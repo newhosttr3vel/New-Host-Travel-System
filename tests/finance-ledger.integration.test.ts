@@ -94,7 +94,11 @@ test("PostgreSQL accepts balanced journal entries and rejects unbalanced or cros
       });
     }));
   } finally {
-    if (firstTenantId) await prisma.tenant.delete({ where: { id: firstTenantId } });
+    if (firstTenantId) {
+      await prisma.journalEntry.deleteMany({ where: { tenantId: firstTenantId } });
+      await prisma.ledgerAccount.deleteMany({ where: { tenantId: firstTenantId } });
+      await prisma.tenant.delete({ where: { id: firstTenantId } });
+    }
     if (secondTenantId) await prisma.tenant.delete({ where: { id: secondTenantId } });
     await prisma.$disconnect();
   }
