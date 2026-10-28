@@ -8,5 +8,5 @@ export default async function OnboardingPage() {
   if (!session) redirect("/login");
   if (membership) redirect("/dashboard");
   const locale = await currentLocale();
-  return <OnboardingForm locale={locale} userName={session.user.name} />;
+  return <OnboardingForm locale={locale} userName={session.user.name ?? session.user.email ?? "User"} />;
 }
