@@ -50,6 +50,12 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
   const [totalEntries, setTotalEntries] = useState(0);
 
   useEffect(() => {
+    const refreshFinance = () => setRefreshKey((value) => value + 1);
+    window.addEventListener("nht:finance-refresh", refreshFinance);
+    return () => window.removeEventListener("nht:finance-refresh", refreshFinance);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true); setError("");
