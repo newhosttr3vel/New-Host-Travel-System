@@ -61,6 +61,27 @@ enum ReservationStatus {
   REFUNDED
 }
 
+enum LedgerAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalEntryStatus {
+  POSTED
+}
+
+enum JournalSourceType {
+  MANUAL
+  CUSTOMER_PAYMENT
+  SUPPLIER_PAYMENT
+  INVOICE
+  SUPPLIER_BILL
+  REVERSAL
+}
+
 model User {
   id            String             @id
   name          String
@@ -131,6 +152,8 @@ model Tenant {
   suppliers       Supplier[]
   reservations    Reservation[]
   auditEvents     AuditEvent[]
+  ledgerAccounts  LedgerAccount[]
+  journalEntries  JournalEntry[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -242,4 +265,67 @@ model AuditEvent {
   @@index([tenantId, createdAt])
   @@index([tenantId, entityType, entityId])
   @@map("audit_events")
+}
+
+
+model LedgerAccount {
+  id           String            @id @default(cuid())
+  tenantId     String
+  code         String
+  name         String
+  nameEn       String
+  type         LedgerAccountType
+  isSystem     Boolean           @default(false)
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  journalLines JournalLine[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, code])
+  @@index([tenantId, type, isActive])
+  @@map("ledger_accounts")
+}
+
+model JournalEntry {
+  id             String             @id @default(cuid())
+  tenantId       String
+  reference      String
+  entryDate      DateTime
+  description    String
+  currency       String             @default("EGP")
+  exchangeRate   Decimal            @default(1) @db.Decimal(18, 8)
+  status         JournalEntryStatus @default(POSTED)
+  sourceType     JournalSourceType  @default(MANUAL)
+  idempotencyKey String?
+  requestHash    String?
+  createdById    String?
+  postedAt       DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines          JournalLine[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, entryDate, status])
+  @@index([tenantId, sourceType, entryDate])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id             String        @id @default(cuid())
+  tenantId       String
+  journalEntryId String
+  accountId      String
+  memo           String?
+  debit          Decimal       @default(0) @db.Decimal(14, 2)
+  credit         Decimal       @default(0) @db.Decimal(14, 2)
+  baseDebit      Decimal       @default(0) @db.Decimal(14, 2)
+  baseCredit     Decimal       @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime      @default(now())
+  journalEntry   JournalEntry  @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  account        LedgerAccount @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@index([tenantId, journalEntryId])
+  @@index([tenantId, accountId])
+  @@map("journal_lines")
 }
