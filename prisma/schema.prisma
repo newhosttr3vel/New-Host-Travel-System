@@ -299,14 +299,18 @@ model JournalEntry {
   sourceType     JournalSourceType  @default(MANUAL)
   idempotencyKey String?
   requestHash    String?
+  reversalOfId   String?
   createdById    String?
   postedAt       DateTime           @default(now())
   createdAt      DateTime           @default(now())
   tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   lines          JournalLine[]
+  reversalOf     JournalEntry?      @relation("JournalReversals", fields: [reversalOfId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  reversals      JournalEntry[]     @relation("JournalReversals")
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, reversalOfId])
   @@index([tenantId, entryDate, status])
   @@index([tenantId, sourceType, entryDate])
   @@map("journal_entries")

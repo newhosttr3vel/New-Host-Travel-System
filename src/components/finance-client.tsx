@@ -7,7 +7,7 @@ type AccountType = "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
 type LedgerAccount = { id: string; code: string; name: string; nameEn: string; type: AccountType; isSystem: boolean; isActive: boolean };
 type JournalLine = { accountId: string; memo: string; debit: string; credit: string };
 type JournalViewLine = { id: string; memo: string | null; debit: string; credit: string; baseDebit: string; baseCredit: string; account: { id: string; code: string; name: string; nameEn: string; type: string } };
-type JournalEntry = { id: string; reference: string; entryDate: string; description: string; currency: string; exchangeRate: string; status: string; createdAt: string; lines: JournalViewLine[] };
+type JournalEntry = { id: string; reference: string; entryDate: string; description: string; currency: string; exchangeRate: string; status: string; sourceType: string; reversalOfId: string | null; isReversed: boolean; createdAt: string; lines: JournalViewLine[] };
 type TrialBalanceRow = { id: string; code: string; name: string; nameEn: string; type: AccountType; totalDebit: string; totalCredit: string; balanceAmount: string; balanceSide: "DEBIT" | "CREDIT" | "ZERO"; isActive: boolean };
 type TrialBalance = { items: TrialBalanceRow[]; summary: { totalDebit: string; totalCredit: string; balanced: boolean; accountCount: number } };
 
@@ -130,6 +130,33 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
     } finally { setSaving(false); }
   }
 
+  async function reverseJournal(entry: JournalEntry) {
+    if (!canWrite || entry.isReversed) return;
+    const confirmation = ar
+      ? `سيتم إنشاء قيد عكسي جديد للقيد ${entry.reference}. القيد الأصلي لن يُحذف. هل تريد المتابعة؟`
+      : `A new reversing entry will be posted for ${entry.reference}. The original will remain unchanged. Continue?`;
+    if (!window.confirm(confirmation)) return;
+    setSaving(true); setError(""); setSuccess("");
+    try {
+      const response = await fetch(`/api/finance/journals/${encodeURIComponent(entry.id)}/reverse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idempotencyKey: crypto.randomUUID() })
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        if (result.error === "ALREADY_REVERSED") {
+          throw new Error(ar ? "تم عكس هذا القيد بالفعل." : "This entry has already been reversed.");
+        }
+        throw new Error(ar ? "تعذر إنشاء القيد العكسي." : "Could not create the reversing entry.");
+      }
+      setSuccess(ar ? "تم ترحيل القيد العكسي مع الاحتفاظ بالقيد الأصلي." : "Reversing entry posted; the original entry was retained.");
+      setRefreshKey((value) => value + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : (ar ? "حدث خطأ غير متوقع." : "Unexpected error."));
+    } finally { setSaving(false); }
+  }
+
   async function submitAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canWrite) return;
@@ -245,8 +272,8 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
       </form>}
 
       <div className="table-wrap"><table className="data-table">
-        <thead><tr><th>{ar ? "رقم القيد" : "Reference"}</th><th>{ar ? "التاريخ" : "Date"}</th><th>{ar ? "البيان" : "Description"}</th><th>{ar ? "العملة" : "Currency"}</th><th>{ar ? "عدد السطور" : "Lines"}</th></tr></thead>
-        <tbody>{entries.map((entry) => <tr key={entry.id}><td dir="ltr"><div className="customer-primary">{entry.reference}</div></td><td>{new Intl.DateTimeFormat(ar ? "ar-EG" : "en-US", { dateStyle: "medium" }).format(new Date(entry.entryDate))}</td><td><div className="customer-primary">{entry.description}</div><div className="customer-secondary">{entry.lines.map((line) => line.account.code).join(" · ")}</div></td><td dir="ltr">{entry.currency}</td><td>{entry.lines.length}</td></tr>)}</tbody>
+        <thead><tr><th>{ar ? "رقم القيد" : "Reference"}</th><th>{ar ? "التاريخ" : "Date"}</th><th>{ar ? "البيان" : "Description"}</th><th>{ar ? "العملة" : "Currency"}</th><th>{ar ? "السطور" : "Lines"}</th><th>{ar ? "الحالة / إجراء" : "Status / action"}</th></tr></thead>
+        <tbody>{entries.map((entry) => <tr key={entry.id}><td dir="ltr"><div className="customer-primary">{entry.reference}</div></td><td>{new Intl.DateTimeFormat(ar ? "ar-EG" : "en-US", { dateStyle: "medium" }).format(new Date(entry.entryDate))}</td><td><div className="customer-primary">{entry.description}</div><div className="customer-secondary">{entry.lines.map((line) => line.account.code).join(" · ")}</div></td><td dir="ltr">{entry.currency}</td><td>{entry.lines.length}</td><td><div className="row-actions">{entry.sourceType === "REVERSAL" && <span className="type-pill">{ar ? "قيد عكسي" : "Reversal"}</span>}{entry.isReversed ? <span className="type-pill">{ar ? "تم عكسه" : "Reversed"}</span> : canWrite && <button className="small-btn danger" type="button" disabled={saving} onClick={() => void reverseJournal(entry)}>{ar ? "عكس القيد" : "Reverse"}</button>}</div></td></tr>)}</tbody>
       </table></div>
       {!loading && entries.length === 0 && <div className="empty-state">{ar ? "لم يتم ترحيل أي قيود بعد." : "No journal entries have been posted yet."}</div>}
       <div className="finance-pagination"><span className="customer-secondary">{ar ? `صفحة ${page} من ${pages} · ${totalEntries} قيدًا` : `Page ${page} of ${pages} · ${totalEntries} entries`}</span><div className="finance-pagination-buttons"><button className="small-btn" type="button" disabled={page <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))}>{ar ? "السابق" : "Previous"}</button><button className="small-btn" type="button" disabled={page >= pages || loading} onClick={() => setPage((value) => value + 1)}>{ar ? "التالي" : "Next"}</button></div></div>

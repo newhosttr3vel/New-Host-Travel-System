@@ -45,6 +45,10 @@ CREATE UNIQUE INDEX "journal_entries_tenantId_reference_key" ON "journal_entries
 CREATE UNIQUE INDEX "journal_entries_tenantId_idempotencyKey_key" ON "journal_entries"("tenantId", "idempotencyKey");
 CREATE INDEX "journal_entries_tenantId_entryDate_status_idx" ON "journal_entries"("tenantId", "entryDate", "status");
 CREATE INDEX "journal_entries_tenantId_sourceType_entryDate_idx" ON "journal_entries"("tenantId", "sourceType", "entryDate");
+ALTER TABLE "journal_entries" ADD COLUMN "reversalOfId" TEXT;
+CREATE UNIQUE INDEX "journal_entries_tenantId_reversalOfId_key" ON "journal_entries"("tenantId", "reversalOfId");
+ALTER TABLE "journal_entries" ADD CONSTRAINT "journal_entries_reversalOfId_fkey"
+  FOREIGN KEY ("reversalOfId", "tenantId") REFERENCES "journal_entries"("id", "tenantId") ON DELETE NO ACTION ON UPDATE CASCADE;
 ALTER TABLE "journal_entries" ADD CONSTRAINT "journal_entries_tenantId_fkey"
   FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

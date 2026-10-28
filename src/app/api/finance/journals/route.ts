@@ -37,6 +37,8 @@ function asPublicEntry(entry: {
   exchangeRate: { toString(): string };
   status: string;
   sourceType: string;
+  reversalOfId: string | null;
+  reversals: Array<{ id: string; reference: string }>;
   createdAt: Date;
   lines: Array<{
     id: string;
@@ -57,6 +59,9 @@ function asPublicEntry(entry: {
     exchangeRate: entry.exchangeRate.toString(),
     status: entry.status,
     sourceType: entry.sourceType,
+    reversalOfId: entry.reversalOfId,
+    isReversed: entry.reversals.length > 0,
+    reversals: entry.reversals,
     createdAt: entry.createdAt.toISOString(),
     lines: entry.lines.map((line) => ({
       id: line.id,
@@ -71,6 +76,7 @@ function asPublicEntry(entry: {
 }
 
 const entryInclude = {
+  reversals: { select: { id: true, reference: true } },
   lines: {
     include: {
       account: {
