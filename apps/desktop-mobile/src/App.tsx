@@ -421,7 +421,7 @@ export default function App() {
             </>}
             {dialog === "supplier" && <>
               <Field label={t("name")} required><input name="name" required defaultValue={supplierForEdit?.name || ""} autoFocus /></Field>
-              <Field label={t("category")}><select name="category" defaultValue={supplierForEdit?.category || "hotel"}>{supplierCategories.map((category) => <option key={category} value={category}>{supplierCategoryText(locale, category)}</option>)}</Field>
+              <Field label={t("category")}><select name="category" defaultValue={supplierForEdit?.category || "hotel"}>{supplierCategories.map((category) => <option key={category} value={category}>{supplierCategoryText(locale, category)}</option>)}</select></Field>
               <div className="form-row"><Field label={t("contactName")}><input name="contactName" defaultValue={supplierForEdit?.contactName || ""} /></Field><Field label={t("phone")}><input name="phone" type="tel" defaultValue={supplierForEdit?.phone || ""} /></Field></div>
               <div className="form-row"><Field label={t("email")}><input name="email" type="email" defaultValue={supplierForEdit?.email || ""} /></Field><Field label={t("paymentTerms")}><input name="paymentTerms" defaultValue={supplierForEdit?.paymentTerms || ""} /></Field></div>
               <Field label={t("notes")}><textarea name="notes" rows={3} defaultValue={supplierForEdit?.notes || ""} /></Field>
