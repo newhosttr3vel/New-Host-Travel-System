@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, Compass, LockKeyhole, ShieldCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { t, type Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
 
 export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale: Locale }) {

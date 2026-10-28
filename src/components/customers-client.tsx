@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import { Archive, Check, ChevronLeft, ChevronRight, Pencil, Plus, Search, Users, X } from "lucide-react";
-import { t, type Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/messages";
 
 type Customer = {
   id: string;

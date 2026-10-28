@@ -1,7 +1,7 @@
 "use client";
 import { Languages } from "lucide-react";
-import type { Locale } from "@/lib/i18n";
-import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/messages";
+import { t } from "@/lib/messages";
 
 export function LocaleToggle({ locale }: { locale: Locale }) {
   function toggle() {

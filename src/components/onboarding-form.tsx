@@ -2,7 +2,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Compass, ShieldCheck } from "lucide-react";
-import { t, type Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
 
 export function OnboardingForm({ locale, userName }: { locale: Locale; userName: string }) {

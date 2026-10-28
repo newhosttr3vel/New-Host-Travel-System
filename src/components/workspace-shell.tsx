@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Building2, Compass, LayoutDashboard, LogOut, ShieldCheck, Users } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-import { t, type Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
 import type { ReactNode } from "react";
 
