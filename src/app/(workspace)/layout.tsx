@@ -8,5 +8,5 @@ export default async function WorkspaceLayout({ children }: Readonly<{ children:
   if (!session) redirect("/login");
   if (!membership) redirect("/onboarding");
   const locale = await currentLocale();
-  return <WorkspaceShell locale={locale} tenantName={membership.tenant.name} role={membership.role} userName={session.user.name}>{children}</WorkspaceShell>;
+  return <WorkspaceShell locale={locale} tenantName={membership.tenant.name} role={membership.role} userName={session.user.name ?? session.user.email ?? "User"}>{children}</WorkspaceShell>;
 }
