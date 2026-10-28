@@ -1,5 +1,6 @@
 import { Store } from "lucide-react";
-import { currentLocale, t } from "@/lib/i18n";
+import { currentLocale } from "@/lib/i18n";
+import { t } from "@/lib/messages";
 import { getTenantContext } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
 import { SuppliersClient } from "@/components/suppliers-client";

@@ -3,7 +3,8 @@ import { ArrowUpLeft, ArrowUpRight, CalendarDays, CircleUserRound, Hotel, Plus, 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-context";
-import { currentLocale, t } from "@/lib/i18n";
+import { currentLocale } from "@/lib/i18n";
+import { t } from "@/lib/messages";
 import { hasPermission } from "@/lib/permissions";
 
 export default async function DashboardPage() {
