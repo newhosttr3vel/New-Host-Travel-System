@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, BriefcaseBusiness, Compass, Hotel, LayoutDashboard, LogOut, ShieldCheck, Users } from "lucide-react";
+import { Building2, BriefcaseBusiness, Compass, Hotel, LayoutDashboard, LogOut, ShieldCheck, Users, WalletCards } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
@@ -36,7 +36,8 @@ export function WorkspaceShell({ children, locale, tenantName, role, userName }:
     { href: "/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
     ...(hasPermission(role, "customers:read") ? [{ href: "/customers", key: "customers" as const, icon: Users }] : []),
     ...(hasPermission(role, "suppliers:read") ? [{ href: "/suppliers", key: "suppliers" as const, icon: Hotel }] : []),
-    ...(hasPermission(role, "reservations:read") ? [{ href: "/reservations", key: "reservations" as const, icon: BriefcaseBusiness }] : [])
+    ...(hasPermission(role, "reservations:read") ? [{ href: "/reservations", key: "reservations" as const, icon: BriefcaseBusiness }] : []),
+    ...(hasPermission(role, "finance:read") ? [{ href: "/finance", key: "finance" as const, icon: WalletCards }] : [])
   ];
   const currentItem = nav.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
   const displayRole = roleLabels[role]?.[locale] ?? role;
