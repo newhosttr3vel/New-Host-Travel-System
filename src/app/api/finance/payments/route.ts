@@ -191,6 +191,10 @@ export async function POST(request: Request) {
         data: { paidAmount: centsToAmount(newPaid), status: newStatus }
       });
       if (changed.count !== 1) throw new Error("INVOICE_BALANCE_CHANGED");
+      const completePayment = await tx.customerPayment.findUniqueOrThrow({
+        where: { id: payment.id },
+        include: paymentInclude
+      });
 
       await tx.auditEvent.create({
         data: {
@@ -199,7 +203,7 @@ export async function POST(request: Request) {
           metadata: { receiptNumber, invoiceReference: invoice.reference, amount: centsToAmount(amountCents), currency: invoice.currency, journalReference: journal.reference }
         }
       });
-      return { item: payment, replay: false as const };
+      return { item: completePayment, replay: false as const };
     });
 
     if ("error" in outcome) {
