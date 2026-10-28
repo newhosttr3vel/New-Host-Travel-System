@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 import { calculateInvoiceLines, calculateInvoiceTotal } from "@/lib/invoice-calculations";
-import { amountToCents, centsToAmount, normalizeJournalLines, JournalValidationError } from "@/lib/finance-journal";
+import { amountToCents, centsToAmount, normalizeJournalLines, rateToUnits, JournalValidationError } from "@/lib/finance-journal";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T12:00:00.000Z");
@@ -187,18 +187,12 @@ export async function POST(request: Request) {
   const tenantId = access.membership.tenantId;
   const reservationId = input.reservationId || undefined;
   const dueDate = input.dueDate && input.dueDate !== "" ? input.dueDate : undefined;
-  let calculated;
-  let totals;
-  let normalized;
+  let calculated: ReturnType<typeof calculateInvoiceLines>;
+  let totals: ReturnType<typeof calculateInvoiceTotal>;
   try {
     calculated = calculateInvoiceLines(input.lines);
     totals = calculateInvoiceTotal(calculated.subtotal, input.taxAmount);
-    const journalLines = [
-      { accountId: "ar-account-placeholder", debit: totals.total, credit: "0.00" },
-      ...calculated.lines.map((line) => ({ accountId: line.revenueAccountId, memo: line.description, debit: "0.00", credit: line.amount })),
-      ...(amountToCents(totals.taxAmount) > 0n ? [{ accountId: "vat-account-placeholder", memo: "VAT payable", debit: "0.00", credit: totals.taxAmount }] : [])
-    ];
-    normalized = { lines: journalLines, exchangeRate: input.exchangeRate };
+    rateToUnits(input.exchangeRate);
   } catch (error) {
     if (error instanceof JournalValidationError) {
       return Response.json({ error: "INVALID_INVOICE_AMOUNT", message: error.message }, { status: 400 });
@@ -253,7 +247,7 @@ export async function POST(request: Request) {
         if (!reservation) return { error: "RESERVATION_NOT_FOUND" as const };
       }
 
-      if (input.currency === access.membership.tenant.defaultCurrency && input.exchangeRate !== "1" && input.exchangeRate !== "1.0" && input.exchangeRate !== "1.00" && input.exchangeRate !== "1.00000000") {
+      if (input.currency === access.membership.tenant.defaultCurrency && rateToUnits(input.exchangeRate) !== 100_000_000n) {
         return { error: "BASE_CURRENCY_RATE_MUST_BE_ONE" as const };
       }
       const exchangeRate = input.exchangeRate;
@@ -288,7 +282,7 @@ export async function POST(request: Request) {
         })),
         ...(taxAccount ? [{ accountId: taxAccount.id, memo: "VAT payable", debit: "0.00", credit: totals.taxAmount }] : [])
       ];
-      normalized = normalizeJournalLines(rawLines, exchangeRate);
+      const normalized = normalizeJournalLines(rawLines, exchangeRate);
 
       const journal = await tx.journalEntry.create({
         data: {
@@ -331,28 +325,29 @@ export async function POST(request: Request) {
           notes: input.notes?.trim() || null,
           idempotencyKey: input.idempotencyKey,
           requestHash,
-          createdById: access.session.user.id,
-          lines: {
-            create: calculated.lines.map((line) => ({
-              tenantId,
-              revenueAccountId: line.revenueAccountId,
-              description: line.description,
-              quantity: line.quantity,
-              unitPrice: line.unitPrice,
-              amount: line.amount
-            }))
-          }
-        },
-        include
+          createdById: access.session.user.id
+        }
       });
+      await tx.invoiceLine.createMany({
+        data: calculated.lines.map((line) => ({
+          tenantId,
+          invoiceId: invoice.id,
+          revenueAccountId: line.revenueAccountId,
+          description: line.description,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          amount: line.amount
+        }))
+      });
+      const completeInvoice = await tx.invoice.findUniqueOrThrow({ where: { id: invoice.id }, include });
       await tx.auditEvent.create({
         data: {
           tenantId, userId: access.session.user.id, action: "INVOICE_ISSUED",
-          entityType: "Invoice", entityId: invoice.id,
+          entityType: "Invoice", entityId: completeInvoice.id,
           metadata: { reference, customerId: customer.id, total: totals.total, currency: input.currency, journalReference: journal.reference }
         }
       });
-      return { item: invoice, replay: false as const };
+      return { item: completeInvoice, replay: false as const };
     });
 
     if ("error" in outcome) {
@@ -369,6 +364,9 @@ export async function POST(request: Request) {
     }
     return Response.json({ item: publicInvoice(outcome.item as unknown as InvoiceRecord), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
+    if (error instanceof JournalValidationError) {
+      return Response.json({ error: "INVALID_INVOICE_AMOUNT", message: error.message }, { status: 400 });
+    }
     if (isPrismaCode(error, "P2002")) {
       const prior = await prisma.invoice.findFirst({
         where: { tenantId, idempotencyKey: input.idempotencyKey },
