@@ -79,34 +79,40 @@ export function normalizeJournalLines(
     throw new JournalValidationError("Total debits must equal total credits in the transaction currency.");
   }
 
-  let baseDebitTotal = prepared.reduce((sum, line) => sum + line.baseDebit, 0n);
-  let baseCreditTotal = prepared.reduce((sum, line) => sum + line.baseCredit, 0n);
-  if (baseDebitTotal !== baseCreditTotal) {
-    const difference = baseDebitTotal > baseCreditTotal
-      ? baseDebitTotal - baseCreditTotal
-      : baseCreditTotal - baseDebitTotal;
-    if (difference > BigInt(prepared.length)) {
+  const baseTotalCents = convertToBaseCents(totalDebit, rateUnits);
+
+  function reconcileBaseSide(side: "debit" | "credit") {
+    const baseKey = side === "debit" ? "baseDebit" : "baseCredit";
+    const amountKey = side === "debit" ? "debit" : "credit";
+    const currentTotal = prepared.reduce((sum, line) => sum + line[baseKey], 0n);
+    const difference = baseTotalCents - currentTotal;
+    if (difference === 0n) return;
+
+    const absoluteDifference = difference < 0n ? -difference : difference;
+    const sideLineCount = prepared.filter((line) => line[amountKey] > 0n).length;
+    if (absoluteDifference > BigInt(Math.max(1, sideLineCount))) {
       throw new JournalValidationError("Converted debit and credit totals do not balance.");
     }
-    const targetSide = baseDebitTotal > baseCreditTotal ? "credit" : "debit";
+
     let targetIndex = -1;
-    let largest = -1n;
+    let largestAmount = -1n;
     prepared.forEach((line, index) => {
-      const amount = targetSide === "credit" ? line.credit : line.debit;
-      if (amount > largest) {
-        largest = amount;
+      if (line[amountKey] > largestAmount && line[amountKey] > 0n) {
+        largestAmount = line[amountKey];
         targetIndex = index;
       }
     });
-    if (targetIndex < 0 || largest <= 0n) throw new JournalValidationError("Unable to reconcile currency rounding.");
-    if (targetSide === "credit") {
-      prepared[targetIndex].baseCredit += difference;
-      baseCreditTotal += difference;
-    } else {
-      prepared[targetIndex].baseDebit += difference;
-      baseDebitTotal += difference;
+    if (targetIndex < 0) throw new JournalValidationError("Unable to reconcile currency rounding.");
+
+    const adjusted = prepared[targetIndex][baseKey] + difference;
+    if (adjusted <= 0n) {
+      throw new JournalValidationError("Currency rounding would make a posted base-currency line zero.");
     }
+    prepared[targetIndex][baseKey] = adjusted;
   }
+
+  reconcileBaseSide("debit");
+  reconcileBaseSide("credit");
 
   return {
     lines: prepared.map((line) => ({
@@ -118,7 +124,7 @@ export function normalizeJournalLines(
       baseCredit: centsToAmount(line.baseCredit),
     })),
     total: centsToAmount(totalDebit),
-    baseTotal: centsToAmount(baseDebitTotal),
+    baseTotal: centsToAmount(baseTotalCents),
     exchangeRate: (rateUnits / RATE_SCALE).toString() + "." + (rateUnits % RATE_SCALE).toString().padStart(8, "0"),
   };
 }
