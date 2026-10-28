@@ -8,16 +8,15 @@ The GitHub Actions workflow runs those commands for pushes to main and pull requ
 
 ## Current coverage
 
-Unit tests check role grants, read-only restrictions, and fail-closed handling for unknown roles.
+Unit tests check role grants, read-only restrictions, fail-closed handling for unknown roles, and reservation lifecycle transitions. The current successful CI workflow also applies the initial migration to PostgreSQL and runs a database integration test proving that composite tenant foreign keys reject reservations linking to another tenant's customer or supplier.
 
 ## Required test additions
 
 - Registration, login, session expiry and password-reset behavior.
-- Tenant onboarding and duplicate-workspace behavior.
-- PostgreSQL migrations and Prisma integration tests.
-- Customer create, validation, update, archival, pagination, search and audit events.
-- Cross-tenant read, write, archive and export denial.
-- Supplier and reservation state transitions.
+- Tenant onboarding duplicate-workspace behavior and tenant-aware API authorization failures.
+- Customer and supplier CRUD validation, pagination, search and audit events.
+- Cross-tenant API read, update, archive and export denial (current integration test covers database-enforced reservation relationship isolation).
+- Supplier contract workflows and reservation concurrency/idempotency.
 - Hotel allocation concurrency limits.
 - Decimal financial calculations, payment allocation, refunds and balanced ledger posting.
 - Secure file delivery.

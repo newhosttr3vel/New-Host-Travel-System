@@ -4,14 +4,16 @@
 - [x] Establish repository and baseline commit.
 - [x] Add Next.js / TypeScript / PostgreSQL / Prisma / Better Auth foundation.
 - [x] Define tenant and membership model, initial business entities, and server-side role grants.
-- [ ] Implement bilingual workspace shell and authentication screens.
-- [ ] Implement workspace onboarding and customer CRUD APIs.
-- [ ] Verify install, migrations, types, lint, tests, and production build in CI.
-- [ ] Complete registration/login and cross-tenant integration tests.
+- [x] Implement bilingual workspace shell, authentication screens and language toggle.
+- [x] Implement workspace onboarding and tenant-scoped customer CRUD APIs.
+- [x] Verify install, migrations, types, lint, tests, and production build in GitHub Actions (run 21 and run 22 succeeded).
+- [x] Add PostgreSQL integration test for database-enforced cross-tenant reservation links.
+- [ ] Add full registration/login route tests and cross-tenant API authorization tests.
 
 ## Milestone 2 — Core CRM and reservations
-- [ ] Supplier create/update/archive workflows.
-- [ ] Reservation create/update/state transitions with tenant-safe customer/supplier references.
+- [x] Supplier create/update/archive, search and pagination workflows.
+- [x] Reservation create/list/update/archive/status transitions with tenant-safe customer/supplier references.
+- [ ] Add quotation builder/conversion, reservation idempotency and inventory concurrency.
 - [ ] Search, pagination, export authorization, and branch scoping.
 - [ ] Customer contacts, duplicate detection, and controlled travel-document data.
 

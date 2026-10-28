@@ -14,7 +14,7 @@ A bilingual (Arabic-first) travel-agency workspace with a foundation for a secur
 - Server-side role-to-permission checks, audit events on customer changes and security headers
 - Initial PostgreSQL migration, optional fictional demo seed, and GitHub Actions quality workflow
 
-The repository began empty. This is an initial working foundation, not a finished travel ERP or a production-certified SaaS release. Suppliers and reservations have schema foundations only; their complete operational workflows, finance, inventory, visas, Hajj/Umrah operations, documents, subscriptions and provider integrations remain to be built.
+The repository began empty. This is an initial working foundation, not a finished travel ERP or a production-certified SaaS release. Supplier create, edit, archive, search and pagination are implemented, as are reservation create, list, edit, archive and controlled status transitions. Advanced quotations, accounting ledger, invoices and payments, hotel inventory, visas, Hajj/Umrah operations, document generation, subscriptions and provider integrations remain to be built.
 
 ## Prerequisites
 

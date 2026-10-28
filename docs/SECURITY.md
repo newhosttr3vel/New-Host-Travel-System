@@ -5,9 +5,10 @@
 - Better Auth manages password storage and session lifecycle.
 - Production configuration refuses a missing or too-short BETTER_AUTH_SECRET.
 - Protected workspace pages redirect unauthenticated visitors and route newly registered users to workspace onboarding.
-- Customer API endpoints check the session, tenant membership, and server-side role permission.
-- Customer list, update and archive operations scope each query to the resolved tenant.
-- Customer create/update/archive and workspace creation write audit events.
+- Customer, supplier and reservation API endpoints check the session, tenant membership and server-side role permission.
+- Customer/supplier/reservation queries scope records to the resolved tenant; reservation customer and optional supplier relationships are constrained by composite database foreign keys plus a tenant consistency check.
+- Workspace creation and customer/supplier/reservation create, update and archive actions write audit events.
+- Reservation supplier-cost values are returned and editable only to roles with finance:read; non-finance users cannot set the cost through the API.
 - Validation uses Zod; errors do not return customer records across tenant boundaries.
 - Response headers include X-Content-Type-Options, Referrer-Policy, X-Frame-Options and Permissions-Policy.
 - Demo seed data is fictional, opt-in and blocked when NODE_ENV=production.
