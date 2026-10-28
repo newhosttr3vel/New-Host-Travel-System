@@ -43,7 +43,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
     return tx.customer.findFirst({
       where: { id, tenantId: access.membership.tenantId, archivedAt: null },
-      select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, createdAt: true, updatedAt: true }
+      select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, notes: true, createdAt: true, updatedAt: true }
     });
   });
   if (!result) return Response.json({ error: "NOT_FOUND" }, { status: 404 });

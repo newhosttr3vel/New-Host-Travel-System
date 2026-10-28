@@ -40,7 +40,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
     return tx.supplier.findFirst({
       where: { id, tenantId: access.membership.tenantId, archivedAt: null },
-      select: { id: true, name: true, category: true, contactName: true, email: true, phone: true, paymentTerms: true, createdAt: true, updatedAt: true }
+      select: { id: true, name: true, category: true, contactName: true, email: true, phone: true, paymentTerms: true, notes: true, createdAt: true, updatedAt: true }
     });
   });
   if (!updated) return Response.json({ error: "NOT_FOUND" }, { status: 404 });

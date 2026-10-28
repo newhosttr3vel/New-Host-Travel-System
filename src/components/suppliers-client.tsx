@@ -6,7 +6,7 @@ import { t, type Locale } from "@/lib/messages";
 type SupplierCategory = "HOTEL" | "AIRLINE" | "TRANSPORT" | "VISA_PROVIDER" | "TOUR_OPERATOR" | "OTHER";
 type Supplier = {
   id: string; name: string; category: SupplierCategory; contactName: string | null;
-  email: string | null; phone: string | null; paymentTerms: string | null; createdAt: string;
+  email: string | null; phone: string | null; paymentTerms: string | null; notes: string | null; createdAt: string;
 };
 type SupplierForm = { name: string; category: SupplierCategory; contactName: string; email: string; phone: string; paymentTerms: string; notes: string };
 const emptyForm: SupplierForm = { name: "", category: "OTHER", contactName: "", email: "", phone: "", paymentTerms: "", notes: "" };
@@ -54,7 +54,7 @@ export function SuppliersClient({ locale, canWrite }: { locale: Locale; canWrite
   function beginCreate() { setEditingId(null); setForm(emptyForm); setError(""); setSuccess(""); setShowForm(true); }
   function beginEdit(item: Supplier) {
     setEditingId(item.id);
-    setForm({ name: item.name, category: item.category, contactName: item.contactName ?? "", email: item.email ?? "", phone: item.phone ?? "", paymentTerms: item.paymentTerms ?? "", notes: "" });
+    setForm({ name: item.name, category: item.category, contactName: item.contactName ?? "", email: item.email ?? "", phone: item.phone ?? "", paymentTerms: item.paymentTerms ?? "", notes: item.notes ?? "" });
     setError(""); setSuccess(""); setShowForm(true); window.scrollTo({ top: 0, behavior: "smooth" });
   }
   async function submit(event: FormEvent<HTMLFormElement>) {

@@ -37,7 +37,7 @@ export async function GET(request: Request) {
   const [items, total] = await prisma.$transaction([
     prisma.customer.findMany({
       where,
-      select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, createdAt: true, updatedAt: true },
+      select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, notes: true, createdAt: true, updatedAt: true },
       orderBy: [{ createdAt: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize

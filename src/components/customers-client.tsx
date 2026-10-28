@@ -10,6 +10,7 @@ type Customer = {
   companyName: string | null;
   email: string | null;
   phone: string | null;
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -62,7 +63,7 @@ export function CustomersClient({ locale, canWrite, canArchive }: { locale: Loca
   }
   function beginEdit(customer: Customer) {
     setEditingId(customer.id);
-    setForm({ name: customer.name, type: customer.type, companyName: customer.companyName ?? "", email: customer.email ?? "", phone: customer.phone ?? "", notes: "" });
+    setForm({ name: customer.name, type: customer.type, companyName: customer.companyName ?? "", email: customer.email ?? "", phone: customer.phone ?? "", notes: customer.notes ?? "" });
     setError(""); setSuccess(""); setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
