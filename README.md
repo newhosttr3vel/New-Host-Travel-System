@@ -34,6 +34,10 @@ The repository began empty. This is an initial working foundation, not a finishe
 8. Open http://localhost:3000, create an account, then complete company onboarding.
 9. To add fictional test records, set SEED_DEMO_DATA=true in a non-production environment and run npm run db:seed. The seed does not create login credentials.
 
+## Deploy as a real website
+
+GitHub Pages cannot run this full-stack app. See [Deployment guide](docs/DEPLOYMENT.md) for a Render Web Service plus managed PostgreSQL setup.
+
 ## Quality checks
 
 Run npm run lint, npm run typecheck, npm test and npm run build. See docs/TESTING.md for current coverage and limitations.
