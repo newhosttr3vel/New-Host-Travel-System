@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, Compass, LayoutDashboard, LogOut, ShieldCheck, Users } from "lucide-react";
+import { Building2, BriefcaseBusiness, Compass, Hotel, LayoutDashboard, LogOut, ShieldCheck, Users } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { hasPermission } from "@/lib/permissions";
 import type { ReactNode } from "react";
 
 const roleLabels: Record<string, { ar: string; en: string }> = {
@@ -33,8 +34,11 @@ export function WorkspaceShell({ children, locale, tenantName, role, userName }:
   }
   const nav = [
     { href: "/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
-    { href: "/customers", key: "customers" as const, icon: Users }
+    ...(hasPermission(role, "customers:read") ? [{ href: "/customers", key: "customers" as const, icon: Users }] : []),
+    ...(hasPermission(role, "suppliers:read") ? [{ href: "/suppliers", key: "suppliers" as const, icon: Hotel }] : []),
+    ...(hasPermission(role, "reservations:read") ? [{ href: "/reservations", key: "reservations" as const, icon: BriefcaseBusiness }] : [])
   ];
+  const currentItem = nav.find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
   const displayRole = roleLabels[role]?.[locale] ?? role;
   return <div className="app-shell">
     <aside className="sidebar">
@@ -63,7 +67,7 @@ export function WorkspaceShell({ children, locale, tenantName, role, userName }:
     </aside>
     <section className="main-area">
       <header className="topbar">
-        <div className="breadcrumb"><Building2 size={14} /><span>{tenantName}</span><span> / </span><span style={{ color: "var(--ink)", fontWeight: 700 }}>{pathname === "/customers" ? t(locale, "customers") : t(locale, "dashboard")}</span></div>
+        <div className="breadcrumb"><Building2 size={14} /><span>{tenantName}</span><span> / </span><span style={{ color: "var(--ink)", fontWeight: 700 }}>{t(locale, currentItem?.key ?? "dashboard")}</span></div>
         <div className="topbar-right">
           <LocaleToggle locale={locale} />
           <div className="user-chip">
