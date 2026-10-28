@@ -94,8 +94,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   });
 
   if ("error" in result) {
-    const statuses: Record<string, number> = { NOT_FOUND: 404, CUSTOMER_NOT_FOUND: 400, SUPPLIER_NOT_FOUND: 400, INVALID_STATUS_TRANSITION: 409, INVALID_DATE_RANGE: 400, CONFLICT: 409 };
-    return Response.json({ error: result.error, ...( "currentStatus" in result ? { currentStatus: result.currentStatus } : {}) }, { status: statuses[result.error] ?? 400 });
+    const statusCode =
+      result.error === "NOT_FOUND" ? 404 :
+      result.error === "INVALID_STATUS_TRANSITION" || result.error === "CONFLICT" ? 409 : 400;
+    return Response.json({ error: result.error, ...("currentStatus" in result ? { currentStatus: result.currentStatus } : {}) }, { status: statusCode });
   }
   if (!result.item) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
   return Response.json({ item: { ...result.item, saleAmount: result.item.saleAmount.toString(), costAmount: result.item.costAmount.toString() } });
