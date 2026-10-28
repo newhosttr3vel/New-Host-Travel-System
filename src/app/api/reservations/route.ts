@@ -84,6 +84,7 @@ export async function POST(request: Request) {
         tenantId: access.membership.tenantId,
         customerId: input.customerId,
         supplierId,
+        supplierTenantId: supplierId ? access.membership.tenantId : null,
         reference,
         serviceType: input.serviceType,
         status: "INQUIRY",

@@ -61,7 +61,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const data = {
       ...(input.customerId !== undefined ? { customerId: input.customerId } : {}),
-      ...(input.supplierId !== undefined ? { supplierId: input.supplierId || null } : {}),
+      ...(input.supplierId !== undefined ? { supplierId: input.supplierId || null, supplierTenantId: input.supplierId ? access.membership.tenantId : null } : {}),
       ...(input.serviceType !== undefined ? { serviceType: input.serviceType } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.startDate !== undefined ? { startDate: asDate(input.startDate) } : {}),

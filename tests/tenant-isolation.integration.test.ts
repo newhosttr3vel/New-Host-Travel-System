@@ -44,6 +44,7 @@ test("PostgreSQL blocks reservation links across tenant boundaries", { skip: pro
         tenantId: firstTenant.id,
         customerId: firstCustomer.id,
         supplierId: secondSupplier.id,
+        supplierTenantId: firstTenant.id,
         reference: `CROSS-SUPPLIER-${unique}`,
         serviceType: "HOTEL"
       }

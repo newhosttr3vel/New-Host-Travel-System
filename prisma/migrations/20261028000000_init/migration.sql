@@ -99,7 +99,7 @@ CREATE INDEX "suppliers_tenantId_category_idx" ON "suppliers"("tenantId", "categ
 ALTER TABLE "suppliers" ADD CONSTRAINT "suppliers_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE TABLE "reservations" (
-  "id" TEXT NOT NULL, "tenantId" TEXT NOT NULL, "customerId" TEXT NOT NULL, "supplierId" TEXT,
+  "id" TEXT NOT NULL, "tenantId" TEXT NOT NULL, "customerId" TEXT NOT NULL, "supplierId" TEXT, "supplierTenantId" TEXT,
   "reference" TEXT NOT NULL, "serviceType" "ReservationServiceType" NOT NULL,
   "status" "ReservationStatus" NOT NULL DEFAULT 'INQUIRY', "startDate" TIMESTAMP(3), "endDate" TIMESTAMP(3),
   "currency" TEXT NOT NULL DEFAULT 'EGP', "saleAmount" DECIMAL(14,2) NOT NULL DEFAULT 0,
@@ -113,7 +113,8 @@ CREATE INDEX "reservations_tenantId_status_startDate_idx" ON "reservations"("ten
 CREATE INDEX "reservations_tenantId_customerId_idx" ON "reservations"("tenantId", "customerId");
 ALTER TABLE "reservations" ADD CONSTRAINT "reservations_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "reservations" ADD CONSTRAINT "reservations_customerId_tenantId_fkey" FOREIGN KEY ("customerId", "tenantId") REFERENCES "customers"("id", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "reservations" ADD CONSTRAINT "reservations_supplierId_tenantId_fkey" FOREIGN KEY ("supplierId", "tenantId") REFERENCES "suppliers"("id", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "reservations" ADD CONSTRAINT "reservations_supplierId_supplierTenantId_fkey" FOREIGN KEY ("supplierId", "supplierTenantId") REFERENCES "suppliers"("id", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "reservations" ADD CONSTRAINT "reservations_supplier_tenant_check" CHECK ((("supplierId" IS NULL AND "supplierTenantId" IS NULL) OR ("supplierId" IS NOT NULL AND "supplierTenantId" = "tenantId")));
 
 CREATE TABLE "audit_events" (
   "id" TEXT NOT NULL, "tenantId" TEXT NOT NULL, "userId" TEXT, "action" TEXT NOT NULL,
