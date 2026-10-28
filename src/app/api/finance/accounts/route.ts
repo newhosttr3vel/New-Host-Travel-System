@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
-import { defaultLedgerAccounts, ledgerAccountTypes } from "@/lib/finance-accounts";
+import { ledgerAccountTypes } from "@/lib/finance-accounts";
 
 const createAccountSchema = z.object({
   code: z.string().trim().min(2).max(20).regex(/^[A-Za-z0-9._-]+$/),
@@ -17,16 +17,6 @@ function isUniqueConstraintError(error: unknown): boolean {
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
-
-  // Backfill the default chart of accounts for workspaces created before finance was enabled.
-  await prisma.ledgerAccount.createMany({
-    data: defaultLedgerAccounts.map((account) => ({
-      tenantId: access.membership.tenantId,
-      ...account,
-      isSystem: true
-    })),
-    skipDuplicates: true
-  });
 
   const accounts = await prisma.ledgerAccount.findMany({
     where: { tenantId: access.membership.tenantId, isActive: true },

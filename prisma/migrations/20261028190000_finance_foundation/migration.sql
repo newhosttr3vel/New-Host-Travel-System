@@ -77,6 +77,33 @@ ALTER TABLE "journal_lines" ADD CONSTRAINT "journal_lines_accountId_tenantId_fke
   FOREIGN KEY ("accountId", "tenantId") REFERENCES "ledger_accounts"("id", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 
+
+-- Initialize the chart of accounts for workspaces that existed before this migration.
+INSERT INTO "ledger_accounts"
+  ("id", "tenantId", "code", "name", "nameEn", "type", "isSystem", "isActive", "createdAt", "updatedAt")
+SELECT gen_random_uuid()::text, tenant."id", account.code, account.name, account.name_en, account.type, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM "tenants" AS tenant
+CROSS JOIN (VALUES
+  ('1000', 'النقدية', 'Cash', 'ASSET'::"LedgerAccountType"),
+  ('1010', 'البنك', 'Bank', 'ASSET'::"LedgerAccountType"),
+  ('1020', 'المحافظ الإلكترونية', 'Electronic wallets', 'ASSET'::"LedgerAccountType"),
+  ('1030', 'محفظة ثاندر', 'Thndr brokerage', 'ASSET'::"LedgerAccountType"),
+  ('1100', 'العملاء - مدينون', 'Accounts receivable', 'ASSET'::"LedgerAccountType"),
+  ('1200', 'دفعات مقدمة للموردين', 'Supplier advances', 'ASSET'::"LedgerAccountType"),
+  ('2000', 'الموردون - دائنون', 'Accounts payable', 'LIABILITY'::"LedgerAccountType"),
+  ('2100', 'دفعات مقدمة من العملاء', 'Customer advances', 'LIABILITY'::"LedgerAccountType"),
+  ('3000', 'رأس مال المالك', 'Owner capital', 'EQUITY'::"LedgerAccountType"),
+  ('3100', 'الأرباح المحتجزة', 'Retained earnings', 'EQUITY'::"LedgerAccountType"),
+  ('4000', 'إيرادات خدمات السفر', 'Travel service revenue', 'REVENUE'::"LedgerAccountType"),
+  ('4100', 'إيرادات العمولات', 'Commission revenue', 'REVENUE'::"LedgerAccountType"),
+  ('4200', 'أرباح فروق العملة', 'Foreign exchange gains', 'REVENUE'::"LedgerAccountType"),
+  ('5000', 'تكلفة خدمات الموردين', 'Supplier service costs', 'EXPENSE'::"LedgerAccountType"),
+  ('5100', 'مصروفات بنكية', 'Bank charges', 'EXPENSE'::"LedgerAccountType"),
+  ('5200', 'مصروفات تشغيلية', 'Operating expenses', 'EXPENSE'::"LedgerAccountType"),
+  ('5300', 'خسائر فروق العملة', 'Foreign exchange losses', 'EXPENSE'::"LedgerAccountType")
+) AS account(code, name, name_en, type)
+ON CONFLICT ("tenantId", "code") DO NOTHING;
+
 -- Deferred constraint triggers validate the final transaction state, after all
 -- journal lines in the posting transaction have been inserted.
 CREATE OR REPLACE FUNCTION assert_journal_entry_balanced()
