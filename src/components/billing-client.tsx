@@ -71,7 +71,7 @@ export function BillingClient({ locale, canWrite }: { locale: Locale; canWrite: 
         ]);
         if (!invoiceResponse.ok) throw new Error(invoiceResult.message || invoiceResult.error || "INVOICE_LOAD_FAILED");
         if (!accountResponse.ok) throw new Error(accountResult.error || "ACCOUNT_LOAD_FAILED");
-        if (!customerResponse.ok) throw new Error(customerResponse.error || "CUSTOMER_LOAD_FAILED");
+        if (!customerResponse.ok) throw new Error(customerResult.error || "CUSTOMER_LOAD_FAILED");
         if (!reservationResponse.ok) throw new Error(reservationResult.error || "RESERVATION_LOAD_FAILED");
         if (active) {
           const currency = accountResult.baseCurrency || invoiceResult.baseCurrency || "EGP";
