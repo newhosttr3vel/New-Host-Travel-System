@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+datasource db { provider = "postgresql" }
+
+enum TenantStatus { TRIAL ACTIVE SUSPENDED CANCELLED }
+enum TenantRole { OWNER ADMINISTRATOR BRANCH_MANAGER RESERVATIONS_MANAGER RESERVATIONS_AGENT ACCOUNTANT SALES VISA_OFFICER OPERATIONS HR_MANAGER AUDITOR READ_ONLY }
+enum CustomerType { INDIVIDUAL CORPORATE }
+enum SupplierCategory { HOTEL AIRLINE TRANSPORT VISA_PROVIDER TOUR_OPERATOR OTHER }
+enum ReservationServiceType { HOTEL FLIGHT VISA TRANSPORT UMRAH_PACKAGE HAJJ_PACKAGE TOUR OTHER }
+enum ReservationStatus { INQUIRY QUOTATION PENDING ON_HOLD CONFIRMED PARTIALLY_PAID FULLY_PAID COMPLETED CANCELLED REFUNDED }
+
+model User {
+  id            String             @id
+  name          String
+  email         String             @unique
+  emailVerified Boolean            @default(false)
+  image         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   TenantMembership[]
+  @@map("user")
+}
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("session")
+}
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuer                String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([userId])
+  @@unique([issuer, accountId])
+  @@map("account")
+}
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([identifier])
+  @@map("verification")
+}
+model Tenant {
+  id              String             @id @default(cuid())
+  name            String
+  slug            String             @unique
+  status          TenantStatus       @default(TRIAL)
+  defaultLanguage String             @default("ar")
+  defaultCurrency String             @default("EGP")
+  timeZone        String             @default("Africa/Cairo")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  memberships     TenantMembership[]
+  branches        Branch[]
+  customers       Customer[]
+  suppliers       Supplier[]
+  reservations    Reservation[]
+  auditEvents     AuditEvent[]
+  @@index([status, createdAt])
+  @@map("tenants")
+}
+model TenantMembership {
+  id        String    @id @default(cuid())
+  tenantId  String
+  userId    String
+  role      TenantRole @default(READ_ONLY)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, userId])
+  @@index([userId, createdAt])
+  @@map("tenant_memberships")
+}
+model Branch {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  slug      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, slug])
+  @@index([tenantId, isActive])
+  @@map("branches")
+}
+model Customer {
+  id           String       @id @default(cuid())
+  tenantId     String
+  type         CustomerType @default(INDIVIDUAL)
+  name         String
+  companyName  String?
+  email        String?
+  phone        String?
+  nationality  String?
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  archivedAt   DateTime?
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  @@unique([id, tenantId])
+  @@index([tenantId, archivedAt, name])
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+  @@map("customers")
+}
+model Supplier {
+  id           String           @id @default(cuid())
+  tenantId     String
+  name         String
+  category     SupplierCategory @default(OTHER)
+  contactName  String?
+  email        String?
+  phone        String?
+  paymentTerms String?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  archivedAt   DateTime?
+  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+  @@unique([id, tenantId])
+  @@index([tenantId, archivedAt, name])
+  @@index([tenantId, category])
+  @@map("suppliers")
+}
+model Reservation {
+  id          String                @id @default(cuid())
+  tenantId    String
+  customerId  String
+  supplierId  String?
+  reference   String
+  serviceType ReservationServiceType
+  status      ReservationStatus     @default(INQUIRY)
+  startDate   DateTime?
+  endDate     DateTime?
+  currency    String                @default("EGP")
+  saleAmount  Decimal               @default(0) @db.Decimal(14, 2)
+  costAmount  Decimal               @default(0) @db.Decimal(14, 2)
+  notes       String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  archivedAt  DateTime?
+  tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@unique([tenantId, reference])
+  @@index([tenantId, status, startDate])
+  @@index([tenantId, customerId])
+  @@map("reservations")
+}
+model AuditEvent {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_events")
+}
