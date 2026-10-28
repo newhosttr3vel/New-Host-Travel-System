@@ -26,5 +26,18 @@ export async function getTenantContext(requestHeaders?: Headers) {
   if (!tenantRow) return { session, membership: null };
   if (tenantRow.status === "SUSPENDED" || tenantRow.status === "CANCELLED") throw new TenantAccessError("This company workspace is currently unavailable.");
   const tenant: SheetRow = { ...tenantRow, status: tenantRow.status || "TRIAL" };
-  return { session, membership: { ...membershipRow, role: (membershipRow.role || "READ_ONLY") as TenantRole, tenant } };
+  return {
+    session,
+    membership: {
+      id: membershipRow.id,
+      tenantId: membershipRow.tenantId,
+      userId: membershipRow.userId,
+      userEmail: membershipRow.userEmail,
+      userName: membershipRow.userName,
+      createdAt: membershipRow.createdAt,
+      updatedAt: membershipRow.updatedAt,
+      role: (membershipRow.role || "READ_ONLY") as TenantRole,
+      tenant
+    }
+  };
 }
