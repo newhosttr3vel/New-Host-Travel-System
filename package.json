@@ -15,7 +15,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "local:start": "node scripts/local.mjs start",
+    "local:stop": "node scripts/local.mjs stop",
+    "local:backup": "node scripts/local.mjs backup",
+    "local:restore": "node scripts/local.mjs restore"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.3",
