@@ -1,12 +1,11 @@
 import { betterAuth } from "better-auth";
-import { prismaAdapter } from "@better-auth/prisma-adapter";
+import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@/lib/prisma";
 
 const secret = process.env.BETTER_AUTH_SECRET;
 if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
   throw new Error("BETTER_AUTH_SECRET must be configured with at least 32 characters in production.");
 }
-
 export const auth = betterAuth({
   appName: "New Host Travel System",
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
