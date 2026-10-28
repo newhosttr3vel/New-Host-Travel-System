@@ -84,6 +84,7 @@ export async function saveRecord<K extends Table>(table: K, record: TableMap[K],
     const values = writableColumns.map((column) => {
       const property = camelCase(column);
       const value = (record as unknown as Record<string, unknown>)[property];
+      if (column === "supplier_id" && value === "") return null;
       return value === undefined ? null : value;
     });
     if (isUpdate) {

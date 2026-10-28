@@ -1,0 +1,26 @@
+name: Desktop and mobile frontend checks
+
+on:
+  push:
+    branches: ["feature/tauri-desktop-mobile"]
+  pull_request:
+    branches: [main, "feature/google-sheets-storage"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/desktop-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run build
