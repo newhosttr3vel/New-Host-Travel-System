@@ -5,6 +5,7 @@ export const defaultLedgerAccounts = [
   { code: "1030", name: "محفظة ثاندر", nameEn: "Thndr brokerage", type: "ASSET" },
   { code: "1100", name: "العملاء - مدينون", nameEn: "Accounts receivable", type: "ASSET" },
   { code: "1200", name: "دفعات مقدمة للموردين", nameEn: "Supplier advances", type: "ASSET" },
+  { code: "1300", name: "ضريبة القيمة المضافة القابلة للاسترداد", nameEn: "Recoverable VAT", type: "ASSET" },
   { code: "2000", name: "الموردون - دائنون", nameEn: "Accounts payable", type: "LIABILITY" },
   { code: "2100", name: "دفعات مقدمة من العملاء", nameEn: "Customer advances", type: "LIABILITY" },
   { code: "2200", name: "ضريبة القيمة المضافة المستحقة", nameEn: "VAT payable", type: "LIABILITY" },

@@ -89,6 +89,13 @@ enum InvoiceStatus {
   VOID
 }
 
+enum SupplierBillStatus {
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
 enum CustomerPaymentMethod {
   CASH
   BANK_TRANSFER
@@ -172,6 +179,8 @@ model Tenant {
   journalEntries  JournalEntry[]
   invoices        Invoice[]
   customerPayments CustomerPayment[]
+  supplierBills    SupplierBill[]
+  supplierPayments SupplierPayment[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -237,7 +246,8 @@ model Supplier {
   updatedAt    DateTime         @updatedAt
   archivedAt   DateTime?
   tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
+  reservations  Reservation[]
+  supplierBills SupplierBill[]
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
   @@index([tenantId, category])
@@ -264,7 +274,8 @@ model Reservation {
   tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
-  invoices    Invoice[]
+  invoices      Invoice[]
+  supplierBills SupplierBill[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@index([tenantId, status, startDate])
@@ -304,6 +315,8 @@ model LedgerAccount {
   journalLines JournalLine[]
   invoiceLines InvoiceLine[]
   customerPayments CustomerPayment[]
+  supplierBillLines SupplierBillLine[]
+  supplierPayments SupplierPayment[]
   @@unique([id, tenantId])
   @@unique([tenantId, code])
   @@index([tenantId, type, isActive])
@@ -332,6 +345,8 @@ model JournalEntry {
   reversals      JournalEntry[]     @relation("JournalReversals")
   invoices       Invoice[]
   customerPayments CustomerPayment[]
+  supplierBills SupplierBill[]
+  supplierPayments SupplierPayment[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@unique([tenantId, idempotencyKey])
@@ -443,4 +458,91 @@ model CustomerPayment {
   @@index([tenantId, paymentDate])
   @@index([tenantId, invoiceId, paymentDate])
   @@map("customer_payments")
+}
+
+
+model SupplierBill {
+  id              String            @id @default(cuid())
+  tenantId        String
+  supplierId      String
+  reservationId   String?
+  journalEntryId  String
+  reference       String
+  supplierReference String?
+  billDate        DateTime
+  dueDate         DateTime?
+  status          SupplierBillStatus @default(ISSUED)
+  currency        String             @default("EGP")
+  exchangeRate    Decimal            @default(1) @db.Decimal(18, 8)
+  subtotal        Decimal            @db.Decimal(14, 2)
+  taxAmount       Decimal            @default(0) @db.Decimal(14, 2)
+  total           Decimal            @db.Decimal(14, 2)
+  paidAmount      Decimal            @default(0) @db.Decimal(14, 2)
+  notes           String?
+  idempotencyKey  String
+  requestHash     String
+  createdById     String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier        Supplier           @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  reservation     Reservation?       @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  journalEntry    JournalEntry       @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  lines           SupplierBillLine[]
+  payments        SupplierPayment[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, status, billDate])
+  @@index([tenantId, supplierId, billDate])
+  @@map("supplier_bills")
+}
+
+model SupplierBillLine {
+  id               String        @id @default(cuid())
+  tenantId         String
+  supplierBillId   String
+  expenseAccountId String
+  description      String
+  quantity         Decimal       @db.Decimal(14, 2)
+  unitPrice        Decimal       @db.Decimal(14, 2)
+  amount           Decimal       @db.Decimal(14, 2)
+  createdAt        DateTime      @default(now())
+  supplierBill     SupplierBill  @relation(fields: [supplierBillId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  expenseAccount   LedgerAccount @relation(fields: [expenseAccountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@index([tenantId, supplierBillId])
+  @@index([tenantId, expenseAccountId])
+  @@map("supplier_bill_lines")
+}
+
+model SupplierPayment {
+  id              String                @id @default(cuid())
+  tenantId        String
+  supplierBillId  String
+  accountId       String
+  journalEntryId  String
+  paymentNumber   String
+  paymentDate     DateTime
+  method          CustomerPaymentMethod
+  amount          Decimal               @db.Decimal(14, 2)
+  currency        String                @default("EGP")
+  exchangeRate    Decimal               @default(1) @db.Decimal(18, 8)
+  idempotencyKey  String
+  requestHash     String
+  reference       String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime              @default(now())
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplierBill    SupplierBill          @relation(fields: [supplierBillId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  account         LedgerAccount         @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  journalEntry    JournalEntry          @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  @@unique([id, tenantId])
+  @@unique([tenantId, paymentNumber])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, paymentDate])
+  @@index([tenantId, supplierBillId, paymentDate])
+  @@map("supplier_payments")
 }
