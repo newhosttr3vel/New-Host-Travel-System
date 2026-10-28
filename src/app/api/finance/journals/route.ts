@@ -5,16 +5,16 @@ import { requireTenantPermission } from "@/lib/api-auth";
 import { normalizeJournalLines, JournalValidationError } from "@/lib/finance-journal";
 import { hasPermission } from "@/lib/permissions";
 
-const dateOnly = z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).refine((value) => {
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 });
-const money = z.string().regex(/^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,2})?$/);
+const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
 const createJournalSchema = z.object({
   entryDate: dateOnly,
   description: z.string().trim().min(3).max(500),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  exchangeRate: z.string().regex(/^(?:0|[1-9]\\d{0,9})(?:\\.\\d{1,8})?$/),
+  exchangeRate: z.string().regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,8})?$/),
   idempotencyKey: z.string().uuid(),
   lines: z.array(z.object({
     accountId: z.string().trim().min(1).max(80),
