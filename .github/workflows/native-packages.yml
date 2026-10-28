@@ -1,0 +1,89 @@
+name: Build Windows installer and Android APK
+
+on:
+  push:
+    branches: ["feature/tauri-desktop-mobile"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install frontend dependencies
+        working-directory: apps/desktop-mobile
+        run: npm install
+      - name: Generate app icons
+        working-directory: apps/desktop-mobile
+        run: npm run tauri:icons
+      - name: Build native Windows installers
+        working-directory: apps/desktop-mobile
+        run: npm run tauri:build
+      - name: Upload Windows installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-host-travel-windows
+          path: |
+            apps/desktop-mobile/src-tauri/target/release/bundle/msi/*.msi
+            apps/desktop-mobile/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK and NDK
+        shell: bash
+        run: |
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - name: Set up Rust Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - name: Install frontend dependencies
+        working-directory: apps/desktop-mobile
+        run: npm install
+      - name: Initialize Android project
+        working-directory: apps/desktop-mobile
+        run: npm run tauri:android:init -- --ci
+      - name: Generate app icons
+        working-directory: apps/desktop-mobile
+        run: npm run tauri:icons
+      - name: Build Android APK
+        working-directory: apps/desktop-mobile
+        run: npm run tauri:android:build -- --apk --ci
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: new-host-travel-android
+          path: apps/desktop-mobile/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 14

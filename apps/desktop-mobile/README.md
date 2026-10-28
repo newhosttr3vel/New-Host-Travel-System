@@ -32,8 +32,9 @@ After installing the Tauri prerequisites, run:
     npm install
     npm run tauri:dev
 
-To build installable bundles:
+Generate the New Host Travel app icon and build installable bundles:
 
+    npm run tauri:icons
     npm run tauri:build
 
 Tauri places native bundles beneath src-tauri/target/release/bundle/ on a compatible build machine.
@@ -43,7 +44,8 @@ Tauri places native bundles beneath src-tauri/target/release/bundle/ on a compat
 After installing the Android prerequisites:
 
     npm install
-    npm run tauri:android:init
+    npm run tauri:android:init -- --ci
+    npm run tauri:icons
     npm run tauri:android:dev
 
 To build an Android package:

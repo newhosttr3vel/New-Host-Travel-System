@@ -12,7 +12,8 @@
     "tauri:build": "tauri build",
     "tauri:android:init": "tauri android init",
     "tauri:android:dev": "tauri android dev",
-    "tauri:android:build": "tauri android build"
+    "tauri:android:build": "tauri android build",
+    "tauri:icons": "tauri icon src/assets/app-icon.svg --output src-tauri/icons"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
