@@ -82,6 +82,22 @@ enum JournalSourceType {
   REVERSAL
 }
 
+enum InvoiceStatus {
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+enum CustomerPaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  ELECTRONIC_WALLET
+  THNDR
+  OTHER
+}
+
 model User {
   id            String             @id
   name          String
@@ -154,6 +170,8 @@ model Tenant {
   auditEvents     AuditEvent[]
   ledgerAccounts  LedgerAccount[]
   journalEntries  JournalEntry[]
+  invoices        Invoice[]
+  customerPayments CustomerPayment[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -198,6 +216,7 @@ model Customer {
   archivedAt   DateTime?
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  invoices     Invoice[]
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
   @@index([tenantId, email])
@@ -245,6 +264,8 @@ model Reservation {
   tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  invoices    Invoice[]
+  @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@index([tenantId, status, startDate])
   @@index([tenantId, customerId])
@@ -281,6 +302,8 @@ model LedgerAccount {
   updatedAt    DateTime          @updatedAt
   tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   journalLines JournalLine[]
+  invoiceLines InvoiceLine[]
+  customerPayments CustomerPayment[]
   @@unique([id, tenantId])
   @@unique([tenantId, code])
   @@index([tenantId, type, isActive])
@@ -307,6 +330,8 @@ model JournalEntry {
   lines          JournalLine[]
   reversalOf     JournalEntry?      @relation("JournalReversals", fields: [reversalOfId, tenantId], references: [id, tenantId], onDelete: NoAction)
   reversals      JournalEntry[]     @relation("JournalReversals")
+  invoices       Invoice[]
+  customerPayments CustomerPayment[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@unique([tenantId, idempotencyKey])
@@ -332,4 +357,90 @@ model JournalLine {
   @@index([tenantId, journalEntryId])
   @@index([tenantId, accountId])
   @@map("journal_lines")
+}
+
+
+model Invoice {
+  id              String       @id @default(cuid())
+  tenantId        String
+  customerId      String
+  reservationId   String?
+  journalEntryId  String
+  reference       String
+  issueDate       DateTime
+  dueDate         DateTime?
+  status          InvoiceStatus @default(ISSUED)
+  currency        String        @default("EGP")
+  exchangeRate    Decimal       @default(1) @db.Decimal(18, 8)
+  subtotal        Decimal       @db.Decimal(14, 2)
+  taxAmount       Decimal       @default(0) @db.Decimal(14, 2)
+  total           Decimal       @db.Decimal(14, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(14, 2)
+  notes           String?
+  idempotencyKey  String
+  requestHash     String
+  createdById     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer        Customer      @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  reservation     Reservation?  @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  journalEntry    JournalEntry  @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  lines           InvoiceLine[]
+  payments        CustomerPayment[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, status, issueDate])
+  @@index([tenantId, customerId, issueDate])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id                String        @id @default(cuid())
+  tenantId          String
+  invoiceId         String
+  revenueAccountId  String
+  description       String
+  quantity          Decimal       @db.Decimal(14, 2)
+  unitPrice         Decimal       @db.Decimal(14, 2)
+  amount            Decimal       @db.Decimal(14, 2)
+  createdAt         DateTime      @default(now())
+  invoice           Invoice       @relation(fields: [invoiceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  revenueAccount    LedgerAccount @relation(fields: [revenueAccountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@index([tenantId, invoiceId])
+  @@index([tenantId, revenueAccountId])
+  @@map("invoice_lines")
+}
+
+model CustomerPayment {
+  id              String                @id @default(cuid())
+  tenantId        String
+  invoiceId       String
+  accountId       String
+  journalEntryId  String
+  receiptNumber   String
+  paymentDate     DateTime
+  method          CustomerPaymentMethod
+  amount          Decimal               @db.Decimal(14, 2)
+  currency        String                @default("EGP")
+  exchangeRate    Decimal               @default(1) @db.Decimal(18, 8)
+  idempotencyKey  String
+  requestHash     String
+  reference       String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime              @default(now())
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice         Invoice               @relation(fields: [invoiceId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  account         LedgerAccount         @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  journalEntry    JournalEntry          @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  @@unique([id, tenantId])
+  @@unique([tenantId, receiptNumber])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, paymentDate])
+  @@index([tenantId, invoiceId, paymentDate])
+  @@map("customer_payments")
 }

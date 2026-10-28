@@ -7,6 +7,7 @@ export const defaultLedgerAccounts = [
   { code: "1200", name: "دفعات مقدمة للموردين", nameEn: "Supplier advances", type: "ASSET" },
   { code: "2000", name: "الموردون - دائنون", nameEn: "Accounts payable", type: "LIABILITY" },
   { code: "2100", name: "دفعات مقدمة من العملاء", nameEn: "Customer advances", type: "LIABILITY" },
+  { code: "2200", name: "ضريبة القيمة المضافة المستحقة", nameEn: "VAT payable", type: "LIABILITY" },
   { code: "3000", name: "رأس مال المالك", nameEn: "Owner capital", type: "EQUITY" },
   { code: "3100", name: "الأرباح المحتجزة", nameEn: "Retained earnings", type: "EQUITY" },
   { code: "4000", name: "إيرادات خدمات السفر", nameEn: "Travel service revenue", type: "REVENUE" },
