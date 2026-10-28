@@ -212,7 +212,7 @@ export async function POST(request: Request) {
         PAYMENT_ACCOUNT_INVALID: "Select an active asset account belonging to this company.",
         RECEIVABLE_ACCOUNT_MISSING: "Default receivable account 1100 is missing or inactive."
       };
-      return Response.json({ error: outcome.error, message: messages[outcome.error], outstanding: "outstanding" in outcome ? outcome.outstanding : undefined }, {
+      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"], outstanding: "outstanding" in outcome ? outcome.outstanding : undefined }, {
         status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400
       });
     }

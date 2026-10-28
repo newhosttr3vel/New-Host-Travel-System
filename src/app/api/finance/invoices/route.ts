@@ -365,7 +365,7 @@ export async function POST(request: Request) {
         REVENUE_ACCOUNT_INVALID: "Every selected revenue account must be active and belong to this company.",
         VAT_ACCOUNT_MISSING: "Default VAT payable account 2200 is missing or inactive."
       };
-      return Response.json({ error: outcome.error, message: messages[outcome.error] }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
+      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
     }
     return Response.json({ item: publicInvoice(outcome.item as unknown as InvoiceRecord), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
