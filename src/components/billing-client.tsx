@@ -271,13 +271,8 @@ export function BillingClient({ locale, canWrite }: { locale: Locale; canWrite: 
 
     <div className="stat-grid">
       <div className="stat-card"><div className="stat-top"><span className="stat-label">{ar ? "عدد الفواتير" : "Invoices"}</span><span className="stat-icon"><FilePlus2 size={17} /></span></div><div className="stat-value">{invoices.length}</div><div className="stat-hint">{ar ? "الفواتير المسجلة محليًا" : "Invoices stored locally"}</div></div>
-      <div className="stat-card"><div className="stat-top"><span className="stat-label">{ar ? "المبالغ المحصلة" : "Collected"}</span><span className="stat-icon"><Receipt size={17} /></span></div><div className="stat-value" style={{ fontSize: 20 }}>{formatMoney(invoices.reduce((sum, invoice) => sum + Number(invoice.paidAmount || 0), 0))}</div><div className="stat-hint">{ar ? "حسب عملة الأساس للعرض فقط" : "Display total; invoices may use different currencies"}</div></div>
-      <div className="stat-card"><div className="stat-top"><span className="stat-label">{ar ? "إجمالي المتبقي" : "Outstanding"}</span><span className="stat-icon"><RefreshCw size={17} /></span></div><div className="stat-value" style={{ fontSize: 20 }}>{formatMoney(invoices.reduce((sum, invoice) => sum + Number(invoice.outstandingAmount || 0), 0))}</div><div className="stat-hint">{ar ? "للمتابعة والتحصيل" : "Pending customer collections"}</div></div>
-    </div>
-    <div className="alert billing-currency-note">
-      {ar
-        ? "تنبيه: إجمالي المبالغ في البطاقات يعرض الأرقام المجمعة لأغراض المتابعة فقط؛ لا تجمع عملات مختلفة كإجمالي محاسبي. ميزان المراجعة يحول الأرصدة إلى عملة الأساس."
-        : "Note: Summary cards add displayed amounts for quick follow-up only; do not treat mixed currencies as a consolidated accounting total. The trial balance uses the base currency."}
+      <div className="stat-card"><div className="stat-top"><span className="stat-label">{ar ? "فواتير مدفوعة بالكامل" : "Fully paid"}</span><span className="stat-icon"><Receipt size={17} /></span></div><div className="stat-value">{invoices.filter((invoice) => invoice.status === "PAID").length}</div><div className="stat-hint">{ar ? "فواتير أغلقت تحصيليًا" : "Invoices fully collected"}</div></div>
+      <div className="stat-card"><div className="stat-top"><span className="stat-label">{ar ? "تحتاج إلى تحصيل" : "Awaiting collection"}</span><span className="stat-icon"><RefreshCw size={17} /></span></div><div className="stat-value">{invoices.filter((invoice) => invoice.status === "ISSUED" || invoice.status === "PARTIALLY_PAID").length}</div><div className="stat-hint">{ar ? "فواتير لديها رصيد متبقٍ" : "Invoices with an open balance"}</div></div>
     </div>
 
     <section className="panel">

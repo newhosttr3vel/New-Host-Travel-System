@@ -218,6 +218,9 @@ export async function POST(request: Request) {
     }
     return Response.json({ item: publicPayment(outcome.item as unknown as PaymentRecord), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
+    if (error instanceof JournalValidationError) {
+      return Response.json({ error: "INVALID_PAYMENT_AMOUNT", message: error.message }, { status: 400 });
+    }
     if (error instanceof Error && error.message === "INVOICE_BALANCE_CHANGED") {
       return Response.json({ error: "INVOICE_BALANCE_CHANGED", message: "The invoice balance changed while this receipt was being posted. Reload and try again." }, { status: 409 });
     }

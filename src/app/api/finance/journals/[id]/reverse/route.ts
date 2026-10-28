@@ -110,6 +110,12 @@ export async function POST(request: Request, context: RouteContext) {
     include: includeEntry
   });
   if (!original) return Response.json({ error: "JOURNAL_NOT_FOUND" }, { status: 404 });
+  if (original.sourceType === "INVOICE" || original.sourceType === "CUSTOMER_PAYMENT") {
+    return Response.json({
+      error: "BUSINESS_DOCUMENT_REVERSAL_REQUIRED",
+      message: "Reverse the linked invoice or receipt through its business workflow; direct journal reversal is disabled to preserve subledger balances."
+    }, { status: 409 });
+  }
   if (original.reversals.length > 0) {
     return Response.json({
       error: "ALREADY_REVERSED",
