@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 import { canTransitionReservationStatus } from "@/lib/reservation-workflow";
+import { hasPermission } from "@/lib/permissions";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
@@ -31,11 +32,15 @@ export async function PATCH(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
   const { id } = await context.params;
+  const canReadCosts = hasPermission(access.membership.role, "finance:read");
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "VALIDATION_ERROR", details: parsed.error.flatten() }, { status: 400 });
   const input = parsed.data;
+  if (!canReadCosts && input.costAmount !== undefined) {
+    return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  }
 
   const result = await prisma.$transaction(async (tx) => {
     const existing = await tx.reservation.findFirst({
@@ -100,7 +105,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return Response.json({ error: result.error, ...("currentStatus" in result ? { currentStatus: result.currentStatus } : {}) }, { status: statusCode });
   }
   if (!result.item) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
-  return Response.json({ item: { ...result.item, saleAmount: result.item.saleAmount.toString(), costAmount: result.item.costAmount.toString() } });
+  return Response.json({ item: { ...result.item, saleAmount: result.item.saleAmount.toString(), costAmount: canReadCosts ? result.item.costAmount.toString() : null } });
 }
 
 export async function DELETE(request: Request, context: RouteContext) {

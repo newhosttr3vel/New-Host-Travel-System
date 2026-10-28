@@ -9,7 +9,7 @@ type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORAT
 type SupplierOption = { id: string; name: string; category: string };
 type Reservation = {
   id: string; reference: string; serviceType: ServiceType; status: Status; startDate: string | null; endDate: string | null;
-  currency: string; saleAmount: string; costAmount: string; notes: string | null;
+  currency: string; saleAmount: string; costAmount: string | null; notes: string | null;
   customer: { id: string; name: string; type?: string };
   supplier: { id: string; name: string } | null;
   createdAt: string;
@@ -41,7 +41,7 @@ const allowedNext: Record<Status, Status[]> = {
   COMPLETED: ["REFUNDED"], CANCELLED: ["REFUNDED"], REFUNDED: []
 };
 
-export function ReservationsClient({ locale, canWrite }: { locale: Locale; canWrite: boolean }) {
+export function ReservationsClient({ locale, canWrite, canReadCosts }: { locale: Locale; canWrite: boolean; canReadCosts: boolean }) {
   const [items, setItems] = useState<Reservation[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
@@ -100,7 +100,7 @@ export function ReservationsClient({ locale, canWrite }: { locale: Locale; canWr
       customerId: item.customer.id, supplierId: item.supplier?.id ?? "", serviceType: item.serviceType,
       startDate: item.startDate ? new Date(item.startDate).toISOString().slice(0, 10) : "",
       endDate: item.endDate ? new Date(item.endDate).toISOString().slice(0, 10) : "",
-      currency: item.currency, saleAmount: item.saleAmount, costAmount: item.costAmount, notes: item.notes ?? ""
+      currency: item.currency, saleAmount: item.saleAmount, costAmount: item.costAmount ?? "0.00", notes: item.notes ?? ""
     });
     setError(""); setSuccess(""); setShowForm(true); window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -114,7 +114,7 @@ export function ReservationsClient({ locale, canWrite }: { locale: Locale; canWr
         body: JSON.stringify({
           customerId: form.customerId, supplierId: form.supplierId, serviceType: form.serviceType,
           startDate: form.startDate, endDate: form.endDate, currency: form.currency,
-          saleAmount: form.saleAmount || "0", costAmount: form.costAmount || "0", notes: form.notes.trim()
+          saleAmount: form.saleAmount || "0", ...(canReadCosts ? { costAmount: form.costAmount || "0" } : {}), notes: form.notes.trim()
         })
       });
       const result = await response.json();
@@ -172,7 +172,7 @@ export function ReservationsClient({ locale, canWrite }: { locale: Locale; canWr
           <label className="field"><span className="field-label">{t(locale, "startDate")}</span><input className="input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></label>
           <label className="field"><span className="field-label">{t(locale, "endDate")}</span><input className="input" type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} min={form.startDate || undefined} /></label>
           <label className="field"><span className="field-label">{t(locale, "saleAmount")}</span><input className="input" type="number" inputMode="decimal" min="0" step="0.01" value={form.saleAmount} onChange={(e) => setForm({ ...form, saleAmount: e.target.value })} required /></label>
-          <label className="field"><span className="field-label">{t(locale, "costAmount")}</span><input className="input" type="number" inputMode="decimal" min="0" step="0.01" value={form.costAmount} onChange={(e) => setForm({ ...form, costAmount: e.target.value })} required /></label>
+          {canReadCosts && <label className="field"><span className="field-label">{t(locale, "costAmount")}</span><input className="input" type="number" inputMode="decimal" min="0" step="0.01" value={form.costAmount} onChange={(e) => setForm({ ...form, costAmount: e.target.value })} required /></label>}
           <label className="field span-2"><span className="field-label">{t(locale, "notes")}</span><textarea className="textarea" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} maxLength={2000} /></label>
         </div>
         {editingId && <p className="customer-secondary">{t(locale, "reservationFlowHint")}</p>}
@@ -194,7 +194,7 @@ export function ReservationsClient({ locale, canWrite }: { locale: Locale; canWr
           <td>{t(locale, serviceTypes.find((x) => x.value === item.serviceType)?.key ?? "serviceOther")}</td>
           <td>{canWrite ? <select className="select" style={{ minWidth: 135, padding: "6px 8px", fontSize: 11 }} aria-label={t(locale, "reservationStatusLabel")} value={item.status} disabled={busyId === item.id} onChange={(e) => void changeStatus(item, e.target.value as Status)}>{[item.status, ...allowedNext[item.status]].filter((v, i, all) => all.indexOf(v) === i).map((value) => <option key={value} value={value}>{t(locale, statuses.find((s) => s.value === value)?.key ?? "statusInquiry")}</option>)}</select> : <span className="type-pill">{t(locale, statuses.find((s) => s.value === item.status)?.key ?? "statusInquiry")}</span>}</td>
           <td>{item.startDate ? new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", { dateStyle: "medium" }).format(new Date(item.startDate)) : "—"}</td>
-          <td><div className="customer-primary" dir="ltr">{new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(item.saleAmount))} {item.currency}</div><div className="customer-secondary">{t(locale, "costAmount")}: {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(item.costAmount))}</div></td>
+          <td><div className="customer-primary" dir="ltr">{new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(item.saleAmount))} {item.currency}</div>{canReadCosts && <div className="customer-secondary">{t(locale, "costAmount")}: {item.costAmount ?? "—"} {item.currency}</div>}</td>
           <td><div className="row-actions">{canWrite && <><button className="small-btn" type="button" disabled={busyId === item.id} onClick={() => beginEdit(item)}><Pencil size={12} style={{ display: "inline", verticalAlign: "middle", marginInlineEnd: 4 }} />{t(locale, "edit")}</button><button className="small-btn danger" type="button" disabled={busyId === item.id} onClick={() => void archiveReservation(item)}><Archive size={12} style={{ display: "inline", verticalAlign: "middle", marginInlineEnd: 4 }} />{t(locale, "archive")}</button></>}</div></td>
         </tr>)}
       </tbody></table></div>}

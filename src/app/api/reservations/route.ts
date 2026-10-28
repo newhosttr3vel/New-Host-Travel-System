@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
+import { hasPermission } from "@/lib/permissions";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
@@ -32,6 +33,7 @@ function asDate(value: string | undefined) {
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
+  const canReadCosts = hasPermission(access.membership.role, "finance:read");
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 100);
   const requestedPage = Number(url.searchParams.get("page") ?? "1");
@@ -57,7 +59,7 @@ export async function GET(request: Request) {
     prisma.reservation.count({ where })
   ]);
   return Response.json({
-    items: items.map((item) => ({ ...item, saleAmount: item.saleAmount.toString(), costAmount: item.costAmount.toString() })),
+    items: items.map((item) => ({ ...item, saleAmount: item.saleAmount.toString(), costAmount: canReadCosts ? item.costAmount.toString() : null })),
     pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) }
   });
 }
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return Response.json({ error: "VALIDATION_ERROR", details: parsed.error.flatten() }, { status: 400 });
   const input = parsed.data;
+  const canReadCosts = hasPermission(access.membership.role, "finance:read");
   const result = await prisma.$transaction(async (tx) => {
     const customer = await tx.customer.findFirst({ where: { id: input.customerId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true } });
     if (!customer) return { error: "CUSTOMER_NOT_FOUND" as const };
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
         endDate: asDate(input.endDate),
         currency: input.currency,
         saleAmount: input.saleAmount,
-        costAmount: input.costAmount,
+        costAmount: canReadCosts ? input.costAmount : "0",
         notes: input.notes || null
       },
       include: { customer: { select: { id: true, name: true } }, supplier: { select: { id: true, name: true } } }
@@ -103,5 +106,5 @@ export async function POST(request: Request) {
     return { item: created };
   });
   if ("error" in result) return Response.json({ error: result.error }, { status: 400 });
-  return Response.json({ item: { ...result.item, saleAmount: result.item.saleAmount.toString(), costAmount: result.item.costAmount.toString() } }, { status: 201 });
+  return Response.json({ item: { ...result.item, saleAmount: result.item.saleAmount.toString(), costAmount: canReadCosts ? result.item.costAmount.toString() : null } }, { status: 201 });
 }

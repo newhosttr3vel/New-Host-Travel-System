@@ -14,6 +14,6 @@ export default async function ReservationsPage() {
       <div><div className="eyebrow">{locale === "ar" ? "إدارة عمليات السفر" : "TRAVEL OPERATIONS"}</div><h1 className="page-title">{t(locale, "reservations")}</h1><p className="page-description">{t(locale, "reservationsSubtitle")}</p></div>
       <div className="page-actions"><span className="btn btn-secondary"><ClipboardList size={16} />{locale === "ar" ? "مسار عمل موثق" : "Workflow controlled"}</span></div>
     </div>
-    <ReservationsClient locale={locale} canWrite={hasPermission(role, "reservations:write")} />
+    <ReservationsClient locale={locale} canWrite={hasPermission(role, "reservations:write")} canReadCosts={hasPermission(role, "finance:read")} />
   </>;
 }
