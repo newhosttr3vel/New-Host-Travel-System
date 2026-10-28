@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpLeft, ArrowUpRight, CalendarDays, CircleUserRound, Hotel, Plus, Users, WalletCards } from "lucide-react";
+import { ArrowUpLeft, ArrowUpRight, CalendarDays, CircleUserRound, Hotel, Plus, ShieldCheck, Users, WalletCards } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-context";
