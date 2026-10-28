@@ -1,27 +1,10 @@
-# Security posture and remaining requirements
+# Security notes
 
-## Controls in the current slice
-
-- Better Auth manages password storage and session lifecycle.
-- Production configuration refuses a missing or too-short BETTER_AUTH_SECRET.
-- Protected workspace pages redirect unauthenticated visitors and route newly registered users to workspace onboarding.
-- Customer, supplier and reservation API endpoints check the session, tenant membership and server-side role permission.
-- Customer/supplier/reservation queries scope records to the resolved tenant; reservation customer and optional supplier relationships are constrained by composite database foreign keys plus a tenant consistency check.
-- Workspace creation and customer/supplier/reservation create, update and archive actions write audit events.
-- Reservation supplier-cost values are returned and editable only to roles with finance:read; non-finance users cannot set the cost through the API.
-- Validation uses Zod; errors do not return customer records across tenant boundaries.
-- Response headers include X-Content-Type-Options, Referrer-Policy, X-Frame-Options and Permissions-Policy.
-- Demo seed data is fictional, opt-in and blocked when NODE_ENV=production.
-
-## Must be completed before production use
-
-1. Enable PostgreSQL row-level security with a non-owner application database role and add tests proving tenant isolation.
-2. Add rate limiting and login abuse protection. Configure email verification and secure password-reset delivery.
-3. Add automated integration and end-to-end tests for login, onboarding and attempts to read, update, archive or export another tenant's data.
-4. Add branch-level permissions, invitation lifecycle, review of exceptional support access and immutable financial audit policies.
-5. Add private object storage and short-lived authorization for passport and travel-document attachments.
-6. Add dependency and secret scanning, database backups, restore drills, observability, incident response and a retention policy.
-7. Review HTTPS, cookies, CSP, trusted origins, logging and PostgreSQL grants in the actual hosting environment.
-8. Obtain an appropriate independent security review and jurisdiction-specific legal/tax review before relying on the product commercially.
-
-No security certification, country-specific regulatory compliance or production hardening is claimed.
+- Keep the spreadsheet private and share it only with the backend service account and trusted administrators.
+- Never commit `.env.local`, OAuth client secrets, or service-account JSON/private keys.
+- Keep `GOOGLE_PRIVATE_KEY`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET` in the host's encrypted environment settings.
+- The browser never receives the Google service-account credentials. Sheets API requests run on the server.
+- APIs use a signed Google-authenticated session, check workspace membership, enforce role permissions, and scope records to `tenantId`.
+- Google Sheets has no relational constraints or multi-row transactions. Concurrent edits may conflict; create backups before large edits.
+- Use synthetic data while testing. Do not store passport scans, card details, or sensitive customer and finance information yet.
+- Before real company use, review rate limiting, account allow-lists or invitations, domain controls, secret rotation, audit completeness, backup/restore drills, and migration to a proper database.

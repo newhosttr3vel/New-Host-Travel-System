@@ -1,33 +1,25 @@
-# Database schema
+# Interim storage: Google Sheets
 
-PostgreSQL is the persistent source of truth. The schema is in prisma/schema.prisma; the checked-in initial SQL migration is under prisma/migrations/20261028000000_init.
+Google Sheets is the temporary record store for this early version. It is not a relational database and must not be treated as a production accounting ledger.
 
-## Main entities
+## Workbook tabs
 
-- User, Session, Account, Verification: Better Auth identity and session records.
-- Tenant: separate agency workspace with language, currency, time-zone and status.
-- TenantMembership: user access and role in an agency.
-- Branch: agency branch records.
-- Customer: individual and corporate customers.
-- Supplier: hotels, airlines, transport providers, visa processors, tour operators and other vendors.
-- Reservation: early reservation record foundation including service type, status, dates, currency, sale price and cost.
-- AuditEvent: workspace-scoped audit trail.
+The spreadsheet configured by `GOOGLE_SHEETS_ID` is initialized by the app with the following tabs and headers:
 
-## Integrity constraints
+- `Tenants`: company workspaces and defaults.
+- `Memberships`: Google identity IDs assigned to a workspace and role.
+- `Branches`: workspace branches reserved for the next implementation slice.
+- `Customers`: company-scoped customer records.
+- `Suppliers`: company-scoped hotels and other providers.
+- `Reservations`: customer-linked travel service records.
+- `AuditEvents`: operational audit rows.
 
-- Operational records reference a tenant.
-- Memberships are unique per (tenantId, userId).
-- Branch slugs are unique within a tenant.
-- Customer and supplier IDs have tenant-scoped unique constraints.
-- Reservation references are unique within a tenant.
-- Reservation customer/supplier foreign keys include tenantId; cross-workspace links fail at database level.
-- Reservation prices use DECIMAL(14,2).
-- Customer records have archivedAt to support soft archiving.
+Do not rename these tabs or change the header row. The service account requires Editor access to this one spreadsheet. Keep the spreadsheet private; never publish it to the web.
 
-## Migration workflow
+## Limitations
 
-Local schema changes: npm run db:migrate:dev -- --name describe_change, then npm run db:generate.
+Google Sheets does not provide relational foreign-key enforcement or multi-row transactions. The adapter scans rows and updates by spreadsheet range; simultaneous edits can conflict. Keep this for a small trusted team and fake/sample data only.
 
-Deployment: npm run db:migrate.
+## Moving later
 
-Never edit an already-applied production migration. Add a new migration for each schema change.
+The API handlers scope records to the authenticated user's workspace. Replace the adapter in `src/lib/sheets-store.ts` with a database-backed repository and migrate rows by stable IDs when the project outgrows Sheets.

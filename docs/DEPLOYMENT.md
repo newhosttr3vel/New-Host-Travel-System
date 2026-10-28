@@ -1,65 +1,32 @@
-# Deployment guide
+# Deployment: Next.js + Google Sheets
 
-The repository is prepared for a managed Node.js web service, for example Render, plus a hosted PostgreSQL database such as Neon. No live deployment has been created yet.
+This is a full-stack Next.js application and cannot run as a static GitHub Pages site. It needs a Node.js host for Google sign-in, API routes, server-side permissions, and private Sheets API credentials.
 
-## Important: choose a web service, not a static site
+## 1. Prepare Google Cloud
 
-This application uses server-side routes, Better Auth sessions, Prisma and PostgreSQL. Do not deploy it through GitHub Pages or a static-export option; those cannot run the current backend. Use a Node.js web service.
+1. Open the Google Cloud Console and select or create a project.
+2. Enable **Google Sheets API**.
+3. Create a service account and generate a JSON key. Keep the JSON key private.
+4. Copy the service account email and share only the target spreadsheet with that email as **Editor**. Do not make the spreadsheet public or enable "Anyone with the link".
+5. Configure the OAuth consent screen and create an OAuth Client ID of type **Web application**.
+6. In Authorized JavaScript origins, add the website origin, such as `https://YOUR-SERVICE.onrender.com`.
+7. In Authorized redirect URIs, add `https://YOUR-SERVICE.onrender.com/api/auth/callback/google`.
 
-## 1. Create the database
+## 2. Deploy the repository
 
-1. Create a PostgreSQL project in Neon.
-2. Copy its pooled connection string for the running web app.
-3. Also keep the direct connection string for the initial database migration.
-4. Do not put either connection string in Git or share it in a chat.
+1. Create a Render **Web Service** and connect `newhosttr3vel/New-Host-Travel-System`. For testing, choose branch `feature/google-sheets-storage`; merge it to main only after review.
+2. Choose Node.js. Build command: `npm install && npm run build`. Start command: `npm run start`.
+3. Set private environment variables in Render:
+   - `GOOGLE_SHEETS_ID`: `1PnGlC91BQcGINC4hCwCRzXFWsZfyt9a1Ym13Mw1YxKM`
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`: email from service account setup
+   - `GOOGLE_PRIVATE_KEY`: private key from the service account JSON (keep secret; represent line breaks as `\n`)
+   - `GOOGLE_CLIENT_ID`: OAuth web client ID
+   - `GOOGLE_CLIENT_SECRET`: OAuth web client secret
+   - `NEXTAUTH_URL`: exact HTTPS Render URL
+   - `NEXTAUTH_SECRET`: a strong random value of at least 32 characters
+4. Open `/api/health`. Expected success JSON: `{"status":"ok","storage":"google_sheets"}`. A degraded result means the account, spreadsheet ID, API enablement, or share permissions need checking.
+5. Sign in using the intended Google account, create a workspace, then test customers, suppliers, and reservations with fake data.
 
-Neon free compute scales to zero after inactivity and has resource limits. This is suitable for a prototype, not a guarantee of always-on production operation.
+## Important
 
-## 2. Apply the initial migration once
-
-Run this from a trusted local computer with Node.js 22.18+ and Git installed:
-
-1. Clone the private repository and enter its project folder.
-2. Run npm install.
-3. Copy .env.example to .env.
-4. In .env, set DATABASE_URL to the direct Neon connection string.
-5. Set BETTER_AUTH_SECRET to a newly generated random secret. One option is openssl rand -base64 32.
-6. Keep BETTER_AUTH_URL=http://localhost:3000 and BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000 for this local migration step.
-7. Run npm run db:migrate. This creates the initial tables and constraints in the hosted database.
-8. Do not run the optional demo seed against a database containing real records.
-
-The .env file is ignored by Git. Never commit credentials.
-
-## 3. Deploy the web application on Render
-
-1. Create a Render account and connect your GitHub account so it can read the private New-Host-Travel-System repository.
-2. Choose New, then Web Service. Do not choose Static Site.
-3. Select the repository and the main branch.
-4. Use Node as the runtime, with build command: npm install && npm run build
-5. Use start command: npm run start
-6. Select the service name before deploying so you can determine the public onrender.com URL.
-7. Add these environment variables in Render's Environment settings:
-   - DATABASE_URL: the pooled Neon connection string
-   - BETTER_AUTH_SECRET: a fresh random secret, different from any example value
-   - BETTER_AUTH_URL: the exact HTTPS URL Render assigned to this service
-   - BETTER_AUTH_TRUSTED_ORIGINS: the same exact HTTPS origin, with no trailing slash
-   - SEED_DEMO_DATA: false
-8. Save the variables and deploy. Check the build logs before using the site.
-
-Render deploys a full Next.js app as a web service. Its free web services can spin down after 15 minutes without inbound traffic and may take time to start again.
-
-## 4. Verify the deployment
-
-1. Open the HTTPS URL Render assigned to the service.
-2. Open /api/health and confirm the response says status ok and database connected.
-3. Register a test account, create a fictional company workspace, then test customer, supplier and reservation workflows.
-4. Test Arabic and English display and confirm a user from one tenant cannot access another tenant's records.
-5. Confirm automatic deployments from main work by making a small reviewed source change.
-
-If the build fails, use the exact error in Render's deploy logs. Do not share passwords, auth secrets or full database URLs when asking for help.
-
-## Before real company use
-
-This milestone is not production-certified. Finish API authorization and cross-tenant tests, PostgreSQL row-level security, rate limits, email verification/password recovery, secure document storage, tested backups/restores, logging and security review first. Use fictional test data until those controls are complete. Paid hosting and database plans may be needed for dependable commercial operation.
-
-See the provider's current docs for service limits and billing before choosing a plan.
+Google Sheets is temporary storage, not a transactional accounting database. Do not store passport scans, payment-card details, or sensitive customer/finance data until access controls, backup/recovery, and migration to a database have been assessed. Review [Google Sheets API usage limits](https://developers.google.com/workspace/sheets/api/limits).

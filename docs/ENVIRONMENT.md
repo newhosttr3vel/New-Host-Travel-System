@@ -1,15 +1,15 @@
-# Environment configuration
+# Environment variables
 
-Copy .env.example to .env for local work. The real .env file is ignored by Git.
+Set these in local `.env.local` or the hosting provider's private environment settings. Never commit secrets or paste private keys into GitHub Issues.
 
-| Variable | Required | Purpose |
-|---|---:|---|
-| DATABASE_URL | Yes | PostgreSQL connection string |
-| BETTER_AUTH_SECRET | Yes for production | Secret used by Better Auth; use at least 32 random characters |
-| BETTER_AUTH_URL | Yes for deployment | Canonical public application origin |
-| BETTER_AUTH_TRUSTED_ORIGINS | Yes for deployment | Comma-separated origins permitted by Better Auth |
-| SEED_DEMO_DATA | Optional | Only the literal value true enables fictional demo seed data; seed refuses production |
+| Variable | Purpose |
+| --- | --- |
+| `GOOGLE_SHEETS_ID` | Spreadsheet ID from the Sheets URL. |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google Cloud service account shared as Editor on the spreadsheet. |
+| `GOOGLE_PRIVATE_KEY` | Private key from the service account JSON key file; store as a secret and represent newlines as `\n` if needed. |
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 web client ID used for Google sign-in. |
+| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 web client secret. |
+| `NEXTAUTH_URL` | Canonical website URL, HTTPS in production. |
+| `NEXTAUTH_SECRET` | Random secret of at least 32 characters used for authentication sessions. |
 
-Generate a development or production secret with: openssl rand -base64 32
-
-Do not reuse the example password or secret, and do not use production credentials in CI. Create a dedicated PostgreSQL application role with only the permissions needed by the running app. Run migrations using a migration role if production policy requires that separation.
+The Google OAuth client and service account are different credentials: the OAuth client signs the user into the website; the service account lets the backend read and update the application spreadsheet.
