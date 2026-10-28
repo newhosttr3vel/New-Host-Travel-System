@@ -1,36 +1,56 @@
 # New Host Travel System
 
-An original travel-agency ERP with a path toward a secure multi-tenant SaaS platform.
+A bilingual (Arabic-first) travel-agency workspace with a foundation for a secure multi-tenant SaaS ERP.
 
-## Product direction
+## What's in this milestone
 
-The application is intended to support travel agency operations, including customer and supplier management, quotations, reservations, Umrah and Hajj operations, travel services, documents, and financial workflows. The architecture must enforce tenant isolation and server-side authorization throughout.
+- Next.js App Router, React and strict TypeScript
+- PostgreSQL persistence through Prisma ORM 7 and the PostgreSQL adapter
+- Email/password registration and session handling through Better Auth
+- New-company onboarding with an owner membership
+- Tenant-scoped customer directory with search, pagination, create, edit and archive
+- Tenant-scoped dashboard counts and latest customer records from PostgreSQL
+- Arabic RTL by default and English LTR via the language control
+- Server-side role-to-permission checks, audit events on customer changes and security headers
+- Initial PostgreSQL migration, optional fictional demo seed, and GitHub Actions quality workflow
 
-## Technology baseline
+The repository began empty. This is an initial working foundation, not a finished travel ERP or a production-certified SaaS release. Suppliers and reservations have schema foundations only; their complete operational workflows, finance, inventory, visas, Hajj/Umrah operations, documents, subscriptions and provider integrations remain to be built.
 
-- Next.js App Router, React, and strict TypeScript
-- PostgreSQL
-- Prisma ORM (stable v7 baseline until Prisma ORM 8 is generally available)
-- Server-side business logic and validation
-- Automated quality checks and documented deployment
+## Prerequisites
 
-## Development status
+- Node.js 22.18+ (use a currently supported Node.js LTS)
+- PostgreSQL 16+ or a compatible managed PostgreSQL service
+- npm
 
-This repository was initially empty. The first milestone establishes a verifiable application foundation before adding further operational modules.
+## Local setup
 
-- [ ] Application shell and bilingual Arabic/English layout
-- [ ] Data model and versioned database migrations
-- [ ] Authentication and tenant-aware authorization
-- [ ] Core customers, suppliers, quotations, and reservations
-- [ ] Financial workflows and audit trail
-- [ ] Automated tests and deployment documentation
+1. Copy .env.example to .env.
+2. Set DATABASE_URL to a local development PostgreSQL database.
+3. Generate BETTER_AUTH_SECRET with: openssl rand -base64 32
+4. Keep BETTER_AUTH_URL=http://localhost:3000 and BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000 for local development.
+5. Install dependencies and generate Prisma Client with: npm install && npm run db:generate
+6. Apply the checked-in initial migration with: npm run db:migrate
+7. Start the application with: npm run dev
+8. Open http://localhost:3000, create an account, then complete company onboarding.
+9. To add fictional test records, set SEED_DEMO_DATA=true in a non-production environment and run npm run db:seed. The seed does not create login credentials.
 
-No production deployment, live integrations, or production accounting readiness is claimed at this stage.
+## Quality checks
 
-## Local development
+Run npm run lint, npm run typecheck, npm test and npm run build. See docs/TESTING.md for current coverage and limitations.
 
-The project requires a supported Node.js LTS version and a PostgreSQL database. See [Environment setup](docs/ENVIRONMENT.md) and [Deployment](docs/DEPLOYMENT.md) as these are added.
+## Documentation
 
-## Security
+- docs/ARCHITECTURE.md — architecture and data boundaries
+- docs/DATABASE.md — schema and migrations
+- docs/SECURITY.md — security posture and remaining requirements
+- docs/ENVIRONMENT.md — environment variables
+- docs/DEPLOYMENT.md — deployment preparation
+- docs/ROADMAP.md — implementation checklist
 
-Never commit real credentials, customer passports, or financial data. Use environment variables and fictional development seed records only.
+## Important security notes
+
+- Do not enter production customer records, passport information, or real financial data until the production security checklist is complete.
+- Configure secrets using environment variables or a secret manager; never commit .env.
+- Tenant-aware application queries are implemented for the customer workflow. PostgreSQL row-level security, independent cross-tenant penetration tests, branch-level authorization, and production monitoring are not yet complete.
+- Live airline/hotel inventory, ticket issuance, government approval, payment processing, email delivery, and WhatsApp messages are not available unless their respective authorized integrations are implemented and configured.
+- No live deployment is configured or claimed at this stage.
