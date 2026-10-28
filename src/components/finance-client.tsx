@@ -37,6 +37,7 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
   const [success, setSuccess] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [showJournalForm, setShowJournalForm] = useState(false);
+  const [journalIdempotencyKey, setJournalIdempotencyKey] = useState("");
   const [showAccountForm, setShowAccountForm] = useState(false);
   const [accountForm, setAccountForm] = useState({ code: "", name: "", nameEn: "", type: "EXPENSE" as AccountType });
   const [entryDate, setEntryDate] = useState(todayLocal());
@@ -94,10 +95,11 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
 
   function changeLine(index: number, field: keyof JournalLine, value: string) {
     setLines((previous) => previous.map((line, current) => current === index ? { ...line, [field]: value } : line));
+    setJournalIdempotencyKey(crypto.randomUUID());
   }
   function resetJournalForm() {
     setEntryDate(todayLocal()); setDescription(""); setCurrency(baseCurrency); setExchangeRate("1");
-    setLines([emptyLine(), { ...emptyLine(), credit: "0.00" }]); setShowJournalForm(false);
+    setLines([emptyLine(), { ...emptyLine(), credit: "0.00" }]); setJournalIdempotencyKey(""); setShowJournalForm(false);
   }
   async function submitJournal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -109,7 +111,7 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           entryDate, description: description.trim(), currency, exchangeRate,
-          idempotencyKey: crypto.randomUUID(),
+          idempotencyKey: journalIdempotencyKey || crypto.randomUUID(),
           lines: lines.map((line) => ({ ...line, memo: line.memo.trim() }))
         })
       });
@@ -242,24 +244,28 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
     <section className="panel">
       <div className="panel-header finance-panel-header">
         <div><h2 className="panel-title">{ar ? "دفتر اليومية" : "Journal entries"}</h2><div className="panel-subtitle">{ar ? "القيود المرحلة غير قابلة للحذف المباشر؛ التصحيح يكون بقيد عكسي." : "Posted entries cannot be deleted; corrections should use reversing entries."}</div></div>
-        {canWrite && <button className="btn btn-primary" type="button" onClick={() => { setShowJournalForm((value) => !value); setShowAccountForm(false); setError(""); }}><Plus size={15} />{ar ? "قيد جديد" : "New journal"}</button>}
+        {canWrite && <button className="btn btn-primary" type="button" onClick={() => {
+          const opening = !showJournalForm;
+          setShowJournalForm(opening); setShowAccountForm(false); setError("");
+          if (opening) setJournalIdempotencyKey(crypto.randomUUID());
+        }}><Plus size={15} />{ar ? "قيد جديد" : "New journal"}</button>}
       </div>
       {showJournalForm && canWrite && <form className="panel-body auth-form" onSubmit={submitJournal}>
         <div className="form-grid">
-          <label className="field"><span className="field-label">{ar ? "تاريخ القيد" : "Entry date"}</span><input className="input" type="date" value={entryDate} onChange={(event) => setEntryDate(event.target.value)} required /></label>
-          <label className="field"><span className="field-label">{ar ? "عملة القيد" : "Entry currency"}</span><select className="select" value={currency} onChange={(event) => { setCurrency(event.target.value); if (event.target.value === baseCurrency) setExchangeRate("1"); }}><option value={baseCurrency}>{baseCurrency} ({ar ? "العملة الأساسية" : "base"})</option>{["EGP", "SAR", "USD"].filter((item) => item !== baseCurrency).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label className="field"><span className="field-label">{ar ? "سعر الصرف إلى العملة الأساسية" : "Rate to base currency"}</span><input className="input" inputMode="decimal" type="number" min="0.00000001" max="9999999999.99999999" step="0.00000001" value={exchangeRate} onChange={(event) => setExchangeRate(event.target.value)} disabled={currency === baseCurrency} required /><span className="customer-secondary">{ar ? "قيمة عملة الشركة الأساسية لكل وحدة من عملة القيد." : "Base-currency units for one unit of the journal currency."}</span></label>
-          <label className="field span-2"><span className="field-label">{ar ? "البيان" : "Description"}</span><input className="input" value={description} onChange={(event) => setDescription(event.target.value)} required minLength={3} maxLength={500} /></label>
+          <label className="field"><span className="field-label">{ar ? "تاريخ القيد" : "Entry date"}</span><input className="input" type="date" value={entryDate} onChange={(event) => { setEntryDate(event.target.value); setJournalIdempotencyKey(crypto.randomUUID()); }} required /></label>
+          <label className="field"><span className="field-label">{ar ? "عملة القيد" : "Entry currency"}</span><select className="select" value={currency} onChange={(event) => { setCurrency(event.target.value); if (event.target.value === baseCurrency) setExchangeRate("1"); setJournalIdempotencyKey(crypto.randomUUID()); }}><option value={baseCurrency}>{baseCurrency} ({ar ? "العملة الأساسية" : "base"})</option>{["EGP", "SAR", "USD"].filter((item) => item !== baseCurrency).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          <label className="field"><span className="field-label">{ar ? "سعر الصرف إلى العملة الأساسية" : "Rate to base currency"}</span><input className="input" inputMode="decimal" type="number" min="0.00000001" max="9999999999.99999999" step="0.00000001" value={exchangeRate} onChange={(event) => { setExchangeRate(event.target.value); setJournalIdempotencyKey(crypto.randomUUID()); }} disabled={currency === baseCurrency} required /><span className="customer-secondary">{ar ? "قيمة عملة الشركة الأساسية لكل وحدة من عملة القيد." : "Base-currency units for one unit of the journal currency."}</span></label>
+          <label className="field span-2"><span className="field-label">{ar ? "البيان" : "Description"}</span><input className="input" value={description} onChange={(event) => { setDescription(event.target.value); setJournalIdempotencyKey(crypto.randomUUID()); }} required minLength={3} maxLength={500} /></label>
         </div>
 
-        <div className="journal-lines-heading"><h3>{ar ? "تفاصيل القيد" : "Journal lines"}</h3><button className="btn btn-secondary" type="button" onClick={() => setLines((value) => [...value, emptyLine()])} disabled={lines.length >= 100}><Plus size={14} />{ar ? "إضافة سطر" : "Add line"}</button></div>
+        <div className="journal-lines-heading"><h3>{ar ? "تفاصيل القيد" : "Journal lines"}</h3><button className="btn btn-secondary" type="button" onClick={() => { setLines((value) => [...value, emptyLine()]); setJournalIdempotencyKey(crypto.randomUUID()); }} disabled={lines.length >= 100}><Plus size={14} />{ar ? "إضافة سطر" : "Add line"}</button></div>
         <div className="journal-lines">
           {lines.map((line, index) => <div className="journal-line" key={index}>
             <label className="field account-field"><span className="field-label">{ar ? "الحساب" : "Account"}</span><select className="select" value={line.accountId} onChange={(event) => changeLine(index, "accountId", event.target.value)} required><option value="">{ar ? "اختر الحساب" : "Select account"}</option>{accounts.map((account) => <option key={account.id} value={account.id}>{account.code} — {accountName(account)}</option>)}</select></label>
             <label className="field"><span className="field-label">{ar ? "مدين" : "Debit"}</span><input className="input money-field" type="number" min="0" step="0.01" value={line.debit} onChange={(event) => { changeLine(index, "debit", event.target.value); if (Number(event.target.value) > 0) changeLine(index, "credit", "0"); }} required /></label>
             <label className="field"><span className="field-label">{ar ? "دائن" : "Credit"}</span><input className="input money-field" type="number" min="0" step="0.01" value={line.credit} onChange={(event) => { changeLine(index, "credit", event.target.value); if (Number(event.target.value) > 0) changeLine(index, "debit", "0"); }} required /></label>
             <label className="field memo-field"><span className="field-label">{ar ? "بيان السطر" : "Line memo"}</span><input className="input" value={line.memo} maxLength={200} onChange={(event) => changeLine(index, "memo", event.target.value)} /></label>
-            <button className="icon-button remove-line" type="button" onClick={() => setLines((value) => value.filter((_, row) => row !== index))} disabled={lines.length <= 2} aria-label={ar ? "حذف السطر" : "Remove line"}><X size={15} /></button>
+            <button className="icon-button remove-line" type="button" onClick={() => { setLines((value) => value.filter((_, row) => row !== index)); setJournalIdempotencyKey(crypto.randomUUID()); }} disabled={lines.length <= 2} aria-label={ar ? "حذف السطر" : "Remove line"}><X size={15} /></button>
           </div>)}
         </div>
 
