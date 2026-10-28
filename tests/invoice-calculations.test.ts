@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateInvoiceLines, calculateInvoiceTotal } from "../src/lib/invoice-calculations";
+import { calculateInvoiceLines, calculateInvoiceTotal, calculateSupplierBillLines } from "../src/lib/invoice-calculations";
 
 test("rounds fractional quantities deterministically to cents", () => {
   const result = calculateInvoiceLines([
@@ -24,4 +24,13 @@ test("rejects non-positive quantity and price", () => {
 
 test("rejects an invoice whose total exceeds Decimal(14,2)", () => {
   assert.throws(() => calculateInvoiceTotal("999999999999.99", "0.01"));
+});
+
+test("supplier bill lines use decimal-safe invoice line arithmetic", () => {
+  const result = calculateSupplierBillLines([
+    { description: "Hotel supplier charge", quantity: "2.50", unitPrice: "123.45", expenseAccountId: "expense" }
+  ]);
+  assert.equal(result.lines[0].amount, "308.63");
+  assert.equal(result.lines[0].expenseAccountId, "expense");
+  assert.equal(result.subtotal, "308.63");
 });

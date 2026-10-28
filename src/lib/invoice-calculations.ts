@@ -33,3 +33,25 @@ export function calculateInvoiceTotal(subtotal: string, taxAmount: string): { su
   if (total > MAX_AMOUNT_CENTS) throw new JournalValidationError("Invoice total is outside the supported range.");
   return { subtotal: centsToAmount(subtotalCents), taxAmount: centsToAmount(taxCents), total: centsToAmount(total) };
 }
+
+export type SupplierBillLineInput = { description: string; quantity: string; unitPrice: string; expenseAccountId: string };
+export type CalculatedSupplierBillLine = SupplierBillLineInput & { amount: string };
+
+export function calculateSupplierBillLines(lines: SupplierBillLineInput[]) {
+  const calculated = calculateInvoiceLines(lines.map((line) => ({
+    description: line.description,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    revenueAccountId: line.expenseAccountId
+  })));
+  return {
+    lines: calculated.lines.map((line) => ({
+      description: line.description,
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      expenseAccountId: line.revenueAccountId,
+      amount: line.amount
+    })),
+    subtotal: calculated.subtotal
+  };
+}
