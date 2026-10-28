@@ -8,6 +8,8 @@ type LedgerAccount = { id: string; code: string; name: string; nameEn: string; t
 type JournalLine = { accountId: string; memo: string; debit: string; credit: string };
 type JournalViewLine = { id: string; memo: string | null; debit: string; credit: string; baseDebit: string; baseCredit: string; account: { id: string; code: string; name: string; nameEn: string; type: string } };
 type JournalEntry = { id: string; reference: string; entryDate: string; description: string; currency: string; exchangeRate: string; status: string; createdAt: string; lines: JournalViewLine[] };
+type TrialBalanceRow = { id: string; code: string; name: string; nameEn: string; type: AccountType; totalDebit: string; totalCredit: string; balanceAmount: string; balanceSide: "DEBIT" | "CREDIT" | "ZERO"; isActive: boolean };
+type TrialBalance = { items: TrialBalanceRow[]; summary: { totalDebit: string; totalCredit: string; balanced: boolean; accountCount: number } };
 
 const types: { value: AccountType; ar: string; en: string }[] = [
   { value: "ASSET", ar: "أصول", en: "Asset" },
@@ -27,6 +29,7 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
   const ar = locale === "ar";
   const [accounts, setAccounts] = useState<LedgerAccount[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [trialBalance, setTrialBalance] = useState<TrialBalance | null>(null);
   const [baseCurrency, setBaseCurrency] = useState("EGP");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,17 +53,22 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
     async function load() {
       setLoading(true); setError("");
       try {
-        const [accountsResponse, journalsResponse] = await Promise.all([
+        const [accountsResponse, journalsResponse, trialBalanceResponse] = await Promise.all([
           fetch("/api/finance/accounts", { cache: "no-store" }),
-          fetch("/api/finance/journals?page=" + page + "&pageSize=20", { cache: "no-store" })
+          fetch("/api/finance/journals?page=" + page + "&pageSize=20", { cache: "no-store" }),
+          fetch("/api/finance/trial-balance", { cache: "no-store" })
         ]);
-        const [accountsResult, journalsResult] = await Promise.all([accountsResponse.json(), journalsResponse.json()]);
+        const [accountsResult, journalsResult, trialBalanceResult] = await Promise.all([
+          accountsResponse.json(), journalsResponse.json(), trialBalanceResponse.json()
+        ]);
         if (!accountsResponse.ok) throw new Error(accountsResponse.status === 403 ? "FORBIDDEN" : accountsResult.error || "LOAD_FAILED");
         if (!journalsResponse.ok) throw new Error(journalsResponse.status === 403 ? "FORBIDDEN" : journalsResult.error || "LOAD_FAILED");
+        if (!trialBalanceResponse.ok) throw new Error(trialBalanceResult.error || "LOAD_FAILED");
         if (active) {
           setAccounts(accountsResult.items as LedgerAccount[]);
           setBaseCurrency(accountsResult.baseCurrency || journalsResult.baseCurrency || "EGP");
           setEntries(journalsResult.items as JournalEntry[]);
+          setTrialBalance(trialBalanceResult as TrialBalance);
           setPages(Math.max(1, journalsResult.pagination.pages));
           setTotalEntries(journalsResult.pagination.total);
           setCurrency(accountsResult.baseCurrency || "EGP");
@@ -179,6 +187,29 @@ export function FinanceClient({ locale, canWrite }: { locale: Locale; canWrite: 
       </table></div>
       {!loading && accounts.length === 0 && <div className="empty-state">{ar ? "لا توجد حسابات." : "No accounts yet."}</div>}
       {loading && <div className="empty-state">{ar ? "جارٍ التحميل..." : "Loading..."}</div>}
+    </section>
+
+    <section className="panel">
+      <div className="panel-header finance-panel-header">
+        <div><h2 className="panel-title">{ar ? "ميزان المراجعة" : "Trial balance"}</h2><div className="panel-subtitle">{ar ? "إجماليات الحسابات بالعملة الأساسية من القيود المرحلة فقط." : "Account totals in base currency from posted journals only."}</div></div>
+        {trialBalance && <span className={"type-pill " + (trialBalance.summary.balanced ? "trial-balanced" : "trial-unbalanced")}>{trialBalance.summary.balanced ? (ar ? "متوازن" : "Balanced") : (ar ? "غير متوازن" : "Out of balance")}</span>}
+      </div>
+      <div className="trial-summary">
+        <div><span>{ar ? "إجمالي المدين" : "Total debits"}</span><strong>{money(trialBalance?.summary.totalDebit ?? "0", baseCurrency)}</strong></div>
+        <div><span>{ar ? "إجمالي الدائن" : "Total credits"}</span><strong>{money(trialBalance?.summary.totalCredit ?? "0", baseCurrency)}</strong></div>
+      </div>
+      <div className="table-wrap"><table className="data-table trial-balance-table">
+        <thead><tr><th>{ar ? "الكود" : "Code"}</th><th>{ar ? "الحساب" : "Account"}</th><th>{ar ? "مدين" : "Debit"}</th><th>{ar ? "دائن" : "Credit"}</th><th>{ar ? "الرصيد الطبيعي" : "Normal balance"}</th></tr></thead>
+        <tbody>{trialBalance?.items.map((row) => <tr key={row.id}>
+          <td dir="ltr">{row.code}</td>
+          <td><div className="customer-primary">{ar ? row.name : row.nameEn}</div><div className="customer-secondary">{accountTypeLabel(row.type, locale)}{!row.isActive ? " · " + (ar ? "غير نشط" : "Inactive") : ""}</div></td>
+          <td className="numeric-cell" dir="ltr">{money(row.totalDebit, baseCurrency)}</td>
+          <td className="numeric-cell" dir="ltr">{money(row.totalCredit, baseCurrency)}</td>
+          <td className="numeric-cell" dir="ltr">{row.balanceSide === "ZERO" ? "—" : (row.balanceSide === "DEBIT" ? (ar ? "مدين " : "Dr ") : (ar ? "دائن " : "Cr ")) + money(row.balanceAmount, baseCurrency)}</td>
+        </tr>)}</tbody>
+      </table></div>
+      {loading && <div className="empty-state">{ar ? "جارٍ حساب ميزان المراجعة..." : "Calculating trial balance..."}</div>}
+      {!loading && trialBalance?.items.length === 0 && <div className="empty-state">{ar ? "لا توجد حسابات." : "No accounts found."}</div>}
     </section>
 
     <section className="panel">

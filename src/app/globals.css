@@ -238,3 +238,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .user-role { display: none; }
   .language-button { padding: 8px 9px; }
 }
+
+.trial-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.trial-summary > div { display: grid; gap: 4px; background: #f8fafb; border: 1px solid #edf0f3; border-radius: 10px; padding: 12px 14px; }
+.trial-summary span { font-size: 11px; color: var(--muted); }
+.trial-summary strong { color: var(--ink); font-size: 17px; font-weight: 800; direction: ltr; text-align: start; }
+.trial-balanced { color: #08745d; background: #effaf6; }
+.trial-unbalanced { color: #a52d25; background: #fff5f4; }
+.numeric-cell { white-space: nowrap; text-align: end; font-variant-numeric: tabular-nums; }
+@media (max-width: 740px) {
+  .trial-summary { grid-template-columns: minmax(0,1fr); }
+  .trial-balance-table { min-width: 760px; }
+}
