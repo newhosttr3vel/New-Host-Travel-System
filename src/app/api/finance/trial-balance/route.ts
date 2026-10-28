@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 
 function toCents(value: string): bigint {
-  if (!/^\\d+(?:\\.\\d{1,2})?$/.test(value)) {
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) {
     throw new Error("Unexpected decimal aggregate from PostgreSQL.");
   }
   const [whole, fraction = ""] = value.split(".");
