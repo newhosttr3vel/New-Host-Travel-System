@@ -94,21 +94,34 @@ export function normalizeJournalLines(
       throw new JournalValidationError("Converted debit and credit totals do not balance.");
     }
 
-    let targetIndex = -1;
-    let largestAmount = -1n;
-    prepared.forEach((line, index) => {
-      if (line[amountKey] > largestAmount && line[amountKey] > 0n) {
-        largestAmount = line[amountKey];
-        targetIndex = index;
-      }
-    });
-    if (targetIndex < 0) throw new JournalValidationError("Unable to reconcile currency rounding.");
+    const candidates = prepared
+      .map((line, index) => ({ line, index }))
+      .filter(({ line }) => line[amountKey] > 0n)
+      .sort((left, right) => {
+        const a = left.line[amountKey];
+        const b = right.line[amountKey];
+        return a === b ? 0 : a > b ? -1 : 1;
+      });
 
-    const adjusted = prepared[targetIndex][baseKey] + difference;
-    if (adjusted <= 0n) {
-      throw new JournalValidationError("Currency rounding would make a posted base-currency line zero.");
+    let remaining = difference;
+    for (const candidate of candidates) {
+      if (remaining === 0n) break;
+      const current = candidate.line[baseKey];
+      if (remaining > 0n) {
+        candidate.line[baseKey] = current + remaining;
+        remaining = 0n;
+        break;
+      }
+      const availableReduction = current - 1n;
+      if (availableReduction <= 0n) continue;
+      const neededReduction = -remaining;
+      const reduction = availableReduction < neededReduction ? availableReduction : neededReduction;
+      candidate.line[baseKey] = current - reduction;
+      remaining += reduction;
     }
-    prepared[targetIndex][baseKey] = adjusted;
+    if (remaining !== 0n) {
+      throw new JournalValidationError("Currency rounding cannot be reconciled without zero-value base lines.");
+    }
   }
 
   reconcileBaseSide("debit");

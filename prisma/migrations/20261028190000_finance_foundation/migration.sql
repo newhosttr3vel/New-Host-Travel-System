@@ -75,3 +75,74 @@ ALTER TABLE "journal_lines" ADD CONSTRAINT "journal_lines_journalEntryId_tenantI
   FOREIGN KEY ("journalEntryId", "tenantId") REFERENCES "journal_entries"("id", "tenantId") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "journal_lines" ADD CONSTRAINT "journal_lines_accountId_tenantId_fkey"
   FOREIGN KEY ("accountId", "tenantId") REFERENCES "ledger_accounts"("id", "tenantId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+
+-- Deferred constraint triggers validate the final transaction state, after all
+-- journal lines in the posting transaction have been inserted.
+CREATE OR REPLACE FUNCTION assert_journal_entry_balanced()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_entry_id TEXT;
+  v_tenant_id TEXT;
+  v_status "JournalEntryStatus";
+  v_line_count BIGINT;
+  v_debit NUMERIC;
+  v_credit NUMERIC;
+  v_base_debit NUMERIC;
+  v_base_credit NUMERIC;
+BEGIN
+  IF TG_TABLE_NAME = 'journal_lines' THEN
+    IF TG_OP = 'DELETE' THEN
+      v_entry_id := OLD."journalEntryId";
+      v_tenant_id := OLD."tenantId";
+    ELSE
+      v_entry_id := NEW."journalEntryId";
+      v_tenant_id := NEW."tenantId";
+    END IF;
+  ELSE
+    IF TG_OP = 'DELETE' THEN
+      v_entry_id := OLD."id";
+      v_tenant_id := OLD."tenantId";
+    ELSE
+      v_entry_id := NEW."id";
+      v_tenant_id := NEW."tenantId";
+    END IF;
+  END IF;
+
+  SELECT "status" INTO v_status
+  FROM "journal_entries"
+  WHERE "id" = v_entry_id AND "tenantId" = v_tenant_id;
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT COUNT(*),
+         COALESCE(SUM("debit"), 0),
+         COALESCE(SUM("credit"), 0),
+         COALESCE(SUM("baseDebit"), 0),
+         COALESCE(SUM("baseCredit"), 0)
+    INTO v_line_count, v_debit, v_credit, v_base_debit, v_base_credit
+  FROM "journal_lines"
+  WHERE "journalEntryId" = v_entry_id AND "tenantId" = v_tenant_id;
+
+  IF v_status = 'POSTED' AND
+     (v_line_count < 2 OR v_debit <> v_credit OR v_base_debit <> v_base_credit) THEN
+    RAISE EXCEPTION 'Journal entry % must contain at least two balanced lines in both transaction and base currency.', v_entry_id
+      USING ERRCODE = '23514', CONSTRAINT = 'journal_entries_balance_check';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+CREATE CONSTRAINT TRIGGER journal_entries_balance_constraint
+AFTER INSERT OR UPDATE ON "journal_entries"
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION assert_journal_entry_balanced();
+
+CREATE CONSTRAINT TRIGGER journal_lines_balance_constraint
+AFTER INSERT OR UPDATE OR DELETE ON "journal_lines"
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION assert_journal_entry_balanced();
