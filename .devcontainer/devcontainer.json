@@ -1,0 +1,22 @@
+{
+  "name": "New Host Travel Web V1 (GitHub Codespaces)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/new-host-travel-system",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "New Host Travel Web V1",
+      "onAutoForward": "openBrowser",
+      "visibility": "private"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "npm run db:generate && npm run db:migrate",
+  "postAttachCommand": "bash .devcontainer/start-dev.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["Prisma.prisma", "dbaeumer.vscode-eslint", "bradlc.vscode-tailwindcss"]
+    }
+  }
+}

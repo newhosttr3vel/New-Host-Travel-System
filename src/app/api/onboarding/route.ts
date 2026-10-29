@@ -1,3 +1,4 @@
+import { defaultLedgerAccounts } from "@/lib/finance-accounts";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -39,6 +40,9 @@ export async function POST(request: Request) {
         defaultCurrency: data.defaultCurrency,
         timeZone: data.timeZone
       }
+    });
+    await tx.ledgerAccount.createMany({
+      data: defaultLedgerAccounts.map((account) => ({ tenantId: created.id, ...account, isSystem: true }))
     });
     await tx.tenantMembership.create({ data: { tenantId: created.id, userId: session.user.id, role: "OWNER" } });
     await tx.auditEvent.create({

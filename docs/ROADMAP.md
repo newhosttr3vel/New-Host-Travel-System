@@ -36,3 +36,8 @@
 - [ ] Production deployment, domain, HTTPS, and release rollback plan.
 
 Only features verified with real persistence and tests should be marked complete.
+
+
+## Finance implementation status (2026-10-28)
+
+Initial finance foundation is implemented on `release/web-v1`: chart of accounts, manual double-entry journals, a base-currency trial balance, idempotent journal creation, immutable reversal-based corrections, audit events, and database constraints that reject unbalanced or cross-tenant journal lines. The full invoice/receipt/supplier-payment cycle is still outstanding.

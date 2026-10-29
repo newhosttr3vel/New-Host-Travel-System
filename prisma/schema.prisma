@@ -61,6 +61,50 @@ enum ReservationStatus {
   REFUNDED
 }
 
+enum LedgerAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalEntryStatus {
+  POSTED
+}
+
+enum JournalSourceType {
+  MANUAL
+  CUSTOMER_PAYMENT
+  SUPPLIER_PAYMENT
+  INVOICE
+  SUPPLIER_BILL
+  REVERSAL
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+enum SupplierBillStatus {
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+}
+
+enum CustomerPaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  ELECTRONIC_WALLET
+  THNDR
+  OTHER
+}
+
 model User {
   id            String             @id
   name          String
@@ -131,6 +175,12 @@ model Tenant {
   suppliers       Supplier[]
   reservations    Reservation[]
   auditEvents     AuditEvent[]
+  ledgerAccounts  LedgerAccount[]
+  journalEntries  JournalEntry[]
+  invoices        Invoice[]
+  customerPayments CustomerPayment[]
+  supplierBills    SupplierBill[]
+  supplierPayments SupplierPayment[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -175,6 +225,7 @@ model Customer {
   archivedAt   DateTime?
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  invoices     Invoice[]
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
   @@index([tenantId, email])
@@ -195,7 +246,8 @@ model Supplier {
   updatedAt    DateTime         @updatedAt
   archivedAt   DateTime?
   tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
+  reservations  Reservation[]
+  supplierBills SupplierBill[]
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
   @@index([tenantId, category])
@@ -222,6 +274,9 @@ model Reservation {
   tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  invoices      Invoice[]
+  supplierBills SupplierBill[]
+  @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@index([tenantId, status, startDate])
   @@index([tenantId, customerId])
@@ -242,4 +297,252 @@ model AuditEvent {
   @@index([tenantId, createdAt])
   @@index([tenantId, entityType, entityId])
   @@map("audit_events")
+}
+
+
+model LedgerAccount {
+  id           String            @id @default(cuid())
+  tenantId     String
+  code         String
+  name         String
+  nameEn       String
+  type         LedgerAccountType
+  isSystem     Boolean           @default(false)
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  journalLines JournalLine[]
+  invoiceLines InvoiceLine[]
+  customerPayments CustomerPayment[]
+  supplierBillLines SupplierBillLine[]
+  supplierPayments SupplierPayment[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, code])
+  @@index([tenantId, type, isActive])
+  @@map("ledger_accounts")
+}
+
+model JournalEntry {
+  id             String             @id @default(cuid())
+  tenantId       String
+  reference      String
+  entryDate      DateTime
+  description    String
+  currency       String             @default("EGP")
+  exchangeRate   Decimal            @default(1) @db.Decimal(18, 8)
+  status         JournalEntryStatus @default(POSTED)
+  sourceType     JournalSourceType  @default(MANUAL)
+  idempotencyKey String?
+  requestHash    String?
+  reversalOfId   String?
+  createdById    String?
+  postedAt       DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines          JournalLine[]
+  reversalOf     JournalEntry?      @relation("JournalReversals", fields: [reversalOfId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  reversals      JournalEntry[]     @relation("JournalReversals")
+  invoices       Invoice[]
+  customerPayments CustomerPayment[]
+  supplierBills SupplierBill[]
+  supplierPayments SupplierPayment[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, reversalOfId])
+  @@index([tenantId, entryDate, status])
+  @@index([tenantId, sourceType, entryDate])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id             String        @id @default(cuid())
+  tenantId       String
+  journalEntryId String
+  accountId      String
+  memo           String?
+  debit          Decimal       @default(0) @db.Decimal(14, 2)
+  credit         Decimal       @default(0) @db.Decimal(14, 2)
+  baseDebit      Decimal       @default(0) @db.Decimal(14, 2)
+  baseCredit     Decimal       @default(0) @db.Decimal(14, 2)
+  createdAt      DateTime      @default(now())
+  journalEntry   JournalEntry  @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  account        LedgerAccount @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@index([tenantId, journalEntryId])
+  @@index([tenantId, accountId])
+  @@map("journal_lines")
+}
+
+
+model Invoice {
+  id              String       @id @default(cuid())
+  tenantId        String
+  customerId      String
+  reservationId   String?
+  journalEntryId  String
+  reference       String
+  issueDate       DateTime
+  dueDate         DateTime?
+  status          InvoiceStatus @default(ISSUED)
+  currency        String        @default("EGP")
+  exchangeRate    Decimal       @default(1) @db.Decimal(18, 8)
+  subtotal        Decimal       @db.Decimal(14, 2)
+  taxAmount       Decimal       @default(0) @db.Decimal(14, 2)
+  total           Decimal       @db.Decimal(14, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(14, 2)
+  notes           String?
+  idempotencyKey  String
+  requestHash     String
+  createdById     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer        Customer      @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  reservation     Reservation?  @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  journalEntry    JournalEntry  @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  lines           InvoiceLine[]
+  payments        CustomerPayment[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, status, issueDate])
+  @@index([tenantId, customerId, issueDate])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id                String        @id @default(cuid())
+  tenantId          String
+  invoiceId         String
+  revenueAccountId  String
+  description       String
+  quantity          Decimal       @db.Decimal(14, 2)
+  unitPrice         Decimal       @db.Decimal(14, 2)
+  amount            Decimal       @db.Decimal(14, 2)
+  createdAt         DateTime      @default(now())
+  invoice           Invoice       @relation(fields: [invoiceId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  revenueAccount    LedgerAccount @relation(fields: [revenueAccountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@index([tenantId, invoiceId])
+  @@index([tenantId, revenueAccountId])
+  @@map("invoice_lines")
+}
+
+model CustomerPayment {
+  id              String                @id @default(cuid())
+  tenantId        String
+  invoiceId       String
+  accountId       String
+  journalEntryId  String
+  receiptNumber   String
+  paymentDate     DateTime
+  method          CustomerPaymentMethod
+  amount          Decimal               @db.Decimal(14, 2)
+  currency        String                @default("EGP")
+  exchangeRate    Decimal               @default(1) @db.Decimal(18, 8)
+  idempotencyKey  String
+  requestHash     String
+  reference       String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime              @default(now())
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice         Invoice               @relation(fields: [invoiceId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  account         LedgerAccount         @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  journalEntry    JournalEntry          @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  @@unique([id, tenantId])
+  @@unique([tenantId, receiptNumber])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, paymentDate])
+  @@index([tenantId, invoiceId, paymentDate])
+  @@map("customer_payments")
+}
+
+
+model SupplierBill {
+  id              String            @id @default(cuid())
+  tenantId        String
+  supplierId      String
+  reservationId   String?
+  journalEntryId  String
+  reference       String
+  supplierReference String?
+  billDate        DateTime
+  dueDate         DateTime?
+  status          SupplierBillStatus @default(ISSUED)
+  currency        String             @default("EGP")
+  exchangeRate    Decimal            @default(1) @db.Decimal(18, 8)
+  subtotal        Decimal            @db.Decimal(14, 2)
+  taxAmount       Decimal            @default(0) @db.Decimal(14, 2)
+  total           Decimal            @db.Decimal(14, 2)
+  paidAmount      Decimal            @default(0) @db.Decimal(14, 2)
+  notes           String?
+  idempotencyKey  String
+  requestHash     String
+  createdById     String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier        Supplier           @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  reservation     Reservation?       @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  journalEntry    JournalEntry       @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  lines           SupplierBillLine[]
+  payments        SupplierPayment[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, status, billDate])
+  @@index([tenantId, supplierId, billDate])
+  @@map("supplier_bills")
+}
+
+model SupplierBillLine {
+  id               String        @id @default(cuid())
+  tenantId         String
+  supplierBillId   String
+  expenseAccountId String
+  description      String
+  quantity         Decimal       @db.Decimal(14, 2)
+  unitPrice        Decimal       @db.Decimal(14, 2)
+  amount           Decimal       @db.Decimal(14, 2)
+  createdAt        DateTime      @default(now())
+  supplierBill     SupplierBill  @relation(fields: [supplierBillId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  expenseAccount   LedgerAccount @relation(fields: [expenseAccountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  @@index([tenantId, supplierBillId])
+  @@index([tenantId, expenseAccountId])
+  @@map("supplier_bill_lines")
+}
+
+model SupplierPayment {
+  id              String                @id @default(cuid())
+  tenantId        String
+  supplierBillId  String
+  accountId       String
+  journalEntryId  String
+  paymentNumber   String
+  paymentDate     DateTime
+  method          CustomerPaymentMethod
+  amount          Decimal               @db.Decimal(14, 2)
+  currency        String                @default("EGP")
+  exchangeRate    Decimal               @default(1) @db.Decimal(18, 8)
+  idempotencyKey  String
+  requestHash     String
+  reference       String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime              @default(now())
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplierBill    SupplierBill          @relation(fields: [supplierBillId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  account         LedgerAccount         @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  journalEntry    JournalEntry          @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
+  @@unique([id, tenantId])
+  @@unique([tenantId, paymentNumber])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, journalEntryId])
+  @@index([tenantId, paymentDate])
+  @@index([tenantId, supplierBillId, paymentDate])
+  @@map("supplier_payments")
 }
