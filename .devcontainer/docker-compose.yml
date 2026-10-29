@@ -1,0 +1,29 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    init: true
+    command: sleep infinity
+    working_dir: /workspaces/new-host-travel-system
+    volumes:
+      - ..:/workspaces/new-host-travel-system:cached
+    environment:
+      DATABASE_URL: postgresql://app_user:codespaces_dev_only_change_me@db:5432/new_host_travel?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: codespaces_dev_only_change_me
+      POSTGRES_DB: new_host_travel
+    volumes:
+      - codespaces_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d new_host_travel"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  codespaces_postgres_data:

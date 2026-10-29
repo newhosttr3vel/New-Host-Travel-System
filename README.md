@@ -16,28 +16,18 @@ A bilingual (Arabic-first) travel-agency workspace with a foundation for a secur
 
 The repository began as a foundation, not a finished travel ERP or a production-certified SaaS release. Supplier create, edit, archive, search and pagination are implemented, as are reservation create, list, edit, archive and controlled status transitions. A first finance milestone now includes a tenant-scoped chart of accounts, immutable posted journals, decimal-safe debit/credit validation, a base-currency trial balance, and reversing entries. Customer invoices and partial/full receipt posting are implemented in `release/web-v1`, including tax payable lines, idempotency keys, concurrency checks on collection, audit events, and links to the source journal. Remaining finance work includes cancellation/reversal workflows for invoices and receipts, supplier bills/payments, credit notes/refunds, allocations, bank reconciliation, and more reporting. Advanced hotel inventory, visas, Hajj/Umrah operations, document generation, subscriptions and provider integrations remain to be built.
 
-## Local-first setup (recommended for the first release)
+## Browser-based development in GitHub Codespaces (no local installation)
 
-The first release is intended to run on your own computer before any public hosting is configured. The local database is a Docker volume on this computer, and its published port is bound to 127.0.0.1 only.
+The project can be edited and run in a cloud development environment from your browser. You do not need to install Node.js, Docker, or an editor on your computer.
 
-Requirements:
-- Node.js 22.18.0 or newer
-- npm
-- Docker Desktop with Docker Compose, running
+1. Switch GitHub to branch `release/web-v1`.
+2. Click **Code → Codespaces → Create codespace on release/web-v1**.
+3. On first creation, Codespaces installs dependencies, starts a PostgreSQL development database, applies migrations, and creates an ignored `.env`.
+4. The site starts when the Codespace attaches. Open the private forwarded port 3000 from the Codespaces **Ports** panel.
 
-From the repository folder, run:
+See [docs/CODESPACES.md](docs/CODESPACES.md) for details.
 
-    npm run local:start
-
-The first run creates a local .env and a unique authentication secret, starts PostgreSQL, installs dependencies if needed, applies database migrations, and launches the site. Then open http://localhost:3000 and register the owner account.
-
-Useful local commands:
-
-- npm run local:stop — stop the local database container without deleting saved data.
-- npm run local:backup — create a database backup in backups/.
-- npm run local:restore -- "backups/your-backup.dump" — restore a backup after explicit confirmation.
-
-See docs/LOCAL_DEVELOPMENT.md for details and troubleshooting. Do not use docker compose down -v unless you intentionally want to delete your local database volume.
+**GitHub Pages is not a runtime for this full-stack ERP.** It publishes static files only, while this project needs Next.js server routes, authentication, and PostgreSQL. A complete live release will need a host that supports the app server and database. Keep this Codespace database for fictional development data only; do not use it as the permanent company database.
 
 ## Future hosted deployment
 
