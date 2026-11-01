@@ -249,7 +249,6 @@ model Supplier {
   tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservations  Reservation[]
   supplierBills SupplierBill[]
-  hotelDetails HotelReservationDetail?
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
   @@index([tenantId, category])
