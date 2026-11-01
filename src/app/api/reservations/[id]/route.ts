@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 import { canTransitionReservationStatus } from "@/lib/reservation-workflow";
 import { hasPermission } from "@/lib/permissions";
+import { runReservationTransaction } from "@/lib/reservation-errors";
 import { hotelReservationDetailsSchema, normalizeHotelReservation, restorePersistedHotelCosts } from "@/lib/hotel-pricing";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -149,7 +150,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const outcome = await runReservationTransaction("update", () => prisma.$transaction(async (tx) => {
     const existing = await tx.reservation.findFirst({
       where: { id, tenantId: access.membership.tenantId, archivedAt: null },
       include: {
@@ -280,7 +281,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       include: reservationInclude
     });
     return { item };
-  });
+  }));
+  if (!outcome.ok) return outcome.response;
+  const result = outcome.value;
 
   if ("error" in result) {
     const statusCode =
