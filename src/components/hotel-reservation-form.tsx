@@ -444,7 +444,6 @@ export function HotelReservationForm({
         HOTEL_NIGHT_RATE_DATE_MISMATCH: "تواريخ الأسعار الليلية لا تطابق تواريخ الإقامة.",
         HOTEL_TOTAL_OUT_OF_RANGE: "إجمالي الحجز أكبر من الحد المسموح.",
         HOTEL_STAY_LENGTH_INVALID: "مدة الإقامة يجب ألا تتجاوز 365 ليلة.",
-        HOTEL_SUPPLIER_REQUIRED: "الفندق المختار يجب أن يكون مصنفًا كفندق ضمن الموردين.",
       } : {
         CUSTOMER_REQUIRED: "Select a client.",
         HOTEL_REQUIRED: "Select a hotel from the hotel directory in Settings.",
@@ -457,7 +456,6 @@ export function HotelReservationForm({
         HOTEL_NIGHT_RATE_DATE_MISMATCH: "Nightly rate dates do not match the stay dates.",
         HOTEL_TOTAL_OUT_OF_RANGE: "The reservation total exceeds the supported amount.",
         HOTEL_STAY_LENGTH_INVALID: "The stay cannot exceed 365 nights.",
-        HOTEL_SUPPLIER_REQUIRED: "The selected hotel must have the Hotel supplier category.",
       };
       setError(messages[code] ?? (ar ? "تعذر حفظ الحجز. راجع البيانات وحاول مرة أخرى." : "Could not save the reservation. Check the details and try again."));
     } finally {
