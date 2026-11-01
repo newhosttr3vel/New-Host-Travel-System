@@ -195,7 +195,7 @@ export async function POST(request: Request) {
         EXPENSE_ACCOUNT_INVALID: "Each expense account must be active and belong to this company.",
         INPUT_VAT_ACCOUNT_MISSING: "Recoverable VAT account 1300 is missing or inactive."
       };
-      return Response.json({ error: outcome.error, message: messages[outcome.error] ?? "Bill could not be posted." }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
+      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] ?? "Bill could not be posted." }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
     }
     return Response.json({ item: publicBill(outcome.item), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
