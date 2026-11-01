@@ -4,7 +4,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Plus, Trash2, X, Save, BedDouble, CalendarDays, FileText, Building2, Wallet } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
-type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
+type CustomerOption = { id: string; name: string; companyName?: string | null; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
 type SupplierOption = { id: string; name: string; category: string };
 type HotelOption = { id: string; name: string; city?: string | null; country?: string | null };
 type NightRate = {
@@ -549,7 +549,7 @@ export function HotelReservationForm({
                 setDetail((current) => ({ ...current, clientNationality: nextCustomer?.nationality ?? "" }));
               }} required>
                 <option value="">{ar ? "اختر شركة العميل" : "Select client company"}</option>
-                {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
+                {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.companyName || customer.name}</option>)}
               </select>
             </label>
             <label className="hotel-field">
