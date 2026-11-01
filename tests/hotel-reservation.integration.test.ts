@@ -95,6 +95,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
           notes: null,
           hotelDetail: {
             create: {
+              tenant: { connect: { id: tenantId } },
               hotel: {
                 connect: { id_tenantId: { id: selectedHotel!.id, tenantId } },
               },
@@ -106,6 +107,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
               pricesIncludeVat: details.pricesIncludeVat,
               rooms: {
                 create: pricing.rooms.map((room) => ({
+                  tenant: { connect: { id: tenantId } },
                   roomCount: room.roomCount,
                   roomType: room.roomType,
                   mealPlan: room.mealPlan,
@@ -114,6 +116,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
                   sortOrder: room.sortOrder,
                   nightlyRates: {
                     create: room.rates.map((rate) => ({
+                      tenant: { connect: { id: tenantId } },
                       stayDate: rate.stayDate,
                       saleRoomRate: rate.saleRoomRate,
                       saleMealRatePerPax: rate.saleMealRatePerPax,
