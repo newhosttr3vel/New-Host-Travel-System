@@ -4,16 +4,25 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
+const traceHook = path.join(root, "scripts", "trace-next-lifecycle.cjs");
 
 console.error("[dev-diagnostic] Node:", process.version);
 console.error("[dev-diagnostic] stdin TTY:", Boolean(process.stdin.isTTY));
 console.error("[dev-diagnostic] stdout TTY:", Boolean(process.stdout.isTTY));
 console.error("[dev-diagnostic] parent PID:", process.pid);
 
+const nodeOptions = [process.env.NODE_OPTIONS, `--require=${traceHook}`]
+  .filter(Boolean)
+  .join(" ");
+
 const child = spawn(
   process.execPath,
   [nextBin, "dev", "--hostname", "0.0.0.0", "--webpack"],
-  { cwd: root, env: process.env, stdio: "inherit" }
+  {
+    cwd: root,
+    env: { ...process.env, NODE_OPTIONS: nodeOptions },
+    stdio: "inherit",
+  }
 );
 
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
