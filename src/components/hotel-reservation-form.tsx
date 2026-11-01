@@ -190,7 +190,7 @@ function buildRoom(room?: HotelRoomSaved, dates: string[] = [], index = 0): Room
 
 function amountToCents(value: string | null | undefined): bigint {
   const raw = (value ?? "0").trim();
-  if (!/^\\d+(?:\\.\\d{0,2})?$/.test(raw)) return 0n;
+  if (!/^\d+(?:\.\d{0,2})?$/.test(raw)) return 0n;
   const [whole, fraction = ""] = raw.split(".");
   return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0") || "0");
 }
@@ -699,8 +699,8 @@ export function HotelReservationForm({
                 <th>{ar ? "الإجراءات" : "Actions"}</th>
               </tr></thead>
               <tbody>{rooms.map((room, index) => {
-                const roomTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).saleTotal, 0);
-                const costTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).costTotal, 0);
+                const roomTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).saleTotal, 0n);
+                const costTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).costTotal, 0n);
                 return <tr key={room.key}>
                   <td>{room.roomCount}</td><td>{room.roomCount * totalNights}</td><td>{room.roomType || "—"}</td><td>{mealPlans.find(([value]) => value === room.mealPlan)?.[locale === "ar" ? 2 : 1] ?? room.mealPlan}</td>
                   <td>{money(roomTotal, locale)} {currency}</td>{canReadCosts && <td>{money(costTotal, locale)} {currency}</td>}
