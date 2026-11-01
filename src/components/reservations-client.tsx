@@ -2,16 +2,36 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Archive, CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardList, Pencil, Plus, Search, X } from "lucide-react";
 import { t, type Locale } from "@/lib/messages";
+import { HotelReservationForm } from "@/components/hotel-reservation-form";
 
 type ServiceType = "HOTEL" | "FLIGHT" | "VISA" | "TRANSPORT" | "UMRAH_PACKAGE" | "HAJJ_PACKAGE" | "TOUR" | "OTHER";
 type Status = "INQUIRY" | "QUOTATION" | "PENDING" | "ON_HOLD" | "CONFIRMED" | "PARTIALLY_PAID" | "FULLY_PAID" | "COMPLETED" | "CANCELLED" | "REFUNDED";
-type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORATE" };
+type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
 type SupplierOption = { id: string; name: string; category: string };
+type SavedHotelRate = {
+  stayDate: string; saleRoomRate: string; saleMealRatePerPax: string; saleVat: string;
+  costRoomRate: string | null; costMealRatePerPax: string | null; costVat: string | null;
+};
+type SavedHotelRoom = {
+  roomCount: number; roomType: string; mealPlan: string; adults: number; children: number;
+  nightlyRates: SavedHotelRate[];
+};
+type SavedHotelDetail = {
+  guestName: string; guestNationality: string | null; guestPhone: string | null; rateCode: string | null;
+  clientOptionDate: string | null; hotelOptionDate: string | null; termsAndConditions: string | null;
+  generalPolicy: string | null; tags: string[]; fileNo: string | null; reservationRemarks: string | null;
+  roomNumber: string | null; hotelConfirmationNumber: string | null; voucher: string | null;
+  referenceNumber: string | null; detailRemarks: string | null; agreementNumber: string | null;
+  costCenter: string | null; hotelRemarks: string | null; company: string | null; subClient: string | null;
+  salesperson: string | null; channel: string | null; clientRemarks: string | null; bank: string | null;
+  paymentMethod: string | null; isManualRate: boolean; pricesIncludeVat: boolean; rooms: SavedHotelRoom[];
+};
 type Reservation = {
   id: string; reference: string; serviceType: ServiceType; status: Status; startDate: string | null; endDate: string | null;
   currency: string; saleAmount: string; costAmount: string | null; notes: string | null;
-  customer: { id: string; name: string; type?: string };
-  supplier: { id: string; name: string } | null;
+  customer: { id: string; name: string; type?: string; nationality?: string | null };
+  supplier: { id: string; name: string; category?: string } | null;
+  hotelDetail: SavedHotelDetail | null;
   createdAt: string;
 };
 type ReservationForm = {
@@ -160,7 +180,28 @@ export function ReservationsClient({ locale, canWrite, canReadCosts }: { locale:
   return <div className="customer-layout">
     {error && <div className="alert" role="alert">{error}</div>}
     {success && <div className="alert success" role="status">{success}</div>}
-    {showForm && canWrite && <section className="panel form-panel">
+    {showForm && canWrite && form.serviceType === "HOTEL" ? (
+      <HotelReservationForm
+        locale={locale}
+        canReadCosts={canReadCosts}
+        customers={customers}
+        suppliers={suppliers}
+        initialReservation={editingId ? (items.find((item) => item.id === editingId) ?? null) : null}
+        companyName=""
+        onCancel={() => { setShowForm(false); setEditingId(null); }}
+        onSaved={(message) => {
+          setSuccess(message);
+          setShowForm(false);
+          setEditingId(null);
+          setForm(emptyForm);
+          setPage(1);
+          setAppliedSearch("");
+          setSearchText("");
+          setRefreshKey((value) => value + 1);
+        }}
+      />
+    ) : null}
+    {showForm && canWrite && form.serviceType !== "HOTEL" && <section className="panel form-panel">
       <div className="panel-header"><div><h2 className="panel-title">{t(locale, editingId ? "editReservation" : "createReservation")}</h2><div className="panel-subtitle">{locale === "ar" ? "تُحفظ تفاصيل الخدمة والعميل والسعر في قاعدة البيانات" : "Service, customer and pricing details are saved in the database"}</div></div><button className="icon-button" type="button" onClick={() => { setShowForm(false); setEditingId(null); }} aria-label={t(locale, "cancel")}><X size={16} /></button></div>
       <form className="panel-body auth-form" onSubmit={submit}>
         {customers.length === 0 && <div className="alert">{locale === "ar" ? "يجب إضافة عميل واحد على الأقل قبل إنشاء الحجز." : "Add at least one customer before creating a reservation."}</div>}
