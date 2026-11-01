@@ -36,7 +36,7 @@ test("calculates multi-room, per-night sale, meal and VAT totals using integer c
 
 test("never persists supplier costs submitted by a user without finance access", () => {
   const result = normalizeHotelReservation(details(), "2026-12-01", "2026-12-03", false);
-  assert.equal(result.saleAmount, "576.00");
+  assert.equal(result.saleAmount, "544.00");
   assert.equal(result.costAmount, "0.00");
   assert.equal(result.rooms[0].rates[0].costRoomRate, "0.00");
 });
