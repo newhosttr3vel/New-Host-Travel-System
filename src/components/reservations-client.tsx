@@ -8,6 +8,7 @@ type ServiceType = "HOTEL" | "FLIGHT" | "VISA" | "TRANSPORT" | "UMRAH_PACKAGE" |
 type Status = "INQUIRY" | "QUOTATION" | "PENDING" | "ON_HOLD" | "CONFIRMED" | "PARTIALLY_PAID" | "FULLY_PAID" | "COMPLETED" | "CANCELLED" | "REFUNDED";
 type CustomerOption = { id: string; name: string; companyName?: string | null; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
 type SupplierOption = { id: string; name: string; category: string };
+type HotelOption = { id: string; name: string; city?: string | null; country?: string | null };
 type SavedHotelRate = {
   stayDate: string; saleRoomRate: string; saleMealRatePerPax: string; saleVat: string;
   costRoomRate: string | null; costMealRatePerPax: string | null; costVat: string | null;
@@ -18,6 +19,7 @@ type SavedHotelRoom = {
   nightlyRates: SavedHotelRate[];
 };
 type SavedHotelDetail = {
+  hotelId: string | null; hotelName: string | null;
   clientNationality: string | null; guestName: string; guestNationality: string | null; guestPhone: string | null; rateCode: string | null;
   clientOptionDate: string | null; hotelOptionDate: string | null; termsAndConditions: string | null;
   generalPolicy: string | null; tags: string[]; fileNo: string | null; reservationRemarks: string | null;
@@ -64,6 +66,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
   const [items, setItems] = useState<Reservation[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
+  const [hotels, setHotels] = useState<HotelOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -86,13 +89,14 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
       try {
         const params = new URLSearchParams({ page: String(page), pageSize: "25" });
         if (appliedSearch) params.set("search", appliedSearch);
-        const [reservationResponse, customerResponse, supplierResponse] = await Promise.all([
+        const [reservationResponse, customerResponse, supplierResponse, hotelResponse] = await Promise.all([
           fetch(`/api/reservations?${params.toString()}`, { cache: "no-store" }),
           fetch("/api/customers?page=1&pageSize=100", { cache: "no-store" }),
-          fetch("/api/suppliers?page=1&pageSize=100", { cache: "no-store" })
+          fetch("/api/suppliers?page=1&pageSize=100", { cache: "no-store" }),
+          fetch("/api/hotels?page=1&pageSize=100", { cache: "no-store" })
         ]);
-        const [reservationResult, customerResult, supplierResult] = await Promise.all([
-          reservationResponse.json(), customerResponse.json(), supplierResponse.json()
+        const [reservationResult, customerResult, supplierResult, hotelResult] = await Promise.all([
+          reservationResponse.json(), customerResponse.json(), supplierResponse.json(), hotelResponse.json()
         ]);
         if (!reservationResponse.ok) throw new Error(reservationResponse.status === 403 ? "FORBIDDEN" : reservationResult.error || "LOAD_FAILED");
         if (active) {
@@ -101,6 +105,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
           setTotal(reservationResult.pagination.total);
           setCustomers(customerResponse.ok ? (customerResult.items as CustomerOption[]).filter((customer) => customer.type === "CORPORATE") : []);
           setSuppliers(supplierResponse.ok ? (supplierResult.items as SupplierOption[]) : []);
+          setHotels(hotelResponse.ok ? (hotelResult.items as HotelOption[]) : []);
         }
       } catch (reason) {
         if (active) setError(reason instanceof Error && reason.message === "FORBIDDEN" ? t(locale, "accessDenied") : t(locale, "genericError"));
@@ -198,6 +203,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
         canReadCosts={canReadCosts}
         customers={customers}
         suppliers={suppliers}
+        hotels={hotels}
         initialReservation={editingId ? (items.find((item) => item.id === editingId) ?? null) : null}
         draft={!editingId ? form : undefined}
         companyName={companyName}
