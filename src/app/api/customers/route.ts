@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 120);
   const requestedType = url.searchParams.get("type");
-  const customerType = requestedType === "CORPORATE" || requestedType === "INDIVIDUAL" ? requestedType : null;
+  const customerType: "CORPORATE" | "INDIVIDUAL" | undefined = requestedType === "CORPORATE" || requestedType === "INDIVIDUAL" ? requestedType : undefined;
   const requestedPage = Number(url.searchParams.get("page") ?? "1");
   const requestedSize = Number(url.searchParams.get("pageSize") ?? "25");
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
