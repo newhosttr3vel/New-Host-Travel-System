@@ -4,6 +4,7 @@ import { hotelReservationDetailsSchema, normalizeHotelReservation, hotelNightCou
 
 function details() {
   return hotelReservationDetailsSchema.parse({
+    hotelId: "hotel-123",
     guestName: "Ahmed Ali",
     guestNationality: "Egyptian",
     rooms: [{
@@ -95,4 +96,11 @@ test("new room IDs and newly added nights never inherit another room's saved cos
   }]);
   assert.equal(restored.rooms[0].rates[0].costRoomRate, "0.00");
   assert.equal(restored.rooms[0].rates[0].costVat, "0.00");
+});
+
+
+test("requires a hotel from the hotel directory", () => {
+  const input = { ...details() } as Record<string, unknown>;
+  delete input.hotelId;
+  assert.equal(hotelReservationDetailsSchema.safeParse(input).success, false);
 });
