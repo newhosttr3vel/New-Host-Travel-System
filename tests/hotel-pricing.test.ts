@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { hotelReservationDetailsSchema, normalizeHotelReservation, hotelNightCount } from "../src/lib/hotel-pricing";
+import { hotelReservationDetailsSchema, normalizeHotelReservation, hotelNightCount, restorePersistedHotelCosts } from "../src/lib/hotel-pricing";
 
 function details() {
   return hotelReservationDetailsSchema.parse({
@@ -49,4 +49,50 @@ test("rejects missing night rates and mismatched date rows", () => {
 
 test("rejects departure on or before arrival", () => {
   assert.throws(() => hotelNightCount("2026-12-01", "2026-12-01"), /INVALID_HOTEL_DATE_RANGE/);
+});
+
+
+test("restores hidden supplier costs by matching persisted room IDs and stay dates", () => {
+  const input = details();
+  const withUntrustedCosts = {
+    ...input,
+    rooms: [{
+      ...input.rooms[0],
+      id: "saved-room-1",
+      rates: input.rooms[0].rates.map((rate) => ({
+        ...rate,
+        costRoomRate: "9999.00",
+        costMealRatePerPax: "9999.00",
+        costVat: "9999.00",
+      })),
+    }],
+  };
+  const restored = restorePersistedHotelCosts(withUntrustedCosts, [{
+    id: "saved-room-1",
+    nightlyRates: [
+      { stayDate: new Date("2026-12-01T12:00:00.000Z"), costRoomRate: { toString: () => "70.00" }, costMealRatePerPax: { toString: () => "5.00" }, costVat: { toString: () => "14.00" } },
+      { stayDate: new Date("2026-12-02T12:00:00.000Z"), costRoomRate: { toString: () => "80.00" }, costMealRatePerPax: { toString: () => "5.00" }, costVat: { toString: () => "16.00" } },
+    ],
+  }]);
+  assert.equal(restored.rooms[0].rates[0].costRoomRate, "70.00");
+  assert.equal(restored.rooms[0].rates[1].costVat, "16.00");
+});
+
+test("new room IDs and newly added nights never inherit another room's saved costs", () => {
+  const input = details();
+  const restored = restorePersistedHotelCosts({
+    ...input,
+    rooms: [{
+      ...input.rooms[0],
+      id: "new-room-id",
+      rates: [{ ...input.rooms[0].rates[0], stayDate: "2026-12-03", costRoomRate: "12345.00" }],
+    }],
+  }, [{
+    id: "saved-room-1",
+    nightlyRates: [
+      { stayDate: new Date("2026-12-01T12:00:00.000Z"), costRoomRate: { toString: () => "70.00" }, costMealRatePerPax: { toString: () => "5.00" }, costVat: { toString: () => "14.00" } },
+    ],
+  }]);
+  assert.equal(restored.rooms[0].rates[0].costRoomRate, "0.00");
+  assert.equal(restored.rooms[0].rates[0].costVat, "0.00");
 });
