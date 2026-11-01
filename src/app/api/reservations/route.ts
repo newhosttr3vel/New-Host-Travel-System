@@ -72,7 +72,6 @@ function serializeReservation(item: ReservationRecord, canReadCosts: boolean) {
 }
 
 function hotelDetailsCreateData(
-  tenantId: string,
   hotelId: string,
   hotelName: string,
   customerNationality: string | null,
@@ -80,9 +79,7 @@ function hotelDetailsCreateData(
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ): Prisma.HotelReservationDetailUncheckedCreateWithoutReservationInput {
   return {
-    // This is the unchecked nested input selected by Reservation.create,
-    // which already supplies the tenant-scoped customer/supplier scalar IDs.
-    tenantId,
+    // Reservation.create supplies tenantId through the parent relation.
     hotelId,
     hotelName,
     clientNationality: input.clientNationality || customerNationality,
@@ -116,7 +113,7 @@ function hotelDetailsCreateData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
-        tenantId,
+        // Hotel detail supplies tenantId to each room.
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
@@ -124,7 +121,8 @@ function hotelDetailsCreateData(
         children: room.children,
         sortOrder: room.sortOrder,
         nightlyRates: {
-          create: room.rates.map((rate) => ({ tenantId, ...rate }))
+          // Room supplies tenantId to each nightly rate.
+          create: room.rates.map((rate) => ({ ...rate }))
         }
       }))
     }
@@ -234,7 +232,6 @@ export async function POST(request: Request) {
         notes: input.notes || null,
         ...(hotelPricing && input.hotelDetails ? {
           hotelDetail: { create: hotelDetailsCreateData(
-            access.membership.tenantId,
             hotel!.id,
             hotel!.name,
             customer.nationality,
