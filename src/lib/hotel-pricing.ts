@@ -187,3 +187,47 @@ export function calculateNightDisplay(
     costTotal: fromCents(costTotal),
   };
 }
+
+export type PersistedHotelCostRoom = {
+  id: string;
+  nightlyRates: Array<{
+    stayDate: Date | string;
+    costRoomRate: { toString(): string };
+    costMealRatePerPax: { toString(): string };
+    costVat: { toString(): string };
+  }>;
+};
+
+/**
+ * Rehydrates cost rates for a user who cannot view them. Room IDs and stay dates
+ * must match records already loaded inside the current reservation transaction.
+ * Any new room/night starts at zero; request-body cost values are never trusted.
+ */
+export function restorePersistedHotelCosts(
+  input: HotelReservationDetailsInput,
+  savedRooms: readonly PersistedHotelCostRoom[],
+): HotelReservationDetailsInput {
+  return {
+    ...input,
+    rooms: input.rooms.map((room) => {
+      const savedRoom = room.id ? savedRooms.find((candidate) => candidate.id === room.id) : undefined;
+      return {
+        ...room,
+        rates: room.rates.map((rate) => {
+          const savedRate = savedRoom?.nightlyRates.find((candidate) => {
+            const savedDate = candidate.stayDate instanceof Date
+              ? candidate.stayDate.toISOString().slice(0, 10)
+              : candidate.stayDate.slice(0, 10);
+            return savedDate === rate.stayDate;
+          });
+          return {
+            ...rate,
+            costRoomRate: savedRate?.costRoomRate.toString() ?? "0.00",
+            costMealRatePerPax: savedRate?.costMealRatePerPax.toString() ?? "0.00",
+            costVat: savedRate?.costVat.toString() ?? "0.00",
+          };
+        }),
+      };
+    }),
+  };
+}
