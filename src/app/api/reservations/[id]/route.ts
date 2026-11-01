@@ -136,7 +136,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "VALIDATION_ERROR", details: parsed.error.flatten() }, { status: 400 });
+    return Response.json({
+    error: "VALIDATION_ERROR",
+    issues: parsed.error.issues.map((issue) => ({
+      path: issue.path.join("."),
+      message: issue.message
+    }))
+  }, { status: 400 });
   }
   const input = parsed.data;
   if (!canReadCosts && input.costAmount !== undefined) {
