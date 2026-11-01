@@ -173,6 +173,7 @@ model Tenant {
   branches        Branch[]
   customers       Customer[]
   suppliers       Supplier[]
+  hotels          Hotel[]
   reservations    Reservation[]
   auditEvents     AuditEvent[]
   ledgerAccounts  LedgerAccount[]
@@ -233,6 +234,23 @@ model Customer {
   @@index([tenantId, phone])
   @@map("customers")
 }
+model Hotel {
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  city        String?
+  country     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservations HotelReservationDetail[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, name])
+  @@index([tenantId, archivedAt, name])
+  @@map("hotels")
+}
 model Supplier {
   id           String           @id @default(cuid())
   tenantId     String
@@ -289,6 +307,7 @@ model HotelReservationDetail {
   id                    String   @id @default(cuid())
   tenantId              String
   reservationId         String
+  hotelId               String?
   hotelName             String?
   clientNationality     String?
   guestName             String
@@ -323,6 +342,7 @@ model HotelReservationDetail {
   updatedAt             DateTime @updatedAt
   tenant                Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservation           Reservation @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  hotel                 Hotel? @relation(fields: [hotelId, tenantId], references: [id, tenantId], onDelete: Restrict)
   rooms                 HotelReservationRoom[]
   @@unique([id, tenantId])
   @@unique([reservationId, tenantId])
