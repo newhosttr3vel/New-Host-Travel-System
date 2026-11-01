@@ -80,8 +80,8 @@ function hotelDetailsCreateData(
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ) {
   return {
-    // Nested create must use Prisma relation operations for composite foreign keys.
-    // The parent Reservation supplies tenantId to this detail and its child records.
+    // Nested create uses explicit Prisma relations instead of scalar foreign keys.
+    tenant: { connect: { id: tenantId } },
     hotel: { connect: { id_tenantId: { id: hotelId, tenantId } } },
     hotelName,
     clientNationality: input.clientNationality || customerNationality,
@@ -115,6 +115,7 @@ function hotelDetailsCreateData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
+        tenant: { connect: { id: tenantId } },
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
@@ -122,7 +123,10 @@ function hotelDetailsCreateData(
         children: room.children,
         sortOrder: room.sortOrder,
         nightlyRates: {
-          create: room.rates.map((rate) => ({ ...rate }))
+          create: room.rates.map((rate) => ({
+            tenant: { connect: { id: tenantId } },
+            ...rate,
+          }))
         }
       }))
     }
