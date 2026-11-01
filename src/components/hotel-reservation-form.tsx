@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Plus, Trash2, X, Save, BedDouble, CalendarDays, FileText, Users, Building2, Wallet, ChevronDown } from "lucide-react";
+import { Plus, Trash2, X, Save, BedDouble, CalendarDays, FileText, Building2, Wallet } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
 type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
