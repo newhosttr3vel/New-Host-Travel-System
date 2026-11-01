@@ -17,7 +17,7 @@ type Customer = {
 type CustomerForm = { name: string; type: "INDIVIDUAL" | "CORPORATE"; companyName: string; email: string; phone: string; notes: string };
 const emptyForm: CustomerForm = { name: "", type: "CORPORATE", companyName: "", email: "", phone: "", notes: "" };
 
-export function CustomersClient({ locale, canWrite, canArchive }: { locale: Locale; canWrite: boolean; canArchive: boolean }) {
+export function CustomersClient({ locale, canWrite, canArchive, corporateOnly = false }: { locale: Locale; canWrite: boolean; canArchive: boolean; corporateOnly?: boolean }) {
   const [items, setItems] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -39,6 +39,7 @@ export function CustomersClient({ locale, canWrite, canArchive }: { locale: Loca
       setLoading(true); setError("");
       try {
         const params = new URLSearchParams({ page: String(page), pageSize: "25" });
+        if (corporateOnly) params.set("type", "CORPORATE");
         if (appliedSearch) params.set("search", appliedSearch);
         const response = await fetch(`/api/customers?${params.toString()}`, { cache: "no-store" });
         const result = await response.json();
@@ -56,7 +57,7 @@ export function CustomersClient({ locale, canWrite, canArchive }: { locale: Loca
     }
     void load();
     return () => { active = false; };
-  }, [page, appliedSearch, refreshKey, locale]);
+  }, [page, appliedSearch, refreshKey, locale, corporateOnly]);
 
   function beginCreate() {
     setEditingId(null); setForm(emptyForm); setError(""); setSuccess(""); setShowForm(true);
