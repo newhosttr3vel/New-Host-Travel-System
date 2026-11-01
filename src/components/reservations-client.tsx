@@ -117,6 +117,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
 
   function beginCreate() {
     setEditingId(null); setForm({ ...emptyForm, currency: "EGP" }); setError(""); setSuccess(""); setShowForm(true);
+    setRefreshKey((value) => value + 1);
   }
   function beginEdit(item: Reservation) {
     setEditingId(item.id);
