@@ -1,5 +1,6 @@
 // Temporary diagnostic preload for tracing Next.js CLI/worker shutdowns.
 // Safe to remove after the Codespaces startup issue is identified.
+/* eslint-disable @typescript-eslint/no-require-imports -- CommonJS preload runs before the Next.js child processes start. */
 const childProcess = require("node:child_process");
 
 const role = process.env.NEXT_PRIVATE_WORKER === "1" ? "next-worker" : "next-cli";
