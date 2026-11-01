@@ -13,24 +13,24 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
 
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   const suffix = randomUUID().replaceAll("-", "").slice(0, 14).toLowerCase();
-  let tenantId: string | undefined;
+  let cleanupTenantId: string | undefined;
 
   try {
     const tenant = await prisma.tenant.create({
       data: { name: "Hotel Reservation Integration", slug: `hotel-booking-${suffix}` },
     });
-    tenantId = tenant.id;
-    const currentTenantId = tenant.id;
+    const tenantId = tenant.id;
+    cleanupTenantId = tenantId;
 
     const [customer, supplier, hotel] = await Promise.all([
       prisma.customer.create({
-        data: { currentTenantId, type: "CORPORATE", name: "Test B2B Client", companyName: "Test Client Company" },
+        data: { tenantId, type: "CORPORATE", name: "Test B2B Client", companyName: "Test Client Company" },
       }),
       prisma.supplier.create({
-        data: { currentTenantId, name: "Test Hotel Supplier", category: "HOTEL" },
+        data: { tenantId, name: "Test Hotel Supplier", category: "HOTEL" },
       }),
       prisma.hotel.create({
-        data: { currentTenantId, name: "Test Hotel Property", city: "Makkah", country: "Saudi Arabia" },
+        data: { tenantId, name: "Test Hotel Property", city: "Makkah", country: "Saudi Arabia" },
       }),
     ]);
 
@@ -61,29 +61,29 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
 
     const created = await prisma.$transaction(async (tx) => {
       const selectedCustomer = await tx.customer.findFirst({
-        where: { id: customer.id, currentTenantId, archivedAt: null },
+        where: { id: customer.id, tenantId, archivedAt: null },
         select: { id: true, nationality: true, type: true },
       });
       assert.equal(selectedCustomer?.type, "CORPORATE");
 
       const selectedSupplier = await tx.supplier.findFirst({
-        where: { id: supplier.id, currentTenantId, archivedAt: null },
+        where: { id: supplier.id, tenantId, archivedAt: null },
         select: { id: true, category: true },
       });
       assert.equal(selectedSupplier?.category, "HOTEL");
 
       const selectedHotel = await tx.hotel.findFirst({
-        where: { id: hotel.id, currentTenantId, archivedAt: null },
+        where: { id: hotel.id, tenantId, archivedAt: null },
         select: { id: true, name: true },
       });
       assert.ok(selectedHotel);
 
       const reservation = await tx.reservation.create({
         data: {
-          currentTenantId,
+          tenantId,
           customerId: selectedCustomer!.id,
           supplierId: selectedSupplier!.id,
-          supplierTenantId: currentTenantId,
+          supplierTenantId: tenantId,
           reference: `NHT-TEST-${suffix}`,
           serviceType: "HOTEL",
           status: "INQUIRY",
@@ -95,8 +95,9 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
           notes: null,
           hotelDetail: {
             create: {
-              currentTenantId,
-              hotelId: selectedHotel!.id,
+              hotel: {
+                connect: { id_tenantId: { id: selectedHotel!.id, tenantId } },
+              },
               hotelName: selectedHotel!.name,
               clientNationality: selectedCustomer!.nationality,
               guestName: details.guestName,
@@ -105,7 +106,6 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
               pricesIncludeVat: details.pricesIncludeVat,
               rooms: {
                 create: pricing.rooms.map((room) => ({
-                  currentTenantId,
                   roomCount: room.roomCount,
                   roomType: room.roomType,
                   mealPlan: room.mealPlan,
@@ -113,7 +113,15 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
                   children: room.children,
                   sortOrder: room.sortOrder,
                   nightlyRates: {
-                    create: room.rates.map((rate) => ({ currentTenantId, ...rate })),
+                    create: room.rates.map((rate) => ({
+                      stayDate: rate.stayDate,
+                      saleRoomRate: rate.saleRoomRate,
+                      saleMealRatePerPax: rate.saleMealRatePerPax,
+                      saleVat: rate.saleVat,
+                      costRoomRate: rate.costRoomRate,
+                      costMealRatePerPax: rate.costMealRatePerPax,
+                      costVat: rate.costVat,
+                    })),
                   },
                 })),
               },
@@ -124,13 +132,14 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
 
       await tx.auditEvent.create({
         data: {
-          currentTenantId,
+          tenantId,
           action: "RESERVATION_CREATED",
           entityType: "Reservation",
           entityId: reservation.id,
           metadata: { reference: reservation.reference },
         },
       });
+
       const loaded = await tx.reservation.findUnique({
         where: { id: reservation.id },
         include: {
@@ -154,7 +163,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
     assert.equal(created.saleAmount.toString(), "155");
     assert.equal(created.costAmount.toString(), "100");
   } finally {
-    if (currentTenantId) await prisma.tenant.delete({ where: { id: currentTenantId } });
+    if (cleanupTenantId) await prisma.tenant.delete({ where: { id: cleanupTenantId } });
     await prisma.$disconnect();
   }
 });
