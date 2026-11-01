@@ -80,6 +80,12 @@ export default async function DashboardPage() {
     statusGroups,
     recentReservations,
     followUpReservations,
+    invoiceSalesGroups,
+    supplierCostGroups,
+    openInvoiceGroups,
+    openSupplierBillGroups,
+    customerReceiptGroups,
+    supplierPaymentGroups,
   ] = await Promise.all([
     canReadCustomers
       ? prisma.customer.count({ where: { tenantId, archivedAt: null } })
@@ -125,6 +131,48 @@ export default async function DashboardPage() {
           orderBy: [{ startDate: "asc" }, { updatedAt: "desc" }],
           take: 5,
           include: { customer: { select: { name: true } } },
+        })
+      : Promise.resolve([]),
+    canReadFinance
+      ? prisma.invoice.groupBy({
+          by: ["currency", "exchangeRate"],
+          where: { tenantId, issueDate: monthRange, status: { not: "VOID" } },
+          _sum: { subtotal: true },
+        })
+      : Promise.resolve([]),
+    canReadFinance
+      ? prisma.supplierBill.groupBy({
+          by: ["currency", "exchangeRate"],
+          where: { tenantId, billDate: monthRange, status: { not: "VOID" } },
+          _sum: { subtotal: true },
+        })
+      : Promise.resolve([]),
+    canReadFinance
+      ? prisma.invoice.groupBy({
+          by: ["currency", "exchangeRate"],
+          where: { tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
+          _sum: { total: true, paidAmount: true },
+        })
+      : Promise.resolve([]),
+    canReadFinance
+      ? prisma.supplierBill.groupBy({
+          by: ["currency", "exchangeRate"],
+          where: { tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
+          _sum: { total: true, paidAmount: true },
+        })
+      : Promise.resolve([]),
+    canReadFinance
+      ? prisma.customerPayment.groupBy({
+          by: ["currency", "exchangeRate"],
+          where: { tenantId, paymentDate: monthRange },
+          _sum: { amount: true },
+        })
+      : Promise.resolve([]),
+    canReadFinance
+      ? prisma.supplierPayment.groupBy({
+          by: ["currency", "exchangeRate"],
+          where: { tenantId, paymentDate: monthRange },
+          _sum: { amount: true },
         })
       : Promise.resolve([]),
   ]);
