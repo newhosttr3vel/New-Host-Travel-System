@@ -160,13 +160,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (startDate && endDate && endDate < startDate) return { error: "INVALID_DATE_RANGE" as const };
 
     const customerId = input.customerId ?? existing.customerId;
-    const customer = input.hotelDetails
-      ? await tx.customer.findFirst({
-          where: { id: customerId, tenantId: access.membership.tenantId, archivedAt: null },
-          select: { id: true, nationality: true }
-        })
-      : null;
-    if (input.hotelDetails && !customer) return { error: "CUSTOMER_NOT_FOUND" as const };
+    const effectiveServiceType = input.serviceType ?? existing.serviceType;
+    const customer = await tx.customer.findFirst({
+      where: { id: customerId, tenantId: access.membership.tenantId, archivedAt: null },
+      select: { id: true, nationality: true, type: true }
+    });
+    if (!customer) return { error: "CUSTOMER_NOT_FOUND" as const };
+    if ((effectiveServiceType === "HOTEL" || effectiveServiceType === "FLIGHT") && customer.type !== "CORPORATE") return { error: "CORPORATE_CLIENT_REQUIRED" as const };
 
     const supplierId = input.supplierId === undefined ? existing.supplierId : (input.supplierId || null);
     const supplier = supplierId
@@ -177,12 +177,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       : null;
     if (supplierId && !supplier) return { error: "SUPPLIER_NOT_FOUND" as const };
 
-    const effectiveServiceType = input.serviceType ?? existing.serviceType;
     if (input.hotelDetails && effectiveServiceType !== "HOTEL") {
       return { error: "HOTEL_DETAILS_ONLY_FOR_HOTEL" as const };
     }
     if (effectiveServiceType === "HOTEL" && supplierId && supplier?.category !== "HOTEL") {
       return { error: "HOTEL_SUPPLIER_REQUIRED" as const };
+    }
+    if (effectiveServiceType === "FLIGHT" && (!supplierId || supplier?.category !== "AIRLINE")) {
+      return { error: "AIRLINE_SUPPLIER_REQUIRED" as const };
     }
     if (
       effectiveServiceType === "HOTEL" &&
