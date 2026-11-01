@@ -11,7 +11,7 @@ export default async function SuppliersPage() {
   const role = membership?.role ?? "READ_ONLY";
   return <>
     <div className="page-heading">
-      <div><div className="eyebrow">{locale === "ar" ? "إدارة شبكة الموردين" : "SUPPLIER RELATIONSHIPS"}</div><h1 className="page-title">{t(locale, "suppliers")}</h1><p className="page-description">{(locale === "ar" ? "إدارة الفنادق وشركات الطيران والموردين الذين تشتري منهم الخدمات" : "Manage the hotels, airlines and providers you buy services from")}</p></div>
+      <div><div className="eyebrow">{locale === "ar" ? "إدارة شبكة الموردين" : "SUPPLIER RELATIONSHIPS"}</div><h1 className="page-title">{t(locale, "suppliers")}</h1><p className="page-description">{(locale === "ar" ? "إدارة شركات الموردين التي تشتري منها الخدمات، مثل موردي الفنادق وشركات الطيران" : "Manage supplier companies you purchase from, including hotel suppliers and airlines")}</p></div>
       <div className="page-actions"><span className="btn btn-secondary"><Store size={16} />{locale === "ar" ? "بيانات الشركة" : "Company records"}</span></div>
     </div>
     <SuppliersClient locale={locale} canWrite={hasPermission(role, "suppliers:write")} />
