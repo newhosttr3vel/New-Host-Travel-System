@@ -25,3 +25,13 @@ Use the Codespaces menu to stop the environment when finished and resume it late
 ## GitHub Pages limitation
 
 GitHub Pages hosts static HTML/CSS/JavaScript. This project needs Next.js server routes, authentication, and PostgreSQL, so Pages cannot run the current full-stack ERP as-is. Codespaces is the browser-based development environment; a later live release must run on a host that supports the Next.js server and database. A static Pages demo can be created separately, but it would not be the complete ERP.
+
+## Diagnose a preview that returns 502
+
+If port 3000 appears in **Ports** but the browser returns 502, open a new terminal and run:
+
+```bash
+npm run dev:diagnostic
+```
+
+The diagnostic reports the Node version, whether the terminal streams are TTYs, and the exact exit code or signal from the Next.js child process. Do not paste the contents of `.env` into an issue or chat. The Codespaces attach script also checks `/api/health` and prints the server log if the app does not become ready.
