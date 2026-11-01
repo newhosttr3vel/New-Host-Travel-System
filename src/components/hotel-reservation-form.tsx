@@ -1,0 +1,692 @@
+"use client";
+
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { Plus, Trash2, X, Save, BedDouble, CalendarDays, FileText, Users, Building2, Wallet, ChevronDown } from "lucide-react";
+import type { Locale } from "@/lib/messages";
+
+type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
+type SupplierOption = { id: string; name: string; category: string };
+type NightRate = {
+  stayDate: string;
+  saleRoomRate: string;
+  saleMealRatePerPax: string;
+  saleVat: string;
+  costRoomRate: string;
+  costMealRatePerPax: string;
+  costVat: string;
+};
+type RoomLine = {
+  key: string;
+  roomCount: number;
+  roomType: string;
+  mealPlan: string;
+  adults: number;
+  children: number;
+  rates: NightRate[];
+};
+type HotelDetail = {
+  guestName: string;
+  guestNationality: string;
+  guestPhone: string;
+  rateCode: string;
+  clientOptionDate: string;
+  hotelOptionDate: string;
+  termsAndConditions: string;
+  generalPolicy: string;
+  tags: string[];
+  fileNo: string;
+  reservationRemarks: string;
+  roomNumber: string;
+  hotelConfirmationNumber: string;
+  voucher: string;
+  referenceNumber: string;
+  detailRemarks: string;
+  agreementNumber: string;
+  costCenter: string;
+  hotelRemarks: string;
+  company: string;
+  subClient: string;
+  salesperson: string;
+  channel: string;
+  clientRemarks: string;
+  bank: string;
+  paymentMethod: string;
+  isManualRate: boolean;
+  pricesIncludeVat: boolean;
+};
+type HotelRoomSaved = {
+  roomCount: number;
+  roomType: string;
+  mealPlan: string;
+  adults: number;
+  children: number;
+  nightlyRates: Array<{
+    stayDate: string;
+    saleRoomRate: string;
+    saleMealRatePerPax: string;
+    saleVat: string;
+    costRoomRate: string | null;
+    costMealRatePerPax: string | null;
+    costVat: string | null;
+  }>;
+};
+type ExistingReservation = {
+  id: string;
+  reference: string;
+  serviceType: string;
+  startDate: string | null;
+  endDate: string | null;
+  currency: string;
+  saleAmount: string;
+  costAmount: string | null;
+  notes: string | null;
+  customer: { id: string; name: string; type?: string; nationality?: string | null };
+  supplier: { id: string; name: string; category?: string } | null;
+  hotelDetail: (HotelDetail & { rooms: HotelRoomSaved[] }) | null;
+};
+type Props = {
+  locale: Locale;
+  canReadCosts: boolean;
+  customers: CustomerOption[];
+  suppliers: SupplierOption[];
+  initialReservation: ExistingReservation | null;
+  companyName: string;
+  onCancel: () => void;
+  onSaved: (message: string) => void;
+};
+
+const emptyRate = (stayDate: string): NightRate => ({
+  stayDate,
+  saleRoomRate: "0.00",
+  saleMealRatePerPax: "0.00",
+  saleVat: "0.00",
+  costRoomRate: "0.00",
+  costMealRatePerPax: "0.00",
+  costVat: "0.00",
+});
+
+const emptyDetail = (companyName: string): HotelDetail => ({
+  guestName: "",
+  guestNationality: "Egyptian",
+  guestPhone: "",
+  rateCode: "",
+  clientOptionDate: "",
+  hotelOptionDate: "",
+  termsAndConditions: "",
+  generalPolicy: "",
+  tags: [],
+  fileNo: "",
+  reservationRemarks: "",
+  roomNumber: "",
+  hotelConfirmationNumber: "",
+  voucher: "",
+  referenceNumber: "",
+  detailRemarks: "",
+  agreementNumber: "",
+  costCenter: "",
+  hotelRemarks: "",
+  company: companyName,
+  subClient: "",
+  salesperson: "",
+  channel: "",
+  clientRemarks: "",
+  bank: "",
+  paymentMethod: "CASH",
+  isManualRate: false,
+  pricesIncludeVat: false,
+});
+
+function nightsBetween(start: string, end: string): string[] {
+  if (!start || !end) return [];
+  const startTime = new Date(start + "T00:00:00.000Z").getTime();
+  const endTime = new Date(end + "T00:00:00.000Z").getTime();
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) return [];
+  const count = Math.min(365, Math.floor((endTime - startTime) / 86_400_000));
+  return Array.from({ length: count }, (_, index) => new Date(startTime + index * 86_400_000).toISOString().slice(0, 10));
+}
+
+function normalizeDate(value: string | null | undefined): string {
+  return value ? new Date(value).toISOString().slice(0, 10) : "";
+}
+
+function buildRoom(room?: HotelRoomSaved, dates: string[] = [], index = 0): RoomLine {
+  const savedRates = new Map((room?.nightlyRates ?? []).map((rate) => [normalizeDate(rate.stayDate), rate]));
+  return {
+    key: `room-${index}-${Math.random().toString(36).slice(2, 8)}`,
+    roomCount: room?.roomCount ?? 1,
+    roomType: room?.roomType ?? "",
+    mealPlan: room?.mealPlan ?? "BB",
+    adults: room?.adults ?? 1,
+    children: room?.children ?? 0,
+    rates: dates.map((date) => {
+      const saved = savedRates.get(date);
+      return {
+        stayDate: date,
+        saleRoomRate: saved?.saleRoomRate ?? "0.00",
+        saleMealRatePerPax: saved?.saleMealRatePerPax ?? "0.00",
+        saleVat: saved?.saleVat ?? "0.00",
+        costRoomRate: saved?.costRoomRate ?? "0.00",
+        costMealRatePerPax: saved?.costMealRatePerPax ?? "0.00",
+        costVat: saved?.costVat ?? "0.00",
+      };
+    }),
+  };
+}
+
+function amount(value: string | null | undefined): number {
+  const parsed = Number(value ?? "0");
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+function money(value: number, locale: Locale): string {
+  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+function dateLabel(value: string, locale: Locale): string {
+  const date = new Date(value + "T12:00:00.000Z");
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", {
+    weekday: "short", day: "2-digit", month: "short",
+  }).format(date);
+}
+
+const mealPlans = [
+  ["RO", "Room only", "إقامة فقط"],
+  ["BB", "Bed & breakfast", "إفطار"],
+  ["HB", "Half board", "نصف إقامة"],
+  ["FB", "Full board", "إقامة كاملة"],
+  ["AI", "All inclusive", "شامل"],
+  ["UAI", "Ultra all inclusive", "شامل مميز"],
+  ["OTHER", "Other", "أخرى"],
+] as const;
+const nationalities = [
+  ["Egyptian", "مصري", "Egyptian"],
+  ["Saudi", "سعودي", "Saudi"],
+  ["Emirati", "إماراتي", "Emirati"],
+  ["Kuwaiti", "كويتي", "Kuwaiti"],
+  ["Qatari", "قطري", "Qatari"],
+  ["Bahraini", "بحريني", "Bahraini"],
+  ["Omani", "عماني", "Omani"],
+  ["Jordanian", "أردني", "Jordanian"],
+  ["Palestinian", "فلسطيني", "Palestinian"],
+  ["Syrian", "سوري", "Syrian"],
+  ["Lebanese", "لبناني", "Lebanese"],
+  ["Iraqi", "عراقي", "Iraqi"],
+  ["Sudanese", "سوداني", "Sudanese"],
+  ["Yemeni", "يمني", "Yemeni"],
+  ["Turkish", "تركي", "Turkish"],
+  ["British", "بريطاني", "British"],
+  ["American", "أمريكي", "American"],
+  ["Other", "أخرى", "Other"],
+] as const;
+const tags = [
+  ["HAJJ", "حج", "Hajj"],
+  ["UMRAH", "عمرة", "Umrah"],
+  ["VIP", "VIP", "VIP"],
+  ["FAMILY", "عائلة", "Family"],
+  ["GROUP", "مجموعة", "Group"],
+  ["HONEYMOON", "شهر عسل", "Honeymoon"],
+  ["CORPORATE", "شركة", "Corporate"],
+] as const;
+const channels = [
+  ["DIRECT", "مباشر", "Direct"],
+  ["AGENT", "وكيل", "Agent"],
+  ["SUB_AGENT", "وكيل فرعي", "Sub-agent"],
+  ["CORPORATE", "شركات", "Corporate"],
+  ["ONLINE", "أونلاين", "Online"],
+  ["WALK_IN", "زيارة مباشرة", "Walk-in"],
+  ["OTHER", "أخرى", "Other"],
+] as const;
+
+export function HotelReservationForm({
+  locale, canReadCosts, customers, suppliers, initialReservation, companyName, onCancel, onSaved,
+}: Props) {
+  const ar = locale === "ar";
+  const hotels = useMemo(() => suppliers.filter((supplier) => supplier.category === "HOTEL"), [suppliers]);
+  const initialStart = normalizeDate(initialReservation?.startDate);
+  const initialEnd = normalizeDate(initialReservation?.endDate);
+  const [customerId, setCustomerId] = useState(initialReservation?.customer.id ?? "");
+  const [hotelId, setHotelId] = useState(initialReservation?.supplier?.id ?? "");
+  const [startDate, setStartDate] = useState(initialStart);
+  const [endDate, setEndDate] = useState(initialEnd);
+  const [currency, setCurrency] = useState(initialReservation?.currency ?? "EGP");
+  const [detail, setDetail] = useState<HotelDetail>(() => ({
+    ...emptyDetail(companyName),
+    ...(initialReservation?.hotelDetail ?? {}),
+    tags: initialReservation?.hotelDetail?.tags ?? [],
+  }));
+  const [rooms, setRooms] = useState<RoomLine[]>(() => {
+    const dates = nightsBetween(initialStart, initialEnd);
+    const existing = initialReservation?.hotelDetail?.rooms ?? [];
+    return existing.length ? existing.map((room, index) => buildRoom(room, dates, index)) : [buildRoom(undefined, dates, 0)];
+  });
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const dateList = useMemo(() => nightsBetween(startDate, endDate), [startDate, endDate]);
+  const selectedCustomer = customers.find((customer) => customer.id === customerId);
+  const totalNights = dateList.length;
+  const totalRooms = rooms.reduce((sum, room) => sum + room.roomCount, 0);
+  const totalAdults = rooms.reduce((sum, room) => sum + room.adults, 0);
+  const totalChildren = rooms.reduce((sum, room) => sum + room.children, 0);
+  const totalPax = totalAdults + totalChildren;
+  const totalRoomNights = rooms.reduce((sum, room) => sum + room.roomCount * totalNights, 0);
+
+  function changeDates(nextStart: string, nextEnd: string) {
+    const dates = nightsBetween(nextStart, nextEnd);
+    setStartDate(nextStart);
+    setEndDate(nextEnd);
+    setRooms((current) => current.map((room) => {
+      const previous = new Map(room.rates.map((rate) => [rate.stayDate, rate]));
+      return {
+        ...room,
+        rates: dates.map((date) => previous.get(date) ?? emptyRate(date)),
+      };
+    }));
+  }
+  function updateDetail<K extends keyof HotelDetail>(key: K, value: HotelDetail[K]) {
+    setDetail((current) => ({ ...current, [key]: value }));
+  }
+  function updateRoom(index: number, patch: Partial<RoomLine>) {
+    setRooms((current) => current.map((room, roomIndex) => roomIndex === index ? { ...room, ...patch } : room));
+  }
+  function updateRate(roomIndex: number, rateIndex: number, patch: Partial<NightRate>) {
+    setRooms((current) => current.map((room, index) => index !== roomIndex ? room : {
+      ...room,
+      rates: room.rates.map((rate, ratePosition) => ratePosition === rateIndex ? { ...rate, ...patch } : rate),
+    }));
+  }
+  function addRoom() {
+    setRooms((current) => [...current, buildRoom(undefined, dateList, current.length)]);
+  }
+  function removeRoom(index: number) {
+    setRooms((current) => current.filter((_, roomIndex) => roomIndex !== index));
+  }
+
+  function calcRate(room: RoomLine, rate: NightRate) {
+    const pax = room.adults + room.children;
+    const saleRoom = amount(rate.saleRoomRate) * room.roomCount;
+    const saleMeal = amount(rate.saleMealRatePerPax) * pax;
+    const salePrice = saleRoom + saleMeal;
+    const saleTotal = salePrice + (detail.pricesIncludeVat ? 0 : amount(rate.saleVat));
+    const costRoom = amount(rate.costRoomRate) * room.roomCount;
+    const costMeal = amount(rate.costMealRatePerPax) * pax;
+    const costPrice = costRoom + costMeal;
+    const costTotal = costPrice + (detail.pricesIncludeVat ? 0 : amount(rate.costVat));
+    return { saleMeal, salePrice, saleTotal, costMeal, costPrice, costTotal };
+  }
+  const totals = rooms.reduce((acc, room) => {
+    room.rates.forEach((rate) => {
+      const line = calcRate(room, rate);
+      acc.sale += line.saleTotal;
+      acc.cost += line.costTotal;
+    });
+    return acc;
+  }, { sale: 0, cost: 0 });
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPending(true);
+    setError("");
+    try {
+      if (!customerId) throw new Error("CUSTOMER_REQUIRED");
+      if (!hotelId) throw new Error("HOTEL_REQUIRED");
+      if (!startDate || !endDate || !totalNights) throw new Error("DATES_REQUIRED");
+      if (!detail.guestName.trim()) throw new Error("GUEST_REQUIRED");
+      if (!rooms.length || rooms.some((room) => !room.roomType.trim())) throw new Error("ROOM_REQUIRED");
+      const payload = {
+        customerId,
+        supplierId: hotelId,
+        serviceType: "HOTEL",
+        startDate,
+        endDate,
+        currency,
+        saleAmount: totals.sale.toFixed(2),
+        costAmount: canReadCosts ? totals.cost.toFixed(2) : "0.00",
+        notes: detail.reservationRemarks,
+        hotelDetails: {
+          ...detail,
+          clientOptionDate: detail.clientOptionDate,
+          hotelOptionDate: detail.hotelOptionDate,
+          rooms: rooms.map((room) => ({
+            roomCount: room.roomCount,
+            roomType: room.roomType.trim(),
+            mealPlan: room.mealPlan,
+            adults: room.adults,
+            children: room.children,
+            rates: room.rates.map((rate) => ({
+              ...rate,
+              ...(canReadCosts ? {} : { costRoomRate: "0.00", costMealRatePerPax: "0.00", costVat: "0.00" }),
+            })),
+          })),
+        },
+      };
+      const response = await fetch(
+        initialReservation ? `/api/reservations/${encodeURIComponent(initialReservation.id)}` : "/api/reservations",
+        {
+          method: initialReservation ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "SAVE_FAILED");
+      onSaved(ar ? (initialReservation ? "تم تحديث الحجز الفندقي بنجاح." : "تم إنشاء الحجز الفندقي بنجاح.") : (initialReservation ? "Hotel reservation updated." : "Hotel reservation created."));
+    } catch (reason) {
+      const code = reason instanceof Error ? reason.message : "SAVE_FAILED";
+      const messages: Record<string, string> = ar ? {
+        CUSTOMER_REQUIRED: "اختر العميل أولًا.",
+        HOTEL_REQUIRED: "اختر الفندق. يجب تسجيل الفندق ضمن الموردين بتصنيف «فندق».",
+        DATES_REQUIRED: "أدخل تاريخ الوصول والمغادرة، ويجب أن يكون المغادرة بعد الوصول.",
+        GUEST_REQUIRED: "أدخل اسم النزيل الرئيسي.",
+        ROOM_REQUIRED: "أضف غرفة واحدة على الأقل وأدخل نوع الغرفة.",
+        INVALID_HOTEL_DATE_RANGE: "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
+        HOTEL_NIGHT_RATES_REQUIRED: "أدخل أسعار كل ليلة من ليالي الإقامة.",
+        HOTEL_NIGHT_RATE_DATE_MISMATCH: "تواريخ الأسعار الليلية لا تطابق تواريخ الإقامة.",
+        HOTEL_TOTAL_OUT_OF_RANGE: "إجمالي الحجز أكبر من الحد المسموح.",
+        HOTEL_STAY_LENGTH_INVALID: "مدة الإقامة يجب ألا تتجاوز 365 ليلة.",
+        HOTEL_SUPPLIER_REQUIRED: "الفندق المختار يجب أن يكون مصنفًا كفندق ضمن الموردين.",
+      } : {
+        CUSTOMER_REQUIRED: "Select a client.",
+        HOTEL_REQUIRED: "Select a hotel registered under suppliers with the Hotel category.",
+        DATES_REQUIRED: "Enter arrival and departure dates. Departure must be after arrival.",
+        GUEST_REQUIRED: "Enter the lead guest name.",
+        ROOM_REQUIRED: "Add at least one room and specify its type.",
+        INVALID_HOTEL_DATE_RANGE: "Departure must be after arrival.",
+        HOTEL_NIGHT_RATES_REQUIRED: "Enter rates for every night of the stay.",
+        HOTEL_NIGHT_RATE_DATE_MISMATCH: "Nightly rate dates do not match the stay dates.",
+        HOTEL_TOTAL_OUT_OF_RANGE: "The reservation total exceeds the supported amount.",
+        HOTEL_STAY_LENGTH_INVALID: "The stay cannot exceed 365 nights.",
+        HOTEL_SUPPLIER_REQUIRED: "The selected hotel must have the Hotel supplier category.",
+      };
+      setError(messages[code] ?? (ar ? "تعذر حفظ الحجز. راجع البيانات وحاول مرة أخرى." : "Could not save the reservation. Check the details and try again."));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  const field = (label: string, value: string, onChange: (value: string) => void, options: {
+    type?: string; placeholder?: string; readOnly?: boolean; disabled?: boolean; required?: boolean; min?: string; max?: string; step?: string;
+  } = {}) => (
+    <label className="hotel-field">
+      <span className="hotel-label">{label}{options.required ? " *" : ""}</span>
+      <input
+        className="hotel-input"
+        type={options.type ?? "text"}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={options.placeholder ?? "—"}
+        readOnly={options.readOnly}
+        disabled={options.disabled}
+        required={options.required}
+        min={options.min}
+        max={options.max}
+        step={options.step}
+      />
+    </label>
+  );
+
+  const select = (label: string, value: string, onChange: (value: string) => void, options: Array<[string, string]>, required = false, disabled = false) => (
+    <label className="hotel-field">
+      <span className="hotel-label">{label}{required ? " *" : ""}</span>
+      <select className="hotel-select" value={value} required={required} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
+        <option value="">{ar ? "اختر..." : "Select..."}</option>
+        {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
+      </select>
+    </label>
+  );
+
+  const section = (icon: ReactNode, title: string, subtitle?: string, content?: ReactNode) => (
+    <section className="hotel-section">
+      <div className="hotel-section-heading">
+        <div className="hotel-section-icon">{icon}</div>
+        <div><h3>{title}</h3>{subtitle && <p>{subtitle}</p>}</div>
+      </div>
+      <div className="hotel-section-content">{content}</div>
+    </section>
+  );
+
+  return (
+    <section className="panel hotel-booking-panel">
+      <div className="panel-header hotel-booking-heading">
+        <div>
+          <div className="ops-section-kicker">{ar ? "HOTEL RESERVATION" : "HOTEL RESERVATION"}</div>
+          <h2 className="panel-title">{ar ? (initialReservation ? "تعديل حجز فندقي" : "إنشاء حجز فندقي جديد") : (initialReservation ? "Edit hotel reservation" : "Create hotel reservation")}</h2>
+          <div className="panel-subtitle">{ar ? "ملف إقامة متكامل بالتفاصيل والغرف والأسعار اليومية" : "A complete stay file with guest, room and nightly pricing details"}</div>
+        </div>
+        <div className="hotel-booking-id"><span>{ar ? "رقم الحجز" : "RESERVATION ID"}</span><strong dir="ltr">{initialReservation?.reference ?? "AUTO-GENERATED"}</strong></div>
+        <button className="icon-button" type="button" onClick={onCancel} aria-label={ar ? "إغلاق" : "Close"}><X size={17} /></button>
+      </div>
+
+      <form className="hotel-booking-form" onSubmit={submit}>
+        {error && <div className="alert" role="alert">{error}</div>}
+        {customers.length === 0 && <div className="alert">{ar ? "يجب إضافة عميل واحد على الأقل قبل إنشاء الحجز." : "Add at least one client before creating a reservation."}</div>}
+        {hotels.length === 0 && <div className="alert">{ar ? "لا توجد فنادق مسجلة. أضف الفندق أولًا من الموردين واختر تصنيف «فندق»." : "No hotels are registered. Add a supplier and set its category to Hotel first."}</div>}
+
+        {section(<CalendarDays size={17} />, ar ? "تفاصيل الحجز" : "Reservation details", ar ? "تواريخ الإقامة والعميل والفندق وبيانات النزيل" : "Stay dates, client, hotel and guest information", <>
+          <div className="hotel-grid hotel-grid-4">
+            {field(ar ? "تاريخ الوصول" : "Arrival date", startDate, (value) => changeDates(value, endDate), { type: "date", required: true })}
+            <label className="hotel-field">
+              <span className="hotel-label">{ar ? "عدد الليالي" : "Nights"}</span>
+              <input className="hotel-input hotel-readonly" readOnly value={totalNights ? String(totalNights) : "—"} />
+            </label>
+            {field(ar ? "تاريخ المغادرة" : "Departure date", endDate, (value) => changeDates(startDate, value), { type: "date", min: startDate || undefined, required: true })}
+            <label className="hotel-field">
+              <span className="hotel-label">{ar ? "العميل" : "Client"} *</span>
+              <select className="hotel-select" value={customerId} onChange={(event) => setCustomerId(event.target.value)} required>
+                <option value="">{ar ? "اختر العميل" : "Select client"}</option>
+                {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
+              </select>
+            </label>
+            <label className="hotel-field">
+              <span className="hotel-label">{ar ? "جنسية العميل" : "Client nationality"}</span>
+              <input className="hotel-input hotel-readonly" value={selectedCustomer?.nationality ?? "—"} readOnly />
+            </label>
+            <label className="hotel-field">
+              <span className="hotel-label">{ar ? "الفندق" : "Hotel"} *</span>
+              <select className="hotel-select" value={hotelId} onChange={(event) => setHotelId(event.target.value)} required>
+                <option value="">{ar ? "اختر الفندق" : "Select hotel"}</option>
+                {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
+              </select>
+            </label>
+            {field(ar ? "اسم النزيل الرئيسي" : "Guest name", detail.guestName, (value) => updateDetail("guestName", value), { required: true, placeholder: ar ? "اسم النزيل كما في جواز السفر" : "Guest name as in passport" })}
+            {select(ar ? "جنسية النزيل" : "Guest nationality", detail.guestNationality, (value) => updateDetail("guestNationality", value), nationalities.map(([value, arabic, english]) => [value, ar ? arabic : english]))}
+            {field(ar ? "رقم الهاتف" : "Phone", detail.guestPhone, (value) => updateDetail("guestPhone", value), { type: "tel" })}
+            {field(ar ? "كود السعر" : "Rate code", detail.rateCode, (value) => updateDetail("rateCode", value))}
+            {field(ar ? "تاريخ خيار العميل" : "Client option date", detail.clientOptionDate, (value) => updateDetail("clientOptionDate", value), { type: "date" })}
+            {field(ar ? "تاريخ خيار الفندق" : "Hotel option date", detail.hotelOptionDate, (value) => updateDetail("hotelOptionDate", value), { type: "date" })}
+          </div>
+          <div className="hotel-grid hotel-grid-2 hotel-spaced">
+            {field(ar ? "الشروط والأحكام" : "Terms & conditions", detail.termsAndConditions, (value) => updateDetail("termsAndConditions", value))}
+            {field(ar ? "السياسة العامة" : "General policy", detail.generalPolicy, (value) => updateDetail("generalPolicy", value))}
+          </div>
+          <div className="hotel-tag-row">
+            <span className="hotel-label">{ar ? "التصنيفات" : "Tags"}</span>
+            <div className="hotel-tags">
+              {tags.map(([value, arabic, english]) => (
+                <label className={`hotel-tag ${detail.tags.includes(value) ? "selected" : ""}`} key={value}>
+                  <input type="checkbox" checked={detail.tags.includes(value)} onChange={(event) => updateDetail("tags", event.target.checked ? [...detail.tags, value] : detail.tags.filter((tag) => tag !== value))} />
+                  <span>{ar ? arabic : english}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="hotel-grid hotel-grid-2 hotel-spaced">
+            {field(ar ? "رقم الملف" : "File No.", detail.fileNo, (value) => updateDetail("fileNo", value))}
+            {field(ar ? "ملاحظات الحجز" : "Reservation remarks", detail.reservationRemarks, (value) => updateDetail("reservationRemarks", value))}
+          </div>
+        </>)}
+
+        {section(<BedDouble size={17} />, ar ? "تفاصيل الغرف والتسعير" : "Room details & pricing", ar ? "أضف أكثر من نوع غرفة، وحدد سعر البيع والتكلفة لكل ليلة" : "Add multiple room types and enter sale and cost rates for each night", <>
+          <div className="hotel-pricing-options">
+            <label className="hotel-check"><input type="checkbox" checked={detail.isManualRate} onChange={(event) => updateDetail("isManualRate", event.target.checked)} /><span>{ar ? "السعر يدوي" : "Is manual rate"}</span></label>
+            <label className="hotel-check"><input type="checkbox" checked={!detail.pricesIncludeVat} onChange={(event) => updateDetail("pricesIncludeVat", !event.target.checked)} /><span>{ar ? "الأسعار لا تشمل ضريبة القيمة المضافة" : "Prices do not include VAT"}</span></label>
+            <label className="hotel-field hotel-currency-field">
+              <span className="hotel-label">{ar ? "العملة" : "Currency"}</span>
+              <select className="hotel-select" value={currency} onChange={(event) => setCurrency(event.target.value)}>
+                <option value="EGP">EGP — {ar ? "جنيه مصري" : "Egyptian pound"}</option>
+                <option value="SAR">SAR — {ar ? "ريال سعودي" : "Saudi riyal"}</option>
+                <option value="USD">USD — {ar ? "دولار أمريكي" : "US dollar"}</option>
+              </select>
+            </label>
+            <button className="btn btn-secondary" type="button" onClick={addRoom}><Plus size={15} />{ar ? "إضافة غرفة / نوع غرفة" : "Add room / room type"}</button>
+          </div>
+
+          {!dateList.length && <div className="hotel-inline-note">{ar ? "حدد تاريخ الوصول والمغادرة أولًا لعرض جدول كل ليلة." : "Set arrival and departure dates to generate the nightly rate table."}</div>}
+
+          {rooms.map((room, roomIndex) => {
+            const roomTotals = room.rates.reduce((acc, rate) => {
+              const line = calcRate(room, rate);
+              acc.sale += line.saleTotal;
+              acc.cost += line.costTotal;
+              return acc;
+            }, { sale: 0, cost: 0 });
+            return (
+              <article className="hotel-room-card" key={room.key}>
+                <div className="hotel-room-heading">
+                  <div><strong>{ar ? `مجموعة الغرف ${roomIndex + 1}` : `Room group ${roomIndex + 1}`}</strong><span>{ar ? `${room.roomCount} غرفة · ${room.roomCount * totalNights} ليلة غرفة` : `${room.roomCount} rooms · ${room.roomCount * totalNights} room nights`}</span></div>
+                  <button className="hotel-icon-action danger" type="button" disabled={rooms.length === 1} onClick={() => removeRoom(roomIndex)} title={ar ? "حذف مجموعة الغرف" : "Remove room group"}><Trash2 size={15} /></button>
+                </div>
+                <div className="hotel-grid hotel-grid-5 hotel-room-fields">
+                  {field(ar ? "عدد الغرف" : "No. of rooms", String(room.roomCount), (value) => updateRoom(roomIndex, { roomCount: Math.max(1, Math.min(100, Number(value) || 1)) }), { type: "number", min: "1", max: "100", required: true })}
+                  {field(ar ? "نوع الغرفة" : "Room type", room.roomType, (value) => updateRoom(roomIndex, { roomType: value }), { placeholder: ar ? "مثال: دبل / توين" : "e.g. Double / Twin", required: true })}
+                  <label className="hotel-field"><span className="hotel-label">{ar ? "خطة الوجبات" : "Meal plan"}</span><select className="hotel-select" value={room.mealPlan} onChange={(event) => updateRoom(roomIndex, { mealPlan: event.target.value })}>{mealPlans.map(([value, english, arabic]) => <option key={value} value={value}>{ar ? arabic : english}</option>)}</select></label>
+                  {field(ar ? "عدد البالغين" : "No. of adults", String(room.adults), (value) => updateRoom(roomIndex, { adults: Math.max(0, Math.min(200, Number(value) || 0)) }), { type: "number", min: "0", max: "200" })}
+                  {field(ar ? "عدد الأطفال" : "No. of children", String(room.children), (value) => updateRoom(roomIndex, { children: Math.max(0, Math.min(200, Number(value) || 0)) }), { type: "number", min: "0", max: "200" })}
+                </div>
+                <div className="hotel-night-table-wrap">
+                  <table className="hotel-night-table">
+                    <thead>
+                      <tr><th rowSpan={2}>{ar ? "التاريخ" : "Date"}</th><th colSpan={6}>{ar ? "سعر البيع" : "Sale"}</th>{canReadCosts && <th colSpan={6}>{ar ? "التكلفة" : "Cost"}</th>}</tr>
+                      <tr>
+                        <th>{ar ? "الغرفة" : "Room"}</th><th>{ar ? "وجبة / فرد" : "Meal / PAX"}</th><th>{ar ? "سعر الوجبة" : "Meal price"}</th><th>{ar ? "السعر" : "Price"}</th><th>VAT</th><th>{ar ? "الإجمالي" : "Total"}</th>
+                        {canReadCosts && <><th>{ar ? "الغرفة" : "Room"}</th><th>{ar ? "وجبة / فرد" : "Meal / PAX"}</th><th>{ar ? "سعر الوجبة" : "Meal price"}</th><th>{ar ? "السعر" : "Price"}</th><th>VAT</th><th>{ar ? "الإجمالي" : "Total"}</th></>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {room.rates.map((rate, rateIndex) => {
+                        const calc = calcRate(room, rate);
+                        return (
+                          <tr key={rate.stayDate}>
+                            <td><strong>{dateLabel(rate.stayDate, locale)}</strong><small dir="ltr">{rate.stayDate}</small></td>
+                            <td><input aria-label={`Sale room rate ${rate.stayDate}`} type="number" min="0" step="0.01" value={rate.saleRoomRate} onChange={(event) => updateRate(roomIndex, rateIndex, { saleRoomRate: event.target.value || "0.00" })} /></td>
+                            <td><input aria-label={`Sale meal per PAX ${rate.stayDate}`} type="number" min="0" step="0.01" value={rate.saleMealRatePerPax} onChange={(event) => updateRate(roomIndex, rateIndex, { saleMealRatePerPax: event.target.value || "0.00" })} /></td>
+                            <td className="hotel-calculated">{money(calc.saleMeal, locale)}</td>
+                            <td className="hotel-calculated">{money(calc.salePrice, locale)}</td>
+                            <td><input aria-label={`Sale VAT ${rate.stayDate}`} type="number" min="0" step="0.01" value={rate.saleVat} onChange={(event) => updateRate(roomIndex, rateIndex, { saleVat: event.target.value || "0.00" })} /></td>
+                            <td className="hotel-total-cell">{money(calc.saleTotal, locale)}</td>
+                            {canReadCosts && <>
+                              <td><input aria-label={`Cost room rate ${rate.stayDate}`} type="number" min="0" step="0.01" value={rate.costRoomRate} onChange={(event) => updateRate(roomIndex, rateIndex, { costRoomRate: event.target.value || "0.00" })} /></td>
+                              <td><input aria-label={`Cost meal per PAX ${rate.stayDate}`} type="number" min="0" step="0.01" value={rate.costMealRatePerPax} onChange={(event) => updateRate(roomIndex, rateIndex, { costMealRatePerPax: event.target.value || "0.00" })} /></td>
+                              <td className="hotel-calculated">{money(calc.costMeal, locale)}</td>
+                              <td className="hotel-calculated">{money(calc.costPrice, locale)}</td>
+                              <td><input aria-label={`Cost VAT ${rate.stayDate}`} type="number" min="0" step="0.01" value={rate.costVat} onChange={(event) => updateRate(roomIndex, rateIndex, { costVat: event.target.value || "0.00" })} /></td>
+                              <td className="hotel-total-cell cost">{money(calc.costTotal, locale)}</td>
+                            </>}
+                          </tr>
+                        );
+                      })}
+                      {!room.rates.length && <tr><td colSpan={canReadCosts ? 13 : 7} className="hotel-empty-row">{ar ? "حدد فترة الإقامة لعرض الليالي." : "Choose a stay period to show the nights."}</td></tr>}
+                    </tbody>
+                    {room.rates.length > 0 && <tfoot><tr>
+                      <td>{ar ? "إجمالي الليالي" : "All nights total"}</td>
+                      <td colSpan={5}></td>
+                      <td className="hotel-total-cell">{money(roomTotals.sale, locale)} {currency}</td>
+                      {canReadCosts && <><td colSpan={5}></td><td className="hotel-total-cell cost">{money(roomTotals.cost, locale)} {currency}</td></>}
+                    </tr></tfoot>}
+                  </table>
+                </div>
+              </article>
+            );
+          })}
+
+          <div className="hotel-room-summary-wrap">
+            <table className="hotel-room-summary">
+              <thead><tr>
+                <th>{ar ? "عدد الغرف" : "No. of rooms"}</th>
+                <th>{ar ? "إجمالي ليالي الغرف" : "Total RN"}</th>
+                <th>{ar ? "نوع الغرفة" : "Room type"}</th>
+                <th>{ar ? "خطة الوجبات" : "Meal plan"}</th>
+                <th>{ar ? "إجمالي البيع" : "Total sale"}</th>
+                {canReadCosts && <th>{ar ? "إجمالي التكلفة" : "Total cost"}</th>}
+                <th>{ar ? "الإجراءات" : "Actions"}</th>
+              </tr></thead>
+              <tbody>{rooms.map((room, index) => {
+                const roomTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).saleTotal, 0);
+                const costTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).costTotal, 0);
+                return <tr key={room.key}>
+                  <td>{room.roomCount}</td><td>{room.roomCount * totalNights}</td><td>{room.roomType || "—"}</td><td>{mealPlans.find(([value]) => value === room.mealPlan)?.[locale === "ar" ? 2 : 1] ?? room.mealPlan}</td>
+                  <td>{money(roomTotal, locale)} {currency}</td>{canReadCosts && <td>{money(costTotal, locale)} {currency}</td>}
+                  <td><button className="hotel-icon-action danger" type="button" disabled={rooms.length === 1} onClick={() => removeRoom(index)}><Trash2 size={14} />{ar ? "حذف" : "Remove"}</button></td>
+                </tr>;
+              })}</tbody>
+              <tfoot><tr>
+                <td>{totalRooms}</td><td>{totalRoomNights}</td><td colSpan={2}>{ar ? "الإجمالي" : "Total"}</td>
+                <td>{money(totals.sale, locale)} {currency}</td>{canReadCosts && <td>{money(totals.cost, locale)} {currency}</td>}<td>—</td>
+              </tr></tfoot>
+            </table>
+          </div>
+          <div className="hotel-pax-summary">
+            <div><span>{ar ? "عدد البالغين" : "No. of adults"}</span><strong>{totalAdults}</strong></div>
+            <div><span>{ar ? "عدد الأطفال" : "No. of children"}</span><strong>{totalChildren}</strong></div>
+            <div><span>PAX</span><strong>{totalPax}</strong></div>
+            <div><span>{ar ? "إجمالي الليالي" : "Nights"}</span><strong>{totalNights}</strong></div>
+          </div>
+        </>)}
+
+        {section(<FileText size={17} />, ar ? "بيانات الفندق والتأكيد" : "Hotel confirmation details", undefined, <>
+          <div className="hotel-grid hotel-grid-4">
+            {field(ar ? "رقم الغرفة" : "Room No.", detail.roomNumber, (value) => updateDetail("roomNumber", value))}
+            {field(ar ? "رقم تأكيد الفندق" : "Hotel Conf. No.", detail.hotelConfirmationNumber, (value) => updateDetail("hotelConfirmationNumber", value))}
+            {field(ar ? "القسيمة" : "Voucher", detail.voucher, (value) => updateDetail("voucher", value))}
+            {field(ar ? "رقم المرجع" : "Reference No.", detail.referenceNumber, (value) => updateDetail("referenceNumber", value))}
+            {field(ar ? "رقم الاتفاقية" : "Agreement No.", detail.agreementNumber, (value) => updateDetail("agreementNumber", value))}
+            {field(ar ? "مركز التكلفة" : "Cost center", detail.costCenter, (value) => updateDetail("costCenter", value))}
+            {field(ar ? "ملاحظات الفندق" : "Hotel remarks", detail.hotelRemarks, (value) => updateDetail("hotelRemarks", value))}
+            {field(ar ? "ملاحظات التفاصيل" : "Detail remarks", detail.detailRemarks, (value) => updateDetail("detailRemarks", value))}
+          </div>
+        </>)}
+
+        {section(<Building2 size={17} />, ar ? "بيانات المبيعات والعميل" : "Company & sales details", undefined, <>
+          <div className="hotel-grid hotel-grid-4">
+            {field(ar ? "الشركة" : "Company", detail.company, (value) => updateDetail("company", value), { readOnly: true })}
+            {field(ar ? "العميل الفرعي" : "Sub client", detail.subClient, (value) => updateDetail("subClient", value))}
+            {field(ar ? "مسؤول المبيعات" : "Salesperson", detail.salesperson, (value) => updateDetail("salesperson", value))}
+            {select(ar ? "قناة البيع" : "Channel", detail.channel, (value) => updateDetail("channel", value), channels.map(([value, arabic, english]) => [value, ar ? arabic : english]))}
+          </div>
+          <div className="hotel-spaced">{field(ar ? "ملاحظات العميل" : "Client remarks", detail.clientRemarks, (value) => updateDetail("clientRemarks", value))}</div>
+        </>)}
+
+        {section(<Wallet size={17} />, ar ? "بيانات الدفع" : "Payment details", undefined, <>
+          <div className="hotel-grid hotel-grid-3">
+            {field(ar ? "البنك" : "Bank", detail.bank, (value) => updateDetail("bank", value))}
+            <label className="hotel-field"><span className="hotel-label">{ar ? "طريقة الدفع" : "Payment method"}</span><select className="hotel-select" value={detail.paymentMethod} onChange={(event) => updateDetail("paymentMethod", event.target.value)}>
+              <option value="CASH">{ar ? "نقدي" : "Cash"}</option><option value="BANK_TRANSFER">{ar ? "تحويل بنكي" : "Bank transfer"}</option><option value="CARD">{ar ? "بطاقة" : "Card"}</option><option value="ELECTRONIC_WALLET">{ar ? "محفظة إلكترونية" : "Electronic wallet"}</option><option value="THNDR">Thndr</option><option value="OTHER">{ar ? "أخرى" : "Other"}</option>
+            </select></label>
+            <label className="hotel-field"><span className="hotel-label">{ar ? "العملة" : "Currency"}</span><select className="hotel-select" value={currency} onChange={(event) => setCurrency(event.target.value)}><option value="EGP">EGP</option><option value="SAR">SAR</option><option value="USD">USD</option></select></label>
+          </div>
+          <div className="hotel-finance-total">
+            <div><span>{ar ? "إجمالي سعر البيع" : "Total sale"}</span><strong>{money(totals.sale, locale)} {currency}</strong></div>
+            {canReadCosts && <div><span>{ar ? "إجمالي تكلفة المورد" : "Total supplier cost"}</span><strong>{money(totals.cost, locale)} {currency}</strong></div>}
+            {canReadCosts && <div><span>{ar ? "هامش تقديري" : "Estimated margin"}</span><strong>{money(totals.sale - totals.cost, locale)} {currency}</strong></div>}
+          </div>
+        </>)}
+
+        {section(<FileText size={17} />, ar ? "المرفقات" : "Attachments", ar ? "المستندات المرتبطة بملف الحجز" : "Documents associated with this reservation", <>
+          <div className="hotel-attachments">
+            <div className="hotel-attachments-head"><span>{ar ? "الملف" : "File"}</span><span>{ar ? "اسم الملف" : "File name"}</span><span>{ar ? "الإجراءات" : "Actions"}</span></div>
+            <div className="hotel-attachments-empty">{ar ? "لا توجد ملفات مرفقة بهذا الحجز." : "No files are attached to this reservation."}</div>
+          </div>
+          <p className="hotel-footnote">{ar ? "رفع الملفات سيُفعّل عند ربط مخزن ملفات آمن وصلاحيات الوصول؛ لم نضف زر رفع غير متصل بحفظ حقيقي." : "File upload will be enabled with secure storage and access controls; no inactive upload control is shown."}</p>
+        </>)}
+
+        <div className="hotel-form-footer">
+          <div className="hotel-form-total"><span>{ar ? "الإجمالي" : "Reservation total"}</span><strong>{money(totals.sale, locale)} {currency}</strong></div>
+          <div className="hotel-form-actions">
+            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={pending}><X size={15} />{ar ? "إلغاء" : "Cancel"}</button>
+            <button type="submit" className="btn btn-primary" disabled={pending || customers.length === 0 || hotels.length === 0}><Save size={15} />{pending ? (ar ? "جارٍ الحفظ..." : "Saving...") : (ar ? "حفظ الحجز" : "Save reservation")}</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  );
+}
