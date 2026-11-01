@@ -21,7 +21,8 @@
     "local:backup": "node scripts/local.mjs backup",
     "local:restore": "node scripts/local.mjs restore",
     "codespaces:setup": "node scripts/codespaces-setup.mjs",
-    "dev:diagnostic": "node scripts/dev-diagnostic.mjs"
+    "dev:diagnostic": "node scripts/dev-diagnostic.mjs",
+    "codespaces:repair-swc": "node scripts/repair-swc.mjs"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.3",
