@@ -35,6 +35,13 @@ test("calculates multi-room, per-night sale, meal and VAT totals using integer c
   assert.equal(result.costAmount, "360.00");
 });
 
+test("does not add VAT again when the entered room prices already include VAT", () => {
+  const input = hotelReservationDetailsSchema.parse({ ...details(), pricesIncludeVat: true });
+  const result = normalizeHotelReservation(input, "2026-12-01", "2026-12-03", true);
+  assert.equal(result.saleAmount, "500.00");
+  assert.equal(result.costAmount, "330.00");
+});
+
 test("never persists supplier costs submitted by a user without finance access", () => {
   const result = normalizeHotelReservation(details(), "2026-12-01", "2026-12-03", false);
   assert.equal(result.saleAmount, "544.00");
