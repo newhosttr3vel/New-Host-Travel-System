@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ArrowLeftRight,
-  BadgeDollarSign,
   Building2,
   CalendarDays,
   Compass,
