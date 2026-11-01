@@ -11,6 +11,7 @@ import {
   LogOut,
   PlaneTakeoff,
   ShieldCheck,
+  Settings2,
   Users,
   WalletCards,
 } from "lucide-react";
@@ -37,7 +38,7 @@ const roleLabels: Record<string, { ar: string; en: string }> = {
 
 type NavItem = {
   href: string;
-  key: "dashboard" | "customers" | "suppliers" | "reservations" | "finance";
+  key: "dashboard" | "customers" | "suppliers" | "reservations" | "finance" | "settings";
   icon: typeof LayoutDashboard;
 };
 
@@ -82,6 +83,12 @@ export function WorkspaceShell({
           ? [{ href: "/reservations", key: "reservations" as const, icon: CalendarDays }]
           : []),
       ],
+    },
+    {
+      label: ar ? "إعدادات النظام" : "SYSTEM SETTINGS",
+      items: (hasPermission(role, "settings:manage") || hasPermission(role, "customers:read") || hasPermission(role, "suppliers:read"))
+        ? [{ href: "/settings", key: "settings" as const, icon: Settings2 }]
+        : [],
     },
     {
       label: ar ? "الحسابات والمالية" : "FINANCE",
