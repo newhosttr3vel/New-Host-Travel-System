@@ -15,7 +15,7 @@ test("sums different transaction currencies only after converting each group to 
     { amount: "100.00", exchangeRate: "12.9" },
     { amount: "10.00", exchangeRate: "1" },
     { amount: "20.00", exchangeRate: "0.5" },
-  ]), 130000n);
+  ]), 131000n);
 });
 
 test("calculates outstanding balances from total less payments before conversion", () => {
