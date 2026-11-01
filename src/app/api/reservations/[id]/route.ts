@@ -78,8 +78,9 @@ function hotelDetailsData(
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ) {
   return {
-    // Connect the hotel using its tenant-scoped unique key. The reservation
-    // relation supplies tenantId to this detail and all nested child rows.
+    // Connect both required tenant-scoped relations explicitly. Nested child
+    // rows also connect to the same tenant because each model owns that relation.
+    tenant: { connect: { id: tenantId } },
     hotel: { connect: { id_tenantId: { id: hotelId, tenantId } } },
     hotelName,
     clientNationality: input.clientNationality || clientNationality,
@@ -113,13 +114,19 @@ function hotelDetailsData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
+        tenant: { connect: { id: tenantId } },
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
         adults: room.adults,
         children: room.children,
         sortOrder: room.sortOrder,
-        nightlyRates: { create: room.rates.map((rate) => ({ ...rate })) }
+        nightlyRates: {
+          create: room.rates.map((rate) => ({
+            tenant: { connect: { id: tenantId } },
+            ...rate,
+          }))
+        }
       }))
     }
   };
