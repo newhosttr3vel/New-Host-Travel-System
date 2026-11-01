@@ -78,7 +78,7 @@ function hotelDetailsCreateData(
   return {
     tenantId,
     hotelName: supplierName,
-    clientNationality: customerNationality,
+    clientNationality: input.clientNationality || customerNationality,
     guestName: input.guestName,
     guestNationality: input.guestNationality || null,
     guestPhone: input.guestPhone || null,
