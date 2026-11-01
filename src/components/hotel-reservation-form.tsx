@@ -16,6 +16,7 @@ type NightRate = {
   costVat: string;
 };
 type RoomLine = {
+  id?: string;
   key: string;
   roomCount: number;
   roomType: string;
@@ -55,6 +56,7 @@ type HotelDetail = {
   pricesIncludeVat: boolean;
 };
 type HotelRoomSaved = {
+  id: string;
   roomCount: number;
   roomType: string;
   mealPlan: string;
@@ -160,6 +162,7 @@ function normalizeDate(value: string | null | undefined): string {
 function buildRoom(room?: HotelRoomSaved, dates: string[] = [], index = 0): RoomLine {
   const savedRates = new Map((room?.nightlyRates ?? []).map((rate) => [normalizeDate(rate.stayDate), rate]));
   return {
+    id: room?.id,
     key: `room-${index}-${Math.random().toString(36).slice(2, 8)}`,
     roomCount: room?.roomCount ?? 1,
     roomType: room?.roomType ?? "",
@@ -379,13 +382,14 @@ export function HotelReservationForm({
         endDate,
         currency,
         saleAmount: totals.sale.toFixed(2),
-        costAmount: canReadCosts ? totals.cost.toFixed(2) : "0.00",
+        ...(canReadCosts ? { costAmount: totals.cost.toFixed(2) } : {}),
         notes: detail.reservationRemarks,
         hotelDetails: {
           ...detail,
           clientOptionDate: detail.clientOptionDate,
           hotelOptionDate: detail.hotelOptionDate,
           rooms: rooms.map((room) => ({
+            ...(room.id ? { id: room.id } : {}),
             roomCount: room.roomCount,
             roomType: room.roomType.trim(),
             mealPlan: room.mealPlan,
