@@ -26,6 +26,7 @@ type RoomLine = {
   rates: NightRate[];
 };
 type HotelDetail = {
+  clientNationality: string;
   guestName: string;
   guestNationality: string;
   guestPhone: string;
@@ -118,6 +119,7 @@ const emptyRate = (stayDate: string): NightRate => ({
 });
 
 const emptyDetail = (companyName: string): HotelDetail => ({
+  clientNationality: "",
   guestName: "",
   guestNationality: "Egyptian",
   guestPhone: "",
@@ -252,7 +254,8 @@ const channels = [
 ] as const;
 
 export function HotelReservationForm({
-  locale, canReadCosts, customers, suppliers, initialReservation, companyName, onCancel, onSaved,
+  locale, canReadCosts, customers, suppliers, initialReservation, draft, companyName,
+  onCancel, onSaved, onSwitchToService,
 }: Props) {
   const ar = locale === "ar";
   const hotels = useMemo(() => suppliers.filter((supplier) => supplier.category === "HOTEL"), [suppliers]);
