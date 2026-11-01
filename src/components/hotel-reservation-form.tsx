@@ -270,7 +270,7 @@ export function HotelReservationForm({
   const initialStart = normalizeDate(initialReservation?.startDate);
   const initialEnd = normalizeDate(initialReservation?.endDate);
   const [customerId, setCustomerId] = useState(initialReservation?.customer.id ?? draft?.customerId ?? "");
-  const [hotelId, setHotelId] = useState(initialReservation?.hotelDetail?.hotelId ?? "");
+  const [hotelId, setHotelId] = useState(initialReservation?.hotelDetail?.hotelId ?? hotels.find((hotel) => hotel.name === initialReservation?.hotelDetail?.hotelName)?.id ?? "");
   const [supplierId, setSupplierId] = useState(initialReservation?.supplier?.id ?? "");
   const [startDate, setStartDate] = useState(initialStart || draft?.startDate || "");
   const [endDate, setEndDate] = useState(initialEnd || draft?.endDate || "");
