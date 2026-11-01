@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 import { canTransitionReservationStatus } from "@/lib/reservation-workflow";
 import { hasPermission } from "@/lib/permissions";
-import { hotelReservationDetailsSchema, normalizeHotelReservation } from "@/lib/hotel-pricing";
+import { hotelReservationDetailsSchema, normalizeHotelReservation, restorePersistedHotelCosts } from "@/lib/hotel-pricing";
 import type { Prisma } from "@/generated/prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -200,26 +200,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       try {
         const detailsForPricing = canReadCosts
           ? input.hotelDetails
-          : {
-              ...input.hotelDetails,
-              rooms: input.hotelDetails.rooms.map((room) => {
-                const savedRoom = existing.hotelDetail?.rooms.find((candidate) => candidate.id === room.id);
-                return {
-                  ...room,
-                  rates: room.rates.map((rate) => {
-                    const savedRate = savedRoom?.nightlyRates.find(
-                      (candidate) => candidate.stayDate.toISOString().slice(0, 10) === rate.stayDate
-                    );
-                    return {
-                      ...rate,
-                      costRoomRate: savedRate?.costRoomRate.toString() ?? "0.00",
-                      costMealRatePerPax: savedRate?.costMealRatePerPax.toString() ?? "0.00",
-                      costVat: savedRate?.costVat.toString() ?? "0.00",
-                    };
-                  })
-                };
-              })
-            };
+          : restorePersistedHotelCosts(input.hotelDetails, existing.hotelDetail?.rooms ?? []);
         // Cost values for non-finance users are restored from this reservation's persisted room IDs,
         // never accepted from the request body.
         hotelPricing = normalizeHotelReservation(detailsForPricing, startText, endText, true);
