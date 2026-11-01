@@ -223,6 +223,26 @@ const mealPlans = [
   ["UAI", "Ultra all inclusive", "شامل مميز"],
   ["OTHER", "Other", "أخرى"],
 ] as const;
+const roomTypes = [
+  ["Standard Single", "Standard Single", "مفردة قياسية"],
+  ["Standard Double", "Standard Double", "مزدوجة قياسية"],
+  ["Standard Twin", "Standard Twin", "توين قياسية"],
+  ["Standard Triple", "Standard Triple", "ثلاثية قياسية"],
+  ["Quadruple", "Quadruple", "رباعية"],
+  ["Superior", "Superior", "سوبيريور"],
+  ["Deluxe", "Deluxe", "ديلوكس"],
+  ["Executive", "Executive", "تنفيذية"],
+  ["Family Room", "Family Room", "غرفة عائلية"],
+  ["Junior Suite", "Junior Suite", "جناح جونيور"],
+  ["Suite", "Suite", "جناح"],
+  ["Presidential Suite", "Presidential Suite", "جناح رئاسي"],
+  ["Studio", "Studio", "استوديو"],
+  ["Apartment", "Apartment", "شقة فندقية"],
+  ["Villa", "Villa", "فيلا"],
+  ["Connecting Rooms", "Connecting Rooms", "غرف متصلة"],
+  ["Accessible Room", "Accessible Room", "غرفة مجهزة لذوي الإعاقة"],
+  ["Other", "Other", "أخرى"],
+] as const;
 const nationalities = [
   ["Egyptian", "مصري", "Egyptian"],
   ["Saudi", "سعودي", "Saudi"],
@@ -261,6 +281,11 @@ const channels = [
   ["WALK_IN", "زيارة مباشرة", "Walk-in"],
   ["OTHER", "أخرى", "Other"],
 ] as const;
+
+function roomTypeLabel(value: string, locale: Locale): string {
+  const option = roomTypes.find(([key]) => key === value);
+  return option ? (locale === "ar" ? option[2] : option[1]) : value;
+}
 
 export function HotelReservationForm({
   locale, canReadCosts, customers, suppliers, hotels, initialReservation, draft, companyName,
@@ -599,7 +624,8 @@ export function HotelReservationForm({
         {section(<BedDouble size={17} />, ar ? "تفاصيل الغرف والتسعير" : "Room details & pricing", ar ? "أضف أكثر من نوع غرفة، وحدد سعر البيع والتكلفة لكل ليلة" : "Add multiple room types and enter sale and cost rates for each night", <>
           <div className="hotel-pricing-options">
             <label className="hotel-check"><input type="checkbox" checked={detail.isManualRate} onChange={(event) => updateDetail("isManualRate", event.target.checked)} /><span>{ar ? "السعر يدوي" : "Is manual rate"}</span></label>
-            <label className="hotel-check"><input type="checkbox" checked={!detail.pricesIncludeVat} onChange={(event) => updateDetail("pricesIncludeVat", !event.target.checked)} /><span>{ar ? "الأسعار لا تشمل ضريبة القيمة المضافة" : "Prices do not include VAT"}</span></label>
+            <label className="hotel-check"><input type="radio" name="hotel-prices-vat" checked={detail.pricesIncludeVat} onChange={() => updateDetail("pricesIncludeVat", true)} /><span>{ar ? "السعر يشمل ضريبة القيمة المضافة" : "Price includes VAT"}</span></label>
+            <label className="hotel-check"><input type="radio" name="hotel-prices-vat" checked={!detail.pricesIncludeVat} onChange={() => updateDetail("pricesIncludeVat", false)} /><span>{ar ? "الأسعار لا تشمل ضريبة القيمة المضافة" : "Prices do not include VAT"}</span></label>
             <label className="hotel-field hotel-currency-field">
               <span className="hotel-label">{ar ? "العملة" : "Currency"}</span>
               <select className="hotel-select" value={currency} onChange={(event) => setCurrency(event.target.value)}>
@@ -628,7 +654,14 @@ export function HotelReservationForm({
                 </div>
                 <div className="hotel-grid hotel-grid-5 hotel-room-fields">
                   {field(ar ? "عدد الغرف" : "No. of rooms", String(room.roomCount), (value) => updateRoom(roomIndex, { roomCount: Math.max(1, Math.min(100, Number(value) || 1)) }), { type: "number", min: "1", max: "100", required: true })}
-                  {field(ar ? "نوع الغرفة" : "Room type", room.roomType, (value) => updateRoom(roomIndex, { roomType: value }), { placeholder: ar ? "مثال: دبل / توين" : "e.g. Double / Twin", required: true })}
+                  <label className="hotel-field">
+                    <span className="hotel-label">{ar ? "نوع الغرفة" : "Room type"} *</span>
+                    <select className="hotel-select" value={room.roomType} onChange={(event) => updateRoom(roomIndex, { roomType: event.target.value })} required>
+                      <option value="" disabled>{ar ? "اختر نوع الغرفة" : "Select room type"}</option>
+                      {room.roomType && !roomTypes.some(([value]) => value === room.roomType) && <option value={room.roomType}>{room.roomType}</option>}
+                      {roomTypes.map(([value, english, arabic]) => <option key={value} value={value}>{ar ? arabic : english}</option>)}
+                    </select>
+                  </label>
                   <label className="hotel-field"><span className="hotel-label">{ar ? "خطة الوجبات" : "Meal plan"}</span><select className="hotel-select" value={room.mealPlan} onChange={(event) => updateRoom(roomIndex, { mealPlan: event.target.value })}>{mealPlans.map(([value, english, arabic]) => <option key={value} value={value}>{ar ? arabic : english}</option>)}</select></label>
                   {field(ar ? "عدد البالغين" : "No. of adults", String(room.adults), (value) => updateRoom(roomIndex, { adults: Math.max(0, Math.min(200, Number(value) || 0)) }), { type: "number", min: "0", max: "200" })}
                   {field(ar ? "عدد الأطفال" : "No. of children", String(room.children), (value) => updateRoom(roomIndex, { children: Math.max(0, Math.min(200, Number(value) || 0)) }), { type: "number", min: "0", max: "200" })}
@@ -694,7 +727,7 @@ export function HotelReservationForm({
                 const roomTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).saleTotal, 0n);
                 const costTotal = room.rates.reduce((sum, rate) => sum + calcRate(room, rate).costTotal, 0n);
                 return <tr key={room.key}>
-                  <td>{room.roomCount}</td><td>{room.roomCount * totalNights}</td><td>{room.roomType || "—"}</td><td>{mealPlans.find(([value]) => value === room.mealPlan)?.[locale === "ar" ? 2 : 1] ?? room.mealPlan}</td>
+                  <td>{room.roomCount}</td><td>{room.roomCount * totalNights}</td><td>{room.roomType ? roomTypeLabel(room.roomType, locale) : "—"}</td><td>{mealPlans.find(([value]) => value === room.mealPlan)?.[locale === "ar" ? 2 : 1] ?? room.mealPlan}</td>
                   <td>{money(roomTotal, locale)} {currency}</td>{canReadCosts && <td>{money(costTotal, locale)} {currency}</td>}
                   <td><button className="hotel-icon-action danger" type="button" disabled={rooms.length === 1} onClick={() => removeRoom(index)}><Trash2 size={14} />{ar ? "حذف" : "Remove"}</button></td>
                 </tr>;
