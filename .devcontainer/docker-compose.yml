@@ -8,6 +8,9 @@ services:
       - ..:/workspaces/new-host-travel-system:cached
     environment:
       DATABASE_URL: postgresql://app_user:codespaces_dev_only_change_me@db:5432/new_host_travel?schema=public
+      CODESPACES: ${CODESPACES:-false}
+      CODESPACE_NAME: ${CODESPACE_NAME:-}
+      GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: ${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-}
     depends_on:
       db:
         condition: service_healthy
