@@ -20,16 +20,17 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
       data: { name: "Hotel Reservation Integration", slug: `hotel-booking-${suffix}` },
     });
     tenantId = tenant.id;
+    const currentTenantId = tenant.id;
 
     const [customer, supplier, hotel] = await Promise.all([
       prisma.customer.create({
-        data: { tenantId, type: "CORPORATE", name: "Test B2B Client", companyName: "Test Client Company" },
+        data: { currentTenantId, type: "CORPORATE", name: "Test B2B Client", companyName: "Test Client Company" },
       }),
       prisma.supplier.create({
-        data: { tenantId, name: "Test Hotel Supplier", category: "HOTEL" },
+        data: { currentTenantId, name: "Test Hotel Supplier", category: "HOTEL" },
       }),
       prisma.hotel.create({
-        data: { tenantId, name: "Test Hotel Property", city: "Makkah", country: "Saudi Arabia" },
+        data: { currentTenantId, name: "Test Hotel Property", city: "Makkah", country: "Saudi Arabia" },
       }),
     ]);
 
@@ -60,29 +61,29 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
 
     const created = await prisma.$transaction(async (tx) => {
       const selectedCustomer = await tx.customer.findFirst({
-        where: { id: customer.id, tenantId, archivedAt: null },
+        where: { id: customer.id, currentTenantId, archivedAt: null },
         select: { id: true, nationality: true, type: true },
       });
       assert.equal(selectedCustomer?.type, "CORPORATE");
 
       const selectedSupplier = await tx.supplier.findFirst({
-        where: { id: supplier.id, tenantId, archivedAt: null },
+        where: { id: supplier.id, currentTenantId, archivedAt: null },
         select: { id: true, category: true },
       });
       assert.equal(selectedSupplier?.category, "HOTEL");
 
       const selectedHotel = await tx.hotel.findFirst({
-        where: { id: hotel.id, tenantId, archivedAt: null },
+        where: { id: hotel.id, currentTenantId, archivedAt: null },
         select: { id: true, name: true },
       });
       assert.ok(selectedHotel);
 
       const reservation = await tx.reservation.create({
         data: {
-          tenantId,
+          currentTenantId,
           customerId: selectedCustomer!.id,
           supplierId: selectedSupplier!.id,
-          supplierTenantId: tenantId,
+          supplierTenantId: currentTenantId,
           reference: `NHT-TEST-${suffix}`,
           serviceType: "HOTEL",
           status: "INQUIRY",
@@ -94,7 +95,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
           notes: null,
           hotelDetail: {
             create: {
-              tenantId,
+              currentTenantId,
               hotelId: selectedHotel!.id,
               hotelName: selectedHotel!.name,
               clientNationality: selectedCustomer!.nationality,
@@ -104,7 +105,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
               pricesIncludeVat: details.pricesIncludeVat,
               rooms: {
                 create: pricing.rooms.map((room) => ({
-                  tenantId,
+                  currentTenantId,
                   roomCount: room.roomCount,
                   roomType: room.roomType,
                   mealPlan: room.mealPlan,
@@ -112,13 +113,26 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
                   children: room.children,
                   sortOrder: room.sortOrder,
                   nightlyRates: {
-                    create: room.rates.map((rate) => ({ tenantId, ...rate })),
+                    create: room.rates.map((rate) => ({ currentTenantId, ...rate })),
                   },
                 })),
               },
             },
           },
         },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          currentTenantId,
+          action: "RESERVATION_CREATED",
+          entityType: "Reservation",
+          entityId: reservation.id,
+          metadata: { reference: reservation.reference },
+        },
+      });
+      const loaded = await tx.reservation.findUnique({
+        where: { id: reservation.id },
         include: {
           customer: true,
           supplier: true,
@@ -127,17 +141,8 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
           },
         },
       });
-
-      await tx.auditEvent.create({
-        data: {
-          tenantId,
-          action: "RESERVATION_CREATED",
-          entityType: "Reservation",
-          entityId: reservation.id,
-          metadata: { reference: reservation.reference },
-        },
-      });
-      return reservation;
+      assert.ok(loaded);
+      return loaded;
     });
 
     assert.equal(created.serviceType, "HOTEL");
@@ -149,7 +154,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
     assert.equal(created.saleAmount.toString(), "155");
     assert.equal(created.costAmount.toString(), "100");
   } finally {
-    if (tenantId) await prisma.tenant.delete({ where: { id: tenantId } });
+    if (currentTenantId) await prisma.tenant.delete({ where: { id: currentTenantId } });
     await prisma.$disconnect();
   }
 });
