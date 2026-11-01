@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 import { hasPermission } from "@/lib/permissions";
 import { hotelReservationDetailsSchema, normalizeHotelReservation } from "@/lib/hotel-pricing";
+import type { Prisma } from "@/generated/prisma/client";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
@@ -43,18 +44,19 @@ const reservationInclude = {
       }
     }
   }
-} as const;
+} as const satisfies Prisma.ReservationInclude;
+type ReservationRecord = Prisma.ReservationGetPayload<{ include: typeof reservationInclude }>;
 
-function serializeReservation(item: any, canReadCosts: boolean) {
+function serializeReservation(item: ReservationRecord, canReadCosts: boolean) {
   return {
     ...item,
     saleAmount: item.saleAmount.toString(),
     costAmount: canReadCosts ? item.costAmount.toString() : null,
     hotelDetail: item.hotelDetail ? {
       ...item.hotelDetail,
-      rooms: item.hotelDetail.rooms.map((room: any) => ({
+      rooms: item.hotelDetail.rooms.map((room) => ({
         ...room,
-        nightlyRates: room.nightlyRates.map((rate: any) => ({
+        nightlyRates: room.nightlyRates.map((rate) => ({
           ...rate,
           saleRoomRate: rate.saleRoomRate.toString(),
           saleMealRatePerPax: rate.saleMealRatePerPax.toString(),
