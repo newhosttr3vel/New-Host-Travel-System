@@ -200,29 +200,29 @@ export default async function DashboardPage() {
 
   const salesBaseCents = sumBaseCents(invoiceSalesGroups.map((group) => ({
     amount: group._sum.subtotal,
-    exchangeRate: group.exchangeRate,
+    exchangeRate: group.exchangeRate.toFixed(8),
   })));
   const supplierCostsBaseCents = sumBaseCents(supplierCostGroups.map((group) => ({
     amount: group._sum.subtotal,
-    exchangeRate: group.exchangeRate,
+    exchangeRate: group.exchangeRate.toFixed(8),
   })));
   const receiptsBaseCents = sumBaseCents(customerReceiptGroups.map((group) => ({
     amount: group._sum.amount,
-    exchangeRate: group.exchangeRate,
+    exchangeRate: group.exchangeRate.toFixed(8),
   })));
   const supplierPaymentsBaseCents = sumBaseCents(supplierPaymentGroups.map((group) => ({
     amount: group._sum.amount,
-    exchangeRate: group.exchangeRate,
+    exchangeRate: group.exchangeRate.toFixed(8),
   })));
   const receivablesBaseCents = sumOutstandingBaseCents(openInvoiceGroups.map((group) => ({
     total: group._sum.total,
     paidAmount: group._sum.paidAmount,
-    exchangeRate: group.exchangeRate,
+    exchangeRate: group.exchangeRate.toFixed(8),
   })));
   const payablesBaseCents = sumOutstandingBaseCents(openSupplierBillGroups.map((group) => ({
     total: group._sum.total,
     paidAmount: group._sum.paidAmount,
-    exchangeRate: group.exchangeRate,
+    exchangeRate: group.exchangeRate.toFixed(8),
   })));
   const billedSpreadBaseCents = salesBaseCents - supplierCostsBaseCents;
   const baseCurrency = membership.tenant.defaultCurrency || "EGP";
