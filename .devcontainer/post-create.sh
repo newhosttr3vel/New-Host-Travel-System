@@ -3,6 +3,7 @@ set -euo pipefail
 cd /workspaces/new-host-travel-system
 node scripts/codespaces-setup.mjs
 npm install
+npm run codespaces:repair-swc
 npm run db:generate
 npm run db:migrate
 echo
