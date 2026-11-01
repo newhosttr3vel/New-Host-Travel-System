@@ -199,16 +199,6 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
         draft={!editingId ? form : undefined}
         companyName={companyName}
         onCancel={() => { setShowForm(false); setEditingId(null); }}
-        onSwitchToService={(serviceType, draft) => {
-          setForm({
-            ...emptyForm,
-            serviceType: serviceType as ServiceType,
-            customerId: draft.customerId,
-            startDate: draft.startDate,
-            endDate: draft.endDate,
-            currency: draft.currency,
-          });
-        }}
         onSaved={(message) => {
           setSuccess(message);
           setShowForm(false);
@@ -227,7 +217,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
         {customers.length === 0 && <div className="alert">{locale === "ar" ? "لا توجد شركات عملاء مسجلة. أضف الشركة من قائمة العملاء مع اختيار نوع (شركة)." : "No B2B client companies found. Add a Corporate customer first."}</div>}
         <div className="form-grid">
           <label className="field"><span className="field-label">{locale === "ar" ? "شركة العميل (B2B)" : "Client company (B2B)"} *</span><select className="select" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} required><option value="">{t(locale, "selectCustomer")}</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          <label className="field"><span className="field-label">{locale === "ar" ? "شركة الطيران / المورد" : "Airline / Supplier"}</span><select className="select" value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}><option value="">{t(locale, "selectSupplier")}</option>{suppliers.filter((s) => s.category === "AIRLINE").map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+          <label className="field"><span className="field-label">{locale === "ar" ? "شركة الطيران / المورد" : "Airline / Supplier"} *</span><select className="select" required value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}><option value="">{t(locale, "selectSupplier")}</option>{suppliers.filter((s) => s.category === "AIRLINE").map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
           <label className="field"><span className="field-label">{locale === "ar" ? "نوع الخدمة" : "Service type"}</span><input className="input" value={locale === "ar" ? "طيران" : "Flight"} readOnly /></label>
           <label className="field"><span className="field-label">{t(locale, "defaultCurrency")}</span><select className="select" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}><option value="EGP">EGP — {t(locale, "currencyEGP")}</option><option value="SAR">SAR — {t(locale, "currencySAR")}</option><option value="USD">USD — {t(locale, "currencyUSD")}</option></select></label>
           <label className="field"><span className="field-label">{t(locale, "startDate")}</span><input className="input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></label>
