@@ -80,7 +80,6 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
       assert.ok(selectedHotel);
 
       const hotelDetailCreate: Prisma.HotelReservationDetailUncheckedCreateWithoutReservationInput = {
-        tenantId,
         hotelId: selectedHotel!.id,
         hotelName: selectedHotel!.name,
         clientNationality: selectedCustomer!.nationality,
@@ -90,7 +89,6 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
         pricesIncludeVat: details.pricesIncludeVat,
         rooms: {
           create: pricing.rooms.map((room) => ({
-            tenantId,
             roomCount: room.roomCount,
             roomType: room.roomType,
             mealPlan: room.mealPlan,
@@ -98,7 +96,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
             children: room.children,
             sortOrder: room.sortOrder,
             nightlyRates: {
-              create: room.rates.map((rate) => ({ tenantId, ...rate })),
+              create: room.rates.map((rate) => ({ ...rate })),
             },
           })),
         },
