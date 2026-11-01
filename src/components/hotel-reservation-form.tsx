@@ -521,10 +521,10 @@ export function HotelReservationForm({
 
       <form className="hotel-booking-form" onSubmit={submit}>
         {error && <div className="alert" role="alert">{error}</div>}
-        {customers.length === 0 && <div className="alert">{ar ? "يجب إضافة عميل واحد على الأقل قبل إنشاء الحجز." : "Add at least one client before creating a reservation."}</div>}
+        {customers.length === 0 && <div className="alert">{ar ? "أضف شركة عميلة من قائمة العملاء (نوع العميل: شركة) قبل إنشاء الحجز." : "Add a Corporate client company before creating a reservation."}</div>}
         {hotels.length === 0 && <div className="alert">{ar ? "لا توجد فنادق مسجلة. أضف الفندق أولًا من الموردين واختر تصنيف «فندق»." : "No hotels are registered. Add a supplier and set its category to Hotel first."}</div>}
 
-        {section(<CalendarDays size={17} />, ar ? "تفاصيل الحجز" : "Reservation details", ar ? "تواريخ الإقامة والعميل والفندق وبيانات النزيل" : "Stay dates, client, hotel and guest information", <>
+        {section(<CalendarDays size={17} />, ar ? "تفاصيل الحجز" : "Reservation details", ar ? "شركة العميل والمورد وتواريخ الإقامة وبيانات النزيل" : "Client company, supplier, stay dates and guest details", <>
           <div className="hotel-grid hotel-grid-4">
             {!initialReservation ? (
               <label className="hotel-field">
@@ -554,14 +554,14 @@ export function HotelReservationForm({
             </label>
             {field(ar ? "تاريخ المغادرة" : "Departure date", endDate, (value) => changeDates(startDate, value), { type: "date", min: startDate || undefined, required: true })}
             <label className="hotel-field">
-              <span className="hotel-label">{ar ? "العميل" : "Client"} *</span>
+              <span className="hotel-label">{ar ? "شركة العميل (B2B)" : "Client company (B2B)"} *</span>
               <select className="hotel-select" value={customerId} onChange={(event) => {
                 const nextCustomerId = event.target.value;
                 setCustomerId(nextCustomerId);
                 const nextCustomer = customers.find((customer) => customer.id === nextCustomerId);
                 setDetail((current) => ({ ...current, clientNationality: nextCustomer?.nationality ?? "" }));
               }} required>
-                <option value="">{ar ? "اختر العميل" : "Select client"}</option>
+                <option value="">{ar ? "اختر شركة العميل" : "Select client company"}</option>
                 {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
               </select>
             </label>
@@ -570,9 +570,9 @@ export function HotelReservationForm({
               <select className="hotel-select" value={detail.clientNationality || selectedCustomer?.nationality || ""} onChange={(event) => updateDetail("clientNationality", event.target.value)}><option value="">{ar ? "اختر الجنسية" : "Select nationality"}</option>{nationalities.map(([value, arabic, english]) => <option key={value} value={value}>{ar ? arabic : english}</option>)}</select>
             </label>
             <label className="hotel-field">
-              <span className="hotel-label">{ar ? "الفندق" : "Hotel"} *</span>
+              <span className="hotel-label">{ar ? "المورد / الفندق" : "Supplier / Hotel"} *</span>
               <select className="hotel-select" value={hotelId} onChange={(event) => setHotelId(event.target.value)} required>
-                <option value="">{ar ? "اختر الفندق" : "Select hotel"}</option>
+                <option value="">{ar ? "اختر المورد / الفندق" : "Select supplier / hotel"}</option>
                 {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
               </select>
             </label>
@@ -580,8 +580,8 @@ export function HotelReservationForm({
             {select(ar ? "جنسية النزيل" : "Guest nationality", detail.guestNationality, (value) => updateDetail("guestNationality", value), nationalities.map(([value, arabic, english]) => [value, ar ? arabic : english] as const))}
             {field(ar ? "رقم الهاتف" : "Phone", detail.guestPhone, (value) => updateDetail("guestPhone", value), { type: "tel" })}
             {field(ar ? "كود السعر" : "Rate code", detail.rateCode, (value) => updateDetail("rateCode", value))}
-            {field(ar ? "تاريخ خيار العميل" : "Client option date", detail.clientOptionDate, (value) => updateDetail("clientOptionDate", value), { type: "date" })}
-            {field(ar ? "تاريخ خيار الفندق" : "Hotel option date", detail.hotelOptionDate, (value) => updateDetail("hotelOptionDate", value), { type: "date" })}
+            {field(ar ? "آخر موعد لسداد العميل (اختياري)" : "Client payment option date (optional)", detail.clientOptionDate, (value) => updateDetail("clientOptionDate", value), { type: "date" })}
+            {field(ar ? "آخر موعد لتأكيد الفندق (اختياري)" : "Hotel confirmation option date (optional)", detail.hotelOptionDate, (value) => updateDetail("hotelOptionDate", value), { type: "date" })}
           </div>
           <div className="hotel-grid hotel-grid-2 hotel-spaced">
             {textareaField(ar ? "الشروط والأحكام" : "Terms & conditions", detail.termsAndConditions, (value) => updateDetail("termsAndConditions", value))}
