@@ -34,7 +34,7 @@ function asDate(value: string | undefined) {
 }
 
 const reservationInclude = {
-  customer: { select: { id: true, name: true, type: true, nationality: true } },
+  customer: { select: { id: true, name: true, companyName: true, type: true, nationality: true } },
   supplier: { select: { id: true, name: true, category: true } },
   hotelDetail: {
     include: {
