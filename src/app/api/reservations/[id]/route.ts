@@ -112,7 +112,7 @@ function hotelDetailsData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
-        tenantId,
+        // Hotel detail supplies tenantId to each room.
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
@@ -120,7 +120,8 @@ function hotelDetailsData(
         children: room.children,
         sortOrder: room.sortOrder,
         nightlyRates: {
-          create: room.rates.map((rate) => ({ tenantId, ...rate }))
+          // Room supplies tenantId to each nightly rate.
+          create: room.rates.map((rate) => ({ ...rate }))
         }
       }))
     }
