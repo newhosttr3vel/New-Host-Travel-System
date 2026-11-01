@@ -78,8 +78,9 @@ function hotelDetailsData(
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ) {
   return {
-    tenantId,
-    hotelId,
+    // Connect the hotel using its tenant-scoped unique key. The reservation
+    // relation supplies tenantId to this detail and all nested child rows.
+    hotel: { connect: { id_tenantId: { id: hotelId, tenantId } } },
     hotelName,
     clientNationality: input.clientNationality || clientNationality,
     guestName: input.guestName,
@@ -112,14 +113,13 @@ function hotelDetailsData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
-        tenantId,
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
         adults: room.adults,
         children: room.children,
         sortOrder: room.sortOrder,
-        nightlyRates: { create: room.rates.map((rate) => ({ tenantId, ...rate })) }
+        nightlyRates: { create: room.rates.map((rate) => ({ ...rate })) }
       }))
     }
   };
@@ -260,8 +260,16 @@ export async function PATCH(request: Request, context: RouteContext) {
       const { rooms, ...detailFields } = createData;
       await tx.hotelReservationDetail.upsert({
         where: { reservationId_tenantId: { reservationId: id, tenantId: access.membership.tenantId } },
-        create: { reservationId: id, ...createData },
-        update: { ...detailFields, rooms: { deleteMany: {}, create: rooms.create } }
+        create: {
+          reservation: {
+            connect: { id_tenantId: { id, tenantId: access.membership.tenantId } },
+          },
+          ...createData,
+        },
+        update: {
+          ...detailFields,
+          rooms: { deleteMany: {}, create: rooms.create },
+        }
       });
     }
 
