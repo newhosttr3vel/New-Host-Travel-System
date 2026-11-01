@@ -32,6 +32,7 @@ const roomSchema = z.object({
 });
 
 export const hotelReservationDetailsSchema = z.object({
+  hotelId: z.string().trim().min(1).max(80),
   guestName: z.string().trim().min(2).max(160),
   clientNationality: text(80),
   guestNationality: text(80),
