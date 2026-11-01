@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import type { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
@@ -43,7 +44,7 @@ function dayAtNoon(value: string) { return new Date(value + "T12:00:00.000Z"); }
 function isPrismaCode(error: unknown, code: string) {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }
-function publicBill(bill: any) {
+function publicBill(bill: Prisma.SupplierBillGetPayload<{ include: typeof include }>) {
   return {
     ...bill,
     billDate: bill.billDate.toISOString(),
@@ -56,10 +57,10 @@ function publicBill(bill: any) {
     total: bill.total.toString(),
     paidAmount: bill.paidAmount.toString(),
     outstandingAmount: centsToAmount(amountToCents(bill.total.toString()) - amountToCents(bill.paidAmount.toString())),
-    lines: bill.lines.map((line: any) => ({
+    lines: bill.lines.map((line) => ({
       ...line, quantity: line.quantity.toString(), unitPrice: line.unitPrice.toString(), amount: line.amount.toString()
     })),
-    payments: bill.payments.map((payment: any) => ({
+    payments: bill.payments.map((payment) => ({
       ...payment, paymentDate: payment.paymentDate.toISOString(), amount: payment.amount.toString(),
       exchangeRate: payment.exchangeRate.toString(), createdAt: payment.createdAt.toISOString(),
       journalReference: payment.journalEntry.reference
