@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import type { Prisma } from "../src/generated/prisma/client";
 import { hotelReservationDetailsSchema, normalizeHotelReservation } from "../src/lib/hotel-pricing";
 
 test("first hotel booking transaction persists the corporate client, hotel, supplier, room and nightly rates", {
@@ -78,6 +79,31 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
       });
       assert.ok(selectedHotel);
 
+      const hotelDetailCreate: Prisma.HotelReservationDetailUncheckedCreateWithoutReservationInput = {
+        tenantId,
+        hotelId: selectedHotel!.id,
+        hotelName: selectedHotel!.name,
+        clientNationality: selectedCustomer!.nationality,
+        guestName: details.guestName,
+        guestNationality: details.guestNationality || null,
+        isManualRate: details.isManualRate,
+        pricesIncludeVat: details.pricesIncludeVat,
+        rooms: {
+          create: pricing.rooms.map((room) => ({
+            tenantId,
+            roomCount: room.roomCount,
+            roomType: room.roomType,
+            mealPlan: room.mealPlan,
+            adults: room.adults,
+            children: room.children,
+            sortOrder: room.sortOrder,
+            nightlyRates: {
+              create: room.rates.map((rate) => ({ tenantId, ...rate })),
+            },
+          })),
+        },
+      };
+
       const reservation = await tx.reservation.create({
         data: {
           tenantId,
@@ -93,42 +119,13 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
           saleAmount: pricing.saleAmount,
           costAmount: pricing.costAmount,
           notes: null,
+          hotelDetail: { create: hotelDetailCreate },
+        },
+        include: {
+          customer: true,
+          supplier: true,
           hotelDetail: {
-            create: {
-              tenant: { connect: { id: tenantId } },
-              hotel: {
-                connect: { id_tenantId: { id: selectedHotel!.id, tenantId } },
-              },
-              hotelName: selectedHotel!.name,
-              clientNationality: selectedCustomer!.nationality,
-              guestName: details.guestName,
-              guestNationality: details.guestNationality || null,
-              isManualRate: details.isManualRate,
-              pricesIncludeVat: details.pricesIncludeVat,
-              rooms: {
-                create: pricing.rooms.map((room) => ({
-                  tenant: { connect: { id: tenantId } },
-                  roomCount: room.roomCount,
-                  roomType: room.roomType,
-                  mealPlan: room.mealPlan,
-                  adults: room.adults,
-                  children: room.children,
-                  sortOrder: room.sortOrder,
-                  nightlyRates: {
-                    create: room.rates.map((rate) => ({
-                      tenant: { connect: { id: tenantId } },
-                      stayDate: rate.stayDate,
-                      saleRoomRate: rate.saleRoomRate,
-                      saleMealRatePerPax: rate.saleMealRatePerPax,
-                      saleVat: rate.saleVat,
-                      costRoomRate: rate.costRoomRate,
-                      costMealRatePerPax: rate.costMealRatePerPax,
-                      costVat: rate.costVat,
-                    })),
-                  },
-                })),
-              },
-            },
+            include: { rooms: { include: { nightlyRates: true } } },
           },
         },
       });
@@ -143,18 +140,7 @@ test("first hotel booking transaction persists the corporate client, hotel, supp
         },
       });
 
-      const loaded = await tx.reservation.findUnique({
-        where: { id: reservation.id },
-        include: {
-          customer: true,
-          supplier: true,
-          hotelDetail: {
-            include: { rooms: { include: { nightlyRates: true } } },
-          },
-        },
-      });
-      assert.ok(loaded);
-      return loaded;
+      return reservation;
     });
 
     assert.equal(created.serviceType, "HOTEL");
