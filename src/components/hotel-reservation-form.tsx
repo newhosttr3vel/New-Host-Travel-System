@@ -473,6 +473,14 @@ export function HotelReservationForm({
     </label>
   );
 
+  const textareaField = (label: string, value: string, onChange: (value: string) => void) => (
+    <label className="hotel-field">
+      <span className="hotel-label">{label}</span>
+      <textarea className="hotel-textarea" value={value} onChange={(event) => onChange(event.target.value)} maxLength={4000} />
+    </label>
+  );
+
+
   const section = (icon: ReactNode, title: string, subtitle?: string, content?: ReactNode) => (
     <section className="hotel-section">
       <div className="hotel-section-heading">
@@ -510,7 +518,12 @@ export function HotelReservationForm({
             {field(ar ? "تاريخ المغادرة" : "Departure date", endDate, (value) => changeDates(startDate, value), { type: "date", min: startDate || undefined, required: true })}
             <label className="hotel-field">
               <span className="hotel-label">{ar ? "العميل" : "Client"} *</span>
-              <select className="hotel-select" value={customerId} onChange={(event) => setCustomerId(event.target.value)} required>
+              <select className="hotel-select" value={customerId} onChange={(event) => {
+                const nextCustomerId = event.target.value;
+                setCustomerId(nextCustomerId);
+                const nextCustomer = customers.find((customer) => customer.id === nextCustomerId);
+                setDetail((current) => ({ ...current, clientNationality: nextCustomer?.nationality ?? "" }));
+              }} required>
                 <option value="">{ar ? "اختر العميل" : "Select client"}</option>
                 {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
               </select>
@@ -534,8 +547,8 @@ export function HotelReservationForm({
             {field(ar ? "تاريخ خيار الفندق" : "Hotel option date", detail.hotelOptionDate, (value) => updateDetail("hotelOptionDate", value), { type: "date" })}
           </div>
           <div className="hotel-grid hotel-grid-2 hotel-spaced">
-            {field(ar ? "الشروط والأحكام" : "Terms & conditions", detail.termsAndConditions, (value) => updateDetail("termsAndConditions", value))}
-            {field(ar ? "السياسة العامة" : "General policy", detail.generalPolicy, (value) => updateDetail("generalPolicy", value))}
+            {textareaField(ar ? "الشروط والأحكام" : "Terms & conditions", detail.termsAndConditions, (value) => updateDetail("termsAndConditions", value))}
+            {textareaField(ar ? "السياسة العامة" : "General policy", detail.generalPolicy, (value) => updateDetail("generalPolicy", value))}
           </div>
           <div className="hotel-tag-row">
             <span className="hotel-label">{ar ? "التصنيفات" : "Tags"}</span>
@@ -550,7 +563,7 @@ export function HotelReservationForm({
           </div>
           <div className="hotel-grid hotel-grid-2 hotel-spaced">
             {field(ar ? "رقم الملف" : "File No.", detail.fileNo, (value) => updateDetail("fileNo", value))}
-            {field(ar ? "ملاحظات الحجز" : "Reservation remarks", detail.reservationRemarks, (value) => updateDetail("reservationRemarks", value))}
+            {textareaField(ar ? "ملاحظات الحجز" : "Reservation remarks", detail.reservationRemarks, (value) => updateDetail("reservationRemarks", value))}
           </div>
         </>)}
 
@@ -679,8 +692,8 @@ export function HotelReservationForm({
             {field(ar ? "رقم المرجع" : "Reference No.", detail.referenceNumber, (value) => updateDetail("referenceNumber", value))}
             {field(ar ? "رقم الاتفاقية" : "Agreement No.", detail.agreementNumber, (value) => updateDetail("agreementNumber", value))}
             {field(ar ? "مركز التكلفة" : "Cost center", detail.costCenter, (value) => updateDetail("costCenter", value))}
-            {field(ar ? "ملاحظات الفندق" : "Hotel remarks", detail.hotelRemarks, (value) => updateDetail("hotelRemarks", value))}
-            {field(ar ? "ملاحظات التفاصيل" : "Detail remarks", detail.detailRemarks, (value) => updateDetail("detailRemarks", value))}
+            {textareaField(ar ? "ملاحظات الفندق" : "Hotel remarks", detail.hotelRemarks, (value) => updateDetail("hotelRemarks", value))}
+            {textareaField(ar ? "ملاحظات التفاصيل" : "Detail remarks", detail.detailRemarks, (value) => updateDetail("detailRemarks", value))}
           </div>
         </>)}
 
@@ -691,7 +704,7 @@ export function HotelReservationForm({
             {field(ar ? "مسؤول المبيعات" : "Salesperson", detail.salesperson, (value) => updateDetail("salesperson", value))}
             {select(ar ? "قناة البيع" : "Channel", detail.channel, (value) => updateDetail("channel", value), channels.map(([value, arabic, english]) => [value, ar ? arabic : english] as const))}
           </div>
-          <div className="hotel-spaced">{field(ar ? "ملاحظات العميل" : "Client remarks", detail.clientRemarks, (value) => updateDetail("clientRemarks", value))}</div>
+          <div className="hotel-spaced">{textareaField(ar ? "ملاحظات العميل" : "Client remarks", detail.clientRemarks, (value) => updateDetail("clientRemarks", value))}</div>
         </>)}
 
         {section(<Wallet size={17} />, ar ? "بيانات الدفع" : "Payment details", undefined, <>
