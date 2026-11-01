@@ -100,7 +100,6 @@ test("new room IDs and newly added nights never inherit another room's saved cos
 
 
 test("requires a hotel from the hotel directory", () => {
-  const input = { ...details() } as Record<string, unknown>;
-  delete input.hotelId;
+  const input = { ...details(), hotelId: "" };
   assert.equal(hotelReservationDetailsSchema.safeParse(input).success, false);
 });
