@@ -10,7 +10,7 @@ export default async function CustomersPage() {
   const role = membership?.role ?? "READ_ONLY";
   return <>
     <div className="page-heading">
-      <div><div className="eyebrow">{locale === "ar" ? "إدارة علاقات العملاء" : "CUSTOMER RELATIONSHIP MANAGEMENT"}</div><h1 className="page-title">{t(locale, "customers")}</h1><p className="page-description">{t(locale, "customersSubtitle")}</p></div>
+      <div><div className="eyebrow">{locale === "ar" ? "إدارة علاقات العملاء" : "CUSTOMER RELATIONSHIP MANAGEMENT"}</div><h1 className="page-title">{t(locale, "customers")}</h1><p className="page-description">{(locale === "ar" ? "إدارة الشركات التي تبيع لها خدمات السفر والحجوزات بنظام B2B" : "Manage the corporate clients you sell travel services to (B2B)")}</p></div>
       <div className="page-actions"><span className="btn btn-secondary"><Users size={16} />{locale === "ar" ? "سجلات محفوظة" : "Persisted records"}</span></div>
     </div>
     <CustomersClient locale={locale} canWrite={hasPermission(role, "customers:write")} canArchive={hasPermission(role, "customers:archive")} />
