@@ -278,6 +278,7 @@ model Reservation {
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
   invoices      Invoice[]
   supplierBills SupplierBill[]
+  hotelDetail HotelReservationDetail?
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@index([tenantId, status, startDate])
