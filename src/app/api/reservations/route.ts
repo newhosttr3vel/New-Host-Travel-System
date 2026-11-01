@@ -74,7 +74,6 @@ function hotelDetailsCreateData(
   tenantId: string,
   hotelId: string,
   hotelName: string,
-  
   customerNationality: string | null,
   input: NonNullable<z.infer<typeof createSchema>["hotelDetails"]>,
   pricing: ReturnType<typeof normalizeHotelReservation>,
