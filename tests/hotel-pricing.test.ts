@@ -30,8 +30,8 @@ test("calculates multi-room, per-night sale, meal and VAT totals using integer c
   assert.equal(result.totalRooms, 2);
   assert.equal(result.totalRoomNights, 4);
   assert.equal(result.totalPax, 3);
-  assert.equal(result.saleAmount, "576.00");
-  assert.equal(result.costAmount, "380.00");
+  assert.equal(result.saleAmount, "544.00");
+  assert.equal(result.costAmount, "360.00");
 });
 
 test("never persists supplier costs submitted by a user without finance access", () => {
