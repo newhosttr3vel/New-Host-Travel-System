@@ -452,11 +452,30 @@ export function HotelReservationForm({
           body: JSON.stringify(payload),
         },
       );
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "SAVE_FAILED");
+      const responseText = await response.text();
+      let result: {
+        error?: string;
+        issues?: Array<{ path?: string; message?: string }>;
+      } = {};
+      try {
+        result = responseText ? JSON.parse(responseText) as typeof result : {};
+      } catch {
+        result = {};
+      }
+      if (!response.ok) {
+        const code = result.error || `HTTP_${response.status}`;
+        const issueText = (result.issues ?? [])
+          .map((issue) => [issue.path, issue.message].filter(Boolean).join(": "))
+          .filter(Boolean)
+          .join("؛ ");
+        throw new Error(issueText ? `${code}::${issueText}` : code);
+      }
       onSaved(ar ? (initialReservation ? "تم تحديث الحجز الفندقي بنجاح." : "تم إنشاء الحجز الفندقي بنجاح.") : (initialReservation ? "Hotel reservation updated." : "Hotel reservation created."));
     } catch (reason) {
-      const code = reason instanceof Error ? reason.message : "SAVE_FAILED";
+      const rawMessage = reason instanceof Error ? reason.message : "SAVE_FAILED";
+      const separator = rawMessage.indexOf("::");
+      const code = separator >= 0 ? rawMessage.slice(0, separator) : rawMessage;
+      const issueText = separator >= 0 ? rawMessage.slice(separator + 2) : "";
       const messages: Record<string, string> = ar ? {
         CUSTOMER_REQUIRED: "اختر العميل أولًا.",
         HOTEL_REQUIRED: "اختر الفندق من قائمة الفنادق في الإعدادات.",
@@ -469,6 +488,23 @@ export function HotelReservationForm({
         HOTEL_NIGHT_RATE_DATE_MISMATCH: "تواريخ الأسعار الليلية لا تطابق تواريخ الإقامة.",
         HOTEL_TOTAL_OUT_OF_RANGE: "إجمالي الحجز أكبر من الحد المسموح.",
         HOTEL_STAY_LENGTH_INVALID: "مدة الإقامة يجب ألا تتجاوز 365 ليلة.",
+        VALIDATION_ERROR: "بعض البيانات المدخلة غير مطابقة للمطلوب.",
+        UNAUTHENTICATED: "انتهت جلسة الدخول. حدّث الصفحة وسجّل الدخول مرة أخرى.",
+        TENANT_SETUP_REQUIRED: "حسابك غير مرتبط بمساحة عمل. راجع إعدادات الشركة.",
+        FORBIDDEN: "ليس لديك صلاحية إنشاء أو تعديل الحجوزات.",
+        CONFLICT: "تم تعديل الحجز من مكان آخر. حدّث الصفحة وحاول مرة أخرى.",
+        NOT_FOUND: "الحجز المطلوب غير موجود أو تم أرشفته.",
+        CUSTOMER_NOT_FOUND: "شركة العميل المحددة غير موجودة أو غير نشطة.",
+        CORPORATE_CLIENT_REQUIRED: "خدمة الفندق تتطلب اختيار عميل من نوع شركة (B2B).",
+        SUPPLIER_NOT_FOUND: "شركة المورد المحددة غير موجودة أو غير نشطة.",
+        HOTEL_NOT_FOUND: "الفندق المحدد غير موجود أو تم أرشفته من الإعدادات.",
+        HOTEL_DETAILS_REQUIRED: "بيانات الفندق وتواريخ الإقامة مطلوبة.",
+        HOTEL_DATES_REQUIRED: "أدخل تاريخ الوصول والمغادرة.",
+        HOTEL_DETAILS_ONLY_FOR_HOTEL: "تفاصيل الفندق لا تتطابق مع نوع الخدمة.",
+        INVALID_DATE_RANGE: "تاريخ المغادرة يجب أن يكون بعد تاريخ الوصول.",
+        INVALID_JSON: "تعذر قراءة بيانات الحجز. حدّث الصفحة وأعد المحاولة.",
+        HTTP_500: "حدث خطأ داخلي أثناء الحفظ. تحقق من سجل الخادم.",
+        RESERVATION_SAVE_FAILED: "حدث خطأ داخلي أثناء حفظ الحجز. تحقق من سجل الخادم.",
       } : {
         CUSTOMER_REQUIRED: "Select a client.",
         HOTEL_REQUIRED: "Select a hotel from the hotel directory in Settings.",
@@ -481,8 +517,26 @@ export function HotelReservationForm({
         HOTEL_NIGHT_RATE_DATE_MISMATCH: "Nightly rate dates do not match the stay dates.",
         HOTEL_TOTAL_OUT_OF_RANGE: "The reservation total exceeds the supported amount.",
         HOTEL_STAY_LENGTH_INVALID: "The stay cannot exceed 365 nights.",
+        VALIDATION_ERROR: "Some entered details do not match the required format.",
+        UNAUTHENTICATED: "Your session has expired. Refresh the page and sign in again.",
+        TENANT_SETUP_REQUIRED: "Your account is not connected to a workspace.",
+        FORBIDDEN: "You do not have permission to create or edit reservations.",
+        CONFLICT: "This reservation changed elsewhere. Refresh and try again.",
+        NOT_FOUND: "The requested reservation was not found or has been archived.",
+        CUSTOMER_NOT_FOUND: "The selected client company was not found or is inactive.",
+        CORPORATE_CLIENT_REQUIRED: "Hotel bookings require a B2B corporate client.",
+        SUPPLIER_NOT_FOUND: "The selected supplier company was not found or is inactive.",
+        HOTEL_NOT_FOUND: "The selected hotel was not found or has been archived in Settings.",
+        HOTEL_DETAILS_REQUIRED: "Hotel details and stay dates are required.",
+        HOTEL_DATES_REQUIRED: "Enter arrival and departure dates.",
+        HOTEL_DETAILS_ONLY_FOR_HOTEL: "Hotel details do not match the selected service type.",
+        INVALID_DATE_RANGE: "Departure must be after arrival.",
+        INVALID_JSON: "The reservation data could not be read. Refresh and try again.",
+        HTTP_500: "An internal error occurred while saving. Check the server log.",
+        RESERVATION_SAVE_FAILED: "An internal error occurred while saving. Check the server log.",
       };
-      setError(messages[code] ?? (ar ? "تعذر حفظ الحجز. راجع البيانات وحاول مرة أخرى." : "Could not save the reservation. Check the details and try again."));
+      const fallback = ar ? "تعذر حفظ الحجز." : "Could not save the reservation.";
+      setError([messages[code] ?? `${fallback} ( ${code} )`, issueText].filter(Boolean).join(" — "));
     } finally {
       setPending(false);
     }
