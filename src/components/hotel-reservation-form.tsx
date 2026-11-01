@@ -188,15 +188,21 @@ function buildRoom(room?: HotelRoomSaved, dates: string[] = [], index = 0): Room
   };
 }
 
-function amount(value: string | null | undefined): number {
-  const parsed = Number(value ?? "0");
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+function amountToCents(value: string | null | undefined): bigint {
+  const raw = (value ?? "0").trim();
+  if (!/^\\d+(?:\\.\\d{0,2})?$/.test(raw)) return 0n;
+  const [whole, fraction = ""] = raw.split(".");
+  return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0") || "0");
 }
-function money(value: number, locale: Locale): string {
+function centsToAmount(value: bigint): string {
+  const normalized = value < 0n ? -value : value;
+  return (value < 0n ? "-" : "") + (normalized / 100n).toString() + "." + (normalized % 100n).toString().padStart(2, "0");
+}
+function money(value: bigint, locale: Locale): string {
   return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(Number(value) / 100);
 }
 function dateLabel(value: string, locale: Locale): string {
   const date = new Date(value + "T12:00:00.000Z");
@@ -349,15 +355,16 @@ export function HotelReservationForm({
   }
 
   function calcRate(room: RoomLine, rate: NightRate) {
-    const pax = room.adults + room.children;
-    const saleRoom = amount(rate.saleRoomRate) * room.roomCount;
-    const saleMeal = amount(rate.saleMealRatePerPax) * pax;
+    const pax = BigInt(room.adults + room.children);
+    const roomQuantity = BigInt(room.roomCount);
+    const saleRoom = amountToCents(rate.saleRoomRate) * roomQuantity;
+    const saleMeal = amountToCents(rate.saleMealRatePerPax) * pax;
     const salePrice = saleRoom + saleMeal;
-    const saleTotal = salePrice + (detail.pricesIncludeVat ? 0 : amount(rate.saleVat));
-    const costRoom = amount(rate.costRoomRate) * room.roomCount;
-    const costMeal = amount(rate.costMealRatePerPax) * pax;
+    const saleTotal = salePrice + (detail.pricesIncludeVat ? 0n : amountToCents(rate.saleVat));
+    const costRoom = amountToCents(rate.costRoomRate) * roomQuantity;
+    const costMeal = amountToCents(rate.costMealRatePerPax) * pax;
     const costPrice = costRoom + costMeal;
-    const costTotal = costPrice + (detail.pricesIncludeVat ? 0 : amount(rate.costVat));
+    const costTotal = costPrice + (detail.pricesIncludeVat ? 0n : amountToCents(rate.costVat));
     return { saleMeal, salePrice, saleTotal, costMeal, costPrice, costTotal };
   }
   const totals = rooms.reduce((acc, room) => {
@@ -367,7 +374,7 @@ export function HotelReservationForm({
       acc.cost += line.costTotal;
     });
     return acc;
-  }, { sale: 0, cost: 0 });
+  }, { sale: 0n, cost: 0n });
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -386,8 +393,8 @@ export function HotelReservationForm({
         startDate,
         endDate,
         currency,
-        saleAmount: totals.sale.toFixed(2),
-        ...(canReadCosts ? { costAmount: totals.cost.toFixed(2) } : {}),
+        saleAmount: centsToAmount(totals.sale),
+        ...(canReadCosts ? { costAmount: centsToAmount(totals.cost) } : {}),
         notes: detail.reservationRemarks,
         hotelDetails: {
           ...detail,
@@ -620,7 +627,7 @@ export function HotelReservationForm({
               acc.sale += line.saleTotal;
               acc.cost += line.costTotal;
               return acc;
-            }, { sale: 0, cost: 0 });
+            }, { sale: 0n, cost: 0n });
             return (
               <article className="hotel-room-card" key={room.key}>
                 <div className="hotel-room-heading">
