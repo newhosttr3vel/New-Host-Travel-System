@@ -105,7 +105,6 @@ type Props = {
   companyName: string;
   onCancel: () => void;
   onSaved: (message: string) => void;
-  onSwitchToService: (serviceType: string, draft: { customerId: string; startDate: string; endDate: string; currency: string }) => void;
 };
 
 const emptyRate = (stayDate: string): NightRate => ({
@@ -261,7 +260,7 @@ const channels = [
 
 export function HotelReservationForm({
   locale, canReadCosts, customers, suppliers, initialReservation, draft, companyName,
-  onCancel, onSaved, onSwitchToService,
+  onCancel, onSaved,
 }: Props) {
   const ar = locale === "ar";
   const hotels = useMemo(() => suppliers.filter((supplier) => supplier.category === "HOTEL"), [suppliers]);
