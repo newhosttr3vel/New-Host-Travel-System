@@ -525,3 +525,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .ops-queue-item { padding-inline: 11px; }
   .ops-queue-item .ops-status-pill { font-size: 8px; padding: 4px 6px; }
 }
+
+
+/* Finance overview: values are persisted records converted to tenant base currency. */
+.finance-overview { margin: 0 0 19px; padding: 19px; border: 1px solid var(--line); border-radius: 15px; background: #fff; box-shadow: 0 4px 15px rgba(25,44,68,.025); }
+.finance-overview-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 15px; }
+.finance-overview-heading .panel-subtitle { margin-top: 5px; }
+.finance-metric-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 11px; }
+.finance-metric-card { --finance-color: #2779ad; --finance-tint: #edf6fc; display: grid; align-content: start; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.finance-metric-card.tone-amber { --finance-color: #a46d14; --finance-tint: #fff7e9; }
+.finance-metric-card.tone-green { --finance-color: #087b60; --finance-tint: #eaf7f2; }
+.finance-metric-card.tone-violet { --finance-color: #6e62a5; --finance-tint: #f2f0fb; }
+.finance-metric-card.tone-slate { --finance-color: #566d80; --finance-tint: #f0f4f7; }
+.finance-metric-card > span { color: var(--ink-soft); font-size: 11px; font-weight: 750; }
+.finance-metric-card > strong { color: var(--finance-color); font-size: clamp(17px,1.8vw,23px); font-weight: 850; line-height: 1.25; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.finance-metric-card > small { color: var(--muted); font-size: 10px; line-height: 1.55; }
+.finance-overview-note { margin: 13px 1px 0; color: var(--muted); font-size: 10px; line-height: 1.7; }
+@media (max-width: 1080px) { .finance-metric-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 740px) { .finance-overview { padding: 13px; } .finance-overview-heading { display: grid; } .finance-metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; } .finance-metric-card { padding: 11px; } .finance-metric-card > strong { font-size: 16px; } }
