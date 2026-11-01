@@ -752,6 +752,9 @@ export function HotelReservationForm({
             </select></label>
             <label className="hotel-field"><span className="hotel-label">{ar ? "العملة" : "Currency"}</span><select className="hotel-select" value={currency} onChange={(event) => setCurrency(event.target.value)}><option value="EGP">EGP</option><option value="SAR">SAR</option><option value="USD">USD</option></select></label>
           </div>
+          <p className="hotel-footnote">{ar
+            ? "طريقة الدفع والبنك هنا بيانات مرتبطة بالحجز فقط، ولا تُنشئ إيصال تحصيل أو قيدًا محاسبيًا. سجّل التحصيل الفعلي من الإدارة المالية."
+            : "Bank and payment method here are booking details only; they do not create a receipt or accounting entry. Record actual collections in Finance."}</p>
           <div className="hotel-finance-total">
             <div><span>{ar ? "إجمالي سعر البيع" : "Total sale"}</span><strong>{money(totals.sale, locale)} {currency}</strong></div>
             {canReadCosts && <div><span>{ar ? "إجمالي تكلفة المورد" : "Total supplier cost"}</span><strong>{money(totals.cost, locale)} {currency}</strong></div>}
