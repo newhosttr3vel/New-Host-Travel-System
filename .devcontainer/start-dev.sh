@@ -2,6 +2,10 @@
 set -euo pipefail
 cd /workspaces/new-host-travel-system
 
+# Refresh the ignored auth base URL and trusted-origin environment values
+# whenever this Codespace attaches (its public host may differ from an older .env).
+node scripts/codespaces-setup.mjs
+
 LOG_FILE=/tmp/new-host-travel-dev.log
 
 if curl --silent --fail http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
