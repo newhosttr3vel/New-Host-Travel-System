@@ -144,7 +144,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const result = await prisma.$transaction(async (tx) => {
     const existing = await tx.reservation.findFirst({
       where: { id, tenantId: access.membership.tenantId, archivedAt: null },
-      include: { hotelDetail: true }
+      include: {
+        hotelDetail: {
+          include: { rooms: { include: { nightlyRates: true } } }
+        }
+      }
     });
     if (!existing) return { error: "NOT_FOUND" as const };
     if (input.status && !canTransitionReservationStatus(existing.status, input.status)) {
@@ -194,7 +198,31 @@ export async function PATCH(request: Request, context: RouteContext) {
       const endText = input.endDate !== undefined ? input.endDate : existing.endDate?.toISOString().slice(0, 10) ?? "";
       if (!startText || !endText) return { error: "HOTEL_DATES_REQUIRED" as const };
       try {
-        hotelPricing = normalizeHotelReservation(input.hotelDetails, startText, endText, canReadCosts);
+        const detailsForPricing = canReadCosts
+          ? input.hotelDetails
+          : {
+              ...input.hotelDetails,
+              rooms: input.hotelDetails.rooms.map((room) => {
+                const savedRoom = existing.hotelDetail?.rooms.find((candidate) => candidate.id === room.id);
+                return {
+                  ...room,
+                  rates: room.rates.map((rate) => {
+                    const savedRate = savedRoom?.nightlyRates.find(
+                      (candidate) => candidate.stayDate.toISOString().slice(0, 10) === rate.stayDate
+                    );
+                    return {
+                      ...rate,
+                      costRoomRate: savedRate?.costRoomRate.toString() ?? "0.00",
+                      costMealRatePerPax: savedRate?.costMealRatePerPax.toString() ?? "0.00",
+                      costVat: savedRate?.costVat.toString() ?? "0.00",
+                    };
+                  })
+                };
+              })
+            };
+        // Cost values for non-finance users are restored from this reservation's persisted room IDs,
+        // never accepted from the request body.
+        hotelPricing = normalizeHotelReservation(detailsForPricing, startText, endText, true);
       } catch (error) {
         return { error: error instanceof Error ? error.message : "INVALID_HOTEL_PRICING" };
       }
