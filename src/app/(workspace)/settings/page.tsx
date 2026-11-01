@@ -19,6 +19,9 @@ export default async function SettingsPage() {
     </div>
     <SettingsDirectories
       locale={locale}
+      canViewHotels={hasPermission(role, "suppliers:read")}
+      canViewSuppliers={hasPermission(role, "suppliers:read")}
+      canViewClients={hasPermission(role, "customers:read")}
       canManageHotels={hasPermission(role, "suppliers:write")}
       canManageSuppliers={hasPermission(role, "suppliers:write")}
       canManageClients={hasPermission(role, "customers:write")}
