@@ -168,7 +168,13 @@ export async function POST(request: Request) {
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) return Response.json({ error: "VALIDATION_ERROR", details: parsed.error.flatten() }, { status: 400 });
+  if (!parsed.success) return Response.json({
+    error: "VALIDATION_ERROR",
+    issues: parsed.error.issues.map((issue) => ({
+      path: issue.path.join("."),
+      message: issue.message
+    }))
+  }, { status: 400 });
   const input = parsed.data;
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
   if (input.serviceType === "HOTEL" && (!input.hotelDetails || !input.startDate || !input.endDate)) {
