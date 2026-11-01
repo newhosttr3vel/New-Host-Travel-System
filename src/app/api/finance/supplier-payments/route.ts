@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import type { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
@@ -27,7 +28,7 @@ const include = {
   account: { select: { id: true, code: true, name: true, nameEn: true } },
   journalEntry: { select: { id: true, reference: true } }
 } as const;
-function publicPayment(payment: any) {
+function publicPayment(payment: Prisma.SupplierPaymentGetPayload<{ include: typeof include }>) {
   return {
     ...payment, paymentDate: payment.paymentDate.toISOString(),
     amount: payment.amount.toString(), exchangeRate: payment.exchangeRate.toString(), createdAt: payment.createdAt.toISOString(),
