@@ -78,7 +78,7 @@ function hotelDetailsData(
   return {
     tenantId,
     hotelName,
-    clientNationality,
+    clientNationality: input.clientNationality || clientNationality,
     guestName: input.guestName,
     guestNationality: input.guestNationality || null,
     guestPhone: input.guestPhone || null,
