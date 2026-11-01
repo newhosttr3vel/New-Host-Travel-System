@@ -18,6 +18,7 @@ const nightlyRateSchema = z.object({
 });
 
 const roomSchema = z.object({
+  id: z.string().trim().min(1).max(80).optional(),
   roomCount: z.number().int().min(1).max(100),
   roomType: z.string().trim().min(1).max(120),
   mealPlan: z.enum(["RO", "BB", "HB", "FB", "AI", "UAI", "OTHER"]),
