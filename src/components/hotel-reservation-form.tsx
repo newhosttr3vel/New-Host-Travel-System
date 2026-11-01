@@ -425,7 +425,7 @@ export function HotelReservationForm({
     </label>
   );
 
-  const select = (label: string, value: string, onChange: (value: string) => void, options: Array<[string, string]>, required = false, disabled = false) => (
+  const select = (label: string, value: string, onChange: (value: string) => void, options: ReadonlyArray<readonly [string, string]>, required = false, disabled = false) => (
     <label className="hotel-field">
       <span className="hotel-label">{label}{required ? " *" : ""}</span>
       <select className="hotel-select" value={value} required={required} disabled={disabled} onChange={(event) => onChange(event.target.value)}>
@@ -479,7 +479,7 @@ export function HotelReservationForm({
             </label>
             <label className="hotel-field">
               <span className="hotel-label">{ar ? "جنسية العميل" : "Client nationality"}</span>
-              <input className="hotel-input hotel-readonly" value={selectedCustomer?.nationality ?? "—"} readOnly />
+              <select className="hotel-select" value={detail.clientNationality || selectedCustomer?.nationality || ""} onChange={(event) => updateDetail("clientNationality", event.target.value)}><option value="">{ar ? "اختر الجنسية" : "Select nationality"}</option>{nationalities.map(([value, arabic, english]) => <option key={value} value={value}>{ar ? arabic : english}</option>)}</select>
             </label>
             <label className="hotel-field">
               <span className="hotel-label">{ar ? "الفندق" : "Hotel"} *</span>
