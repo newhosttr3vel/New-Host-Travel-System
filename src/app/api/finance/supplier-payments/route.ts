@@ -126,7 +126,7 @@ export async function POST(request: Request) {
         PAYMENT_ACCOUNT_INVALID: "Choose an active asset account belonging to this company.",
         PAYABLE_ACCOUNT_MISSING: "Default accounts payable account 2000 is missing or inactive."
       };
-      return Response.json({ error: outcome.error, message: messages[outcome.error] ?? "Payment failed.", outstanding: "outstanding" in outcome ? outcome.outstanding : undefined }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
+      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] ?? "Payment failed.", outstanding: "outstanding" in outcome ? outcome.outstanding : undefined }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
     }
     return Response.json({ item: publicPayment(outcome.item), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
