@@ -17,7 +17,7 @@ type SavedHotelRoom = {
   nightlyRates: SavedHotelRate[];
 };
 type SavedHotelDetail = {
-  guestName: string; guestNationality: string | null; guestPhone: string | null; rateCode: string | null;
+  clientNationality: string | null; guestName: string; guestNationality: string | null; guestPhone: string | null; rateCode: string | null;
   clientOptionDate: string | null; hotelOptionDate: string | null; termsAndConditions: string | null;
   generalPolicy: string | null; tags: string[]; fileNo: string | null; reservationRemarks: string | null;
   roomNumber: string | null; hotelConfirmationNumber: string | null; voucher: string | null;
@@ -61,7 +61,7 @@ const allowedNext: Record<Status, Status[]> = {
   COMPLETED: ["REFUNDED"], CANCELLED: ["REFUNDED"], REFUNDED: []
 };
 
-export function ReservationsClient({ locale, canWrite, canReadCosts }: { locale: Locale; canWrite: boolean; canReadCosts: boolean }) {
+export function ReservationsClient({ locale, canWrite, canReadCosts, companyName }: { locale: Locale; canWrite: boolean; canReadCosts: boolean; companyName: string }) {
   const [items, setItems] = useState<Reservation[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
@@ -187,7 +187,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts }: { locale:
         customers={customers}
         suppliers={suppliers}
         initialReservation={editingId ? (items.find((item) => item.id === editingId) ?? null) : null}
-        companyName=""
+        companyName={companyName}
         onCancel={() => { setShowForm(false); setEditingId(null); }}
         onSaved={(message) => {
           setSuccess(message);
