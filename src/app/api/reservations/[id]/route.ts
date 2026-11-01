@@ -70,13 +70,15 @@ function serializeReservation(item: ReservationRecord, canReadCosts: boolean) {
 
 function hotelDetailsData(
   tenantId: string,
-  hotelName: string | null,
+  hotelId: string,
+  hotelName: string,
   clientNationality: string | null,
   input: z.infer<typeof hotelReservationDetailsSchema>,
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ) {
   return {
     tenantId,
+    hotelId,
     hotelName,
     clientNationality: input.clientNationality || clientNationality,
     guestName: input.guestName,
@@ -177,6 +179,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       : null;
     if (supplierId && !supplier) return { error: "SUPPLIER_NOT_FOUND" as const };
 
+    const selectedHotel = input.hotelDetails
+      ? await tx.hotel.findFirst({
+          where: { id: input.hotelDetails.hotelId, tenantId: access.membership.tenantId, archivedAt: null },
+          select: { id: true, name: true }
+        })
+      : null;
+    if (input.hotelDetails && !selectedHotel) return { error: "HOTEL_NOT_FOUND" as const };
+
     if (input.hotelDetails && effectiveServiceType !== "HOTEL") {
       return { error: "HOTEL_DETAILS_ONLY_FOR_HOTEL" as const };
     }
@@ -234,7 +244,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (input.hotelDetails && hotelPricing && customer) {
       const createData = hotelDetailsData(
         access.membership.tenantId,
-        supplier?.name ?? null,
+        selectedHotel!.id,
+        selectedHotel!.name,
         customer.nationality,
         input.hotelDetails,
         hotelPricing
