@@ -32,7 +32,7 @@ type SavedHotelDetail = {
 type Reservation = {
   id: string; reference: string; serviceType: ServiceType; status: Status; startDate: string | null; endDate: string | null;
   currency: string; saleAmount: string; costAmount: string | null; notes: string | null;
-  customer: { id: string; name: string; type?: string; nationality?: string | null };
+  customer: { id: string; name: string; companyName?: string | null; type?: string; nationality?: string | null };
   supplier: { id: string; name: string; category?: string } | null;
   hotelDetail: SavedHotelDetail | null;
   createdAt: string;
@@ -249,8 +249,8 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
       items.length === 0 ? <div className="empty-state"><div className="empty-icon"><CalendarDays size={22} /></div><div className="empty-title">{appliedSearch ? t(locale, "emptySearch") : t(locale, "noReservationsYet")}</div><p className="empty-copy">{locale === "ar" ? "أنشئ الحجز الأول لربط العميل بالخدمة وتكلفتها وسعر البيع." : "Create your first reservation to connect a customer with a service and its selling price and cost."}</p>{canWrite && !appliedSearch && customers.length > 0 && <button className="btn btn-primary" style={{ marginTop: 15 }} onClick={beginCreate} type="button"><Plus size={15} />{t(locale, "addReservation")}</button>}</div> :
       <div className="table-wrap"><table className="data-table"><thead><tr><th>{t(locale, "reservationReference")}</th><th>{t(locale, "customerLabel")}</th><th>{t(locale, "serviceTypeLabel")}</th><th>{t(locale, "reservationStatusLabel")}</th><th>{t(locale, "startDate")}</th><th>{t(locale, "saleAmount")}</th><th>{t(locale, "actions")}</th></tr></thead><tbody>
         {items.map((item) => <tr key={item.id}>
-          <td><div className="customer-primary" dir="ltr">{item.reference}</div><div className="customer-secondary">{item.supplier?.name || "—"}</div></td>
-          <td><div className="customer-primary">{item.customer.name}</div></td>
+          <td><div className="customer-primary" dir="ltr">{item.reference}</div><div className="customer-secondary">{item.serviceType === "HOTEL" ? (item.hotelDetail?.hotelName || "—") : (item.supplier?.name || "—")}</div>{item.serviceType === "HOTEL" && <div className="customer-secondary">{locale === "ar" ? "المورد" : "Supplier"}: {item.supplier?.name || "—"}</div>}</td>
+          <td><div className="customer-primary">{item.customer.companyName || item.customer.name}</div></td>
           <td>{t(locale, serviceTypes.find((x) => x.value === item.serviceType)?.key ?? "serviceOther")}</td>
           <td>{canWrite ? <select className="select" style={{ minWidth: 135, padding: "6px 8px", fontSize: 11 }} aria-label={t(locale, "reservationStatusLabel")} value={item.status} disabled={busyId === item.id} onChange={(e) => void changeStatus(item, e.target.value as Status)}>{[item.status, ...allowedNext[item.status]].filter((v, i, all) => all.indexOf(v) === i).map((value) => <option key={value} value={value}>{t(locale, statuses.find((s) => s.value === value)?.key ?? "statusInquiry")}</option>)}</select> : <span className="type-pill">{t(locale, statuses.find((s) => s.value === item.status)?.key ?? "statusInquiry")}</span>}</td>
           <td>{item.startDate ? new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", { dateStyle: "medium" }).format(new Date(item.startDate)) : "—"}</td>
