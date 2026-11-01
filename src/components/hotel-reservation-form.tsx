@@ -100,9 +100,11 @@ type Props = {
   customers: CustomerOption[];
   suppliers: SupplierOption[];
   initialReservation: ExistingReservation | null;
+  draft?: { customerId?: string; startDate?: string; endDate?: string; currency?: string };
   companyName: string;
   onCancel: () => void;
   onSaved: (message: string) => void;
+  onSwitchToService: (serviceType: string, draft: { customerId: string; startDate: string; endDate: string; currency: string }) => void;
 };
 
 const emptyRate = (stayDate: string): NightRate => ({
@@ -256,11 +258,11 @@ export function HotelReservationForm({
   const hotels = useMemo(() => suppliers.filter((supplier) => supplier.category === "HOTEL"), [suppliers]);
   const initialStart = normalizeDate(initialReservation?.startDate);
   const initialEnd = normalizeDate(initialReservation?.endDate);
-  const [customerId, setCustomerId] = useState(initialReservation?.customer.id ?? "");
+  const [customerId, setCustomerId] = useState(initialReservation?.customer.id ?? draft?.customerId ?? "");
   const [hotelId, setHotelId] = useState(initialReservation?.supplier?.id ?? "");
-  const [startDate, setStartDate] = useState(initialStart);
-  const [endDate, setEndDate] = useState(initialEnd);
-  const [currency, setCurrency] = useState(initialReservation?.currency ?? "EGP");
+  const [startDate, setStartDate] = useState(initialStart || draft?.startDate || "");
+  const [endDate, setEndDate] = useState(initialEnd || draft?.endDate || "");
+  const [currency, setCurrency] = useState(initialReservation?.currency ?? draft?.currency ?? "EGP");
   const [detail, setDetail] = useState<HotelDetail>(() => {
     const saved = initialReservation?.hotelDetail;
     return {
@@ -514,6 +516,27 @@ export function HotelReservationForm({
 
         {section(<CalendarDays size={17} />, ar ? "تفاصيل الحجز" : "Reservation details", ar ? "تواريخ الإقامة والعميل والفندق وبيانات النزيل" : "Stay dates, client, hotel and guest information", <>
           <div className="hotel-grid hotel-grid-4">
+            {!initialReservation ? (
+              <label className="hotel-field">
+                <span className="hotel-label">{ar ? "نوع الخدمة" : "Service type"} *</span>
+                <select className="hotel-select" value="HOTEL" onChange={(event) => {
+                  if (event.target.value !== "HOTEL") {
+                    onSwitchToService(event.target.value, { customerId, startDate, endDate, currency });
+                  }
+                }}>
+                  <option value="HOTEL">{ar ? "فندق" : "Hotel"}</option>
+                  <option value="FLIGHT">{ar ? "طيران" : "Flight"}</option>
+                  <option value="VISA">{ar ? "تأشيرة" : "Visa"}</option>
+                  <option value="TRANSPORT">{ar ? "نقل" : "Transport"}</option>
+                  <option value="UMRAH_PACKAGE">{ar ? "باقة عمرة" : "Umrah package"}</option>
+                  <option value="HAJJ_PACKAGE">{ar ? "باقة حج" : "Hajj package"}</option>
+                  <option value="TOUR">{ar ? "رحلة سياحية" : "Tour"}</option>
+                  <option value="OTHER">{ar ? "أخرى" : "Other"}</option>
+                </select>
+              </label>
+            ) : (
+              <label className="hotel-field"><span className="hotel-label">{ar ? "نوع الخدمة" : "Service type"}</span><input className="hotel-input hotel-readonly" value={ar ? "فندق" : "Hotel"} readOnly /></label>
+            )}
             {field(ar ? "تاريخ الوصول" : "Arrival date", startDate, (value) => changeDates(value, endDate), { type: "date", required: true })}
             <label className="hotel-field">
               <span className="hotel-label">{ar ? "عدد الليالي" : "Nights"}</span>
