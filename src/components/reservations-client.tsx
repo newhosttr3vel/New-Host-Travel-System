@@ -188,8 +188,19 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
         customers={customers}
         suppliers={suppliers}
         initialReservation={editingId ? (items.find((item) => item.id === editingId) ?? null) : null}
+        draft={!editingId ? form : undefined}
         companyName={companyName}
         onCancel={() => { setShowForm(false); setEditingId(null); }}
+        onSwitchToService={(serviceType, draft) => {
+          setForm({
+            ...emptyForm,
+            serviceType: serviceType as ServiceType,
+            customerId: draft.customerId,
+            startDate: draft.startDate,
+            endDate: draft.endDate,
+            currency: draft.currency,
+          });
+        }}
         onSaved={(message) => {
           setSuccess(message);
           setShowForm(false);
