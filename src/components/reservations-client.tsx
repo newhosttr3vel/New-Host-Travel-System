@@ -13,6 +13,7 @@ type SavedHotelRate = {
   costRoomRate: string | null; costMealRatePerPax: string | null; costVat: string | null;
 };
 type SavedHotelRoom = {
+  id: string;
   roomCount: number; roomType: string; mealPlan: string; adults: number; children: number;
   nightlyRates: SavedHotelRate[];
 };
