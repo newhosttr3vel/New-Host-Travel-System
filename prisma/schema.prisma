@@ -181,6 +181,7 @@ model Tenant {
   customerPayments CustomerPayment[]
   supplierBills    SupplierBill[]
   supplierPayments SupplierPayment[]
+  hotelReservationDetails HotelReservationDetail[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -248,6 +249,7 @@ model Supplier {
   tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservations  Reservation[]
   supplierBills SupplierBill[]
+  hotelDetails HotelReservationDetail?
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
   @@index([tenantId, category])
@@ -282,6 +284,91 @@ model Reservation {
   @@index([tenantId, customerId])
   @@map("reservations")
 }
+
+model HotelReservationDetail {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  reservationId         String
+  hotelName             String?
+  clientNationality     String?
+  guestName             String
+  guestNationality      String?
+  guestPhone            String?
+  rateCode              String?
+  clientOptionDate      DateTime?
+  hotelOptionDate       DateTime?
+  termsAndConditions    String?
+  generalPolicy         String?
+  tags                  String[] @default([])
+  fileNo                String?
+  reservationRemarks    String?
+  roomNumber            String?
+  hotelConfirmationNumber String?
+  voucher               String?
+  referenceNumber       String?
+  detailRemarks         String?
+  agreementNumber       String?
+  costCenter            String?
+  hotelRemarks          String?
+  company               String?
+  subClient             String?
+  salesperson           String?
+  channel               String?
+  clientRemarks         String?
+  bank                  String?
+  paymentMethod         String?
+  isManualRate          Boolean  @default(false)
+  pricesIncludeVat      Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tenant                Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservation           Reservation @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  rooms                 HotelReservationRoom[]
+  @@unique([id, tenantId])
+  @@unique([reservationId, tenantId])
+  @@index([tenantId, fileNo])
+  @@index([tenantId, hotelName])
+  @@map("hotel_reservation_details")
+}
+
+model HotelReservationRoom {
+  id             String   @id @default(cuid())
+  tenantId       String
+  hotelDetailId  String
+  roomCount      Int      @default(1)
+  roomType       String
+  mealPlan       String
+  adults         Int      @default(1)
+  children       Int      @default(0)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  hotelDetail    HotelReservationDetail @relation(fields: [hotelDetailId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  nightlyRates   HotelReservationNightRate[]
+  @@unique([id, tenantId])
+  @@index([tenantId, hotelDetailId, sortOrder])
+  @@map("hotel_reservation_rooms")
+}
+
+model HotelReservationNightRate {
+  id                String   @id @default(cuid())
+  tenantId          String
+  roomId            String
+  stayDate          DateTime
+  saleRoomRate      Decimal  @default(0) @db.Decimal(14, 2)
+  saleMealRatePerPax Decimal @default(0) @db.Decimal(14, 2)
+  saleVat           Decimal  @default(0) @db.Decimal(14, 2)
+  costRoomRate      Decimal  @default(0) @db.Decimal(14, 2)
+  costMealRatePerPax Decimal @default(0) @db.Decimal(14, 2)
+  costVat           Decimal  @default(0) @db.Decimal(14, 2)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  room              HotelReservationRoom @relation(fields: [roomId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  @@unique([tenantId, roomId, stayDate])
+  @@index([tenantId, stayDate])
+  @@map("hotel_reservation_night_rates")
+}
+
 model AuditEvent {
   id         String   @id @default(cuid())
   tenantId   String
