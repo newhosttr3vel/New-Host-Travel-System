@@ -186,13 +186,16 @@ export async function POST(request: Request) {
   }
 
   const result = await prisma.$transaction(async (tx) => {
-    const customer = await tx.customer.findFirst({ where: { id: input.customerId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true, nationality: true } });
+    const customer = await tx.customer.findFirst({ where: { id: input.customerId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true, nationality: true, type: true } });
     if (!customer) return { error: "CUSTOMER_NOT_FOUND" as const };
+    if ((input.serviceType === "HOTEL" || input.serviceType === "FLIGHT") && customer.type !== "CORPORATE") return { error: "CORPORATE_CLIENT_REQUIRED" as const };
+    if (input.serviceType === "FLIGHT" && !input.supplierId) return { error: "AIRLINE_SUPPLIER_REQUIRED" as const };
     const supplierId = input.supplierId || null;
     if (supplierId) {
       const supplier = await tx.supplier.findFirst({ where: { id: supplierId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true, name: true, category: true } });
       if (!supplier) return { error: "SUPPLIER_NOT_FOUND" as const };
       if (input.serviceType === "HOTEL" && supplier.category !== "HOTEL") return { error: "HOTEL_SUPPLIER_REQUIRED" as const };
+      if (input.serviceType === "FLIGHT" && supplier.category !== "AIRLINE") return { error: "AIRLINE_SUPPLIER_REQUIRED" as const };
     }
     const reference = `NHT-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const created = await tx.reservation.create({
