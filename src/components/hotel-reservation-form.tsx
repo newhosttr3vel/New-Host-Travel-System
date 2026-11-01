@@ -70,6 +70,14 @@ type HotelRoomSaved = {
     costVat: string | null;
   }>;
 };
+type ExistingHotelDetail = Partial<{
+  [Key in keyof HotelDetail as HotelDetail[Key] extends string ? Key : never]: string | null;
+}> & {
+  tags?: string[];
+  isManualRate?: boolean;
+  pricesIncludeVat?: boolean;
+  rooms: HotelRoomSaved[];
+};
 type ExistingReservation = {
   id: string;
   reference: string;
@@ -82,7 +90,7 @@ type ExistingReservation = {
   notes: string | null;
   customer: { id: string; name: string; type?: string; nationality?: string | null };
   supplier: { id: string; name: string; category?: string } | null;
-  hotelDetail: (HotelDetail & { rooms: HotelRoomSaved[] }) | null;
+  hotelDetail: ExistingHotelDetail | null;
 };
 type Props = {
   locale: Locale;
@@ -250,11 +258,41 @@ export function HotelReservationForm({
   const [startDate, setStartDate] = useState(initialStart);
   const [endDate, setEndDate] = useState(initialEnd);
   const [currency, setCurrency] = useState(initialReservation?.currency ?? "EGP");
-  const [detail, setDetail] = useState<HotelDetail>(() => ({
-    ...emptyDetail(companyName),
-    ...(initialReservation?.hotelDetail ?? {}),
-    tags: initialReservation?.hotelDetail?.tags ?? [],
-  }));
+  const [detail, setDetail] = useState<HotelDetail>(() => {
+    const saved = initialReservation?.hotelDetail;
+    return {
+      ...emptyDetail(companyName),
+      clientNationality: saved?.clientNationality ?? initialReservation?.customer.nationality ?? "",
+      guestName: saved?.guestName ?? "",
+      guestNationality: saved?.guestNationality ?? "Egyptian",
+      guestPhone: saved?.guestPhone ?? "",
+      rateCode: saved?.rateCode ?? "",
+      clientOptionDate: normalizeDate(saved?.clientOptionDate),
+      hotelOptionDate: normalizeDate(saved?.hotelOptionDate),
+      termsAndConditions: saved?.termsAndConditions ?? "",
+      generalPolicy: saved?.generalPolicy ?? "",
+      tags: saved?.tags ?? [],
+      fileNo: saved?.fileNo ?? "",
+      reservationRemarks: saved?.reservationRemarks ?? initialReservation?.notes ?? "",
+      roomNumber: saved?.roomNumber ?? "",
+      hotelConfirmationNumber: saved?.hotelConfirmationNumber ?? "",
+      voucher: saved?.voucher ?? "",
+      referenceNumber: saved?.referenceNumber ?? "",
+      detailRemarks: saved?.detailRemarks ?? "",
+      agreementNumber: saved?.agreementNumber ?? "",
+      costCenter: saved?.costCenter ?? "",
+      hotelRemarks: saved?.hotelRemarks ?? "",
+      company: saved?.company ?? companyName,
+      subClient: saved?.subClient ?? "",
+      salesperson: saved?.salesperson ?? "",
+      channel: saved?.channel ?? "",
+      clientRemarks: saved?.clientRemarks ?? "",
+      bank: saved?.bank ?? "",
+      paymentMethod: saved?.paymentMethod ?? "CASH",
+      isManualRate: saved?.isManualRate ?? false,
+      pricesIncludeVat: saved?.pricesIncludeVat ?? false,
+    };
+  });
   const [rooms, setRooms] = useState<RoomLine[]>(() => {
     const dates = nightsBetween(initialStart, initialEnd);
     const existing = initialReservation?.hotelDetail?.rooms ?? [];
@@ -489,7 +527,7 @@ export function HotelReservationForm({
               </select>
             </label>
             {field(ar ? "اسم النزيل الرئيسي" : "Guest name", detail.guestName, (value) => updateDetail("guestName", value), { required: true, placeholder: ar ? "اسم النزيل كما في جواز السفر" : "Guest name as in passport" })}
-            {select(ar ? "جنسية النزيل" : "Guest nationality", detail.guestNationality, (value) => updateDetail("guestNationality", value), nationalities.map(([value, arabic, english]) => [value, ar ? arabic : english]))}
+            {select(ar ? "جنسية النزيل" : "Guest nationality", detail.guestNationality, (value) => updateDetail("guestNationality", value), nationalities.map(([value, arabic, english]) => [value, ar ? arabic : english] as const))}
             {field(ar ? "رقم الهاتف" : "Phone", detail.guestPhone, (value) => updateDetail("guestPhone", value), { type: "tel" })}
             {field(ar ? "كود السعر" : "Rate code", detail.rateCode, (value) => updateDetail("rateCode", value))}
             {field(ar ? "تاريخ خيار العميل" : "Client option date", detail.clientOptionDate, (value) => updateDetail("clientOptionDate", value), { type: "date" })}
@@ -651,7 +689,7 @@ export function HotelReservationForm({
             {field(ar ? "الشركة" : "Company", detail.company, (value) => updateDetail("company", value), { readOnly: true })}
             {field(ar ? "العميل الفرعي" : "Sub client", detail.subClient, (value) => updateDetail("subClient", value))}
             {field(ar ? "مسؤول المبيعات" : "Salesperson", detail.salesperson, (value) => updateDetail("salesperson", value))}
-            {select(ar ? "قناة البيع" : "Channel", detail.channel, (value) => updateDetail("channel", value), channels.map(([value, arabic, english]) => [value, ar ? arabic : english]))}
+            {select(ar ? "قناة البيع" : "Channel", detail.channel, (value) => updateDetail("channel", value), channels.map(([value, arabic, english]) => [value, ar ? arabic : english] as const))}
           </div>
           <div className="hotel-spaced">{field(ar ? "ملاحظات العميل" : "Client remarks", detail.clientRemarks, (value) => updateDetail("clientRemarks", value))}</div>
         </>)}
