@@ -9,7 +9,7 @@ function decimalText(value: DecimalLike, label: string): string {
 
 function amountToCents(value: DecimalLike): bigint {
   const text = decimalText(value, "amount");
-  if (!/^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,2})?$/.test(text)) {
+  if (!/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/.test(text)) {
     throw new Error("Invalid monetary amount in dashboard aggregation.");
   }
   const [whole, fraction = ""] = text.split(".");
@@ -18,7 +18,7 @@ function amountToCents(value: DecimalLike): bigint {
 
 function rateToUnits(value: DecimalLike): bigint {
   const text = decimalText(value, "exchange rate");
-  if (!/^(?:0|[1-9]\\d{0,8})(?:\\.\\d{1,8})?$/.test(text)) {
+  if (!/^(?:0|[1-9]\d{0,8})(?:\.\d{1,8})?$/.test(text)) {
     throw new Error("Invalid exchange rate in dashboard aggregation.");
   }
   const [whole, fraction = ""] = text.split(".");
