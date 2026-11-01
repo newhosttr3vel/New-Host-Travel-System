@@ -40,6 +40,9 @@ type ReservationForm = {
   currency: string; saleAmount: string; costAmount: string; notes: string;
 };
 const emptyForm: ReservationForm = { customerId: "", supplierId: "", serviceType: "", startDate: "", endDate: "", currency: "EGP", saleAmount: "0.00", costAmount: "0.00", notes: "" };
+const serviceTypes: { value: ServiceType; key: "serviceHotel" | "serviceFlight" }[] = [
+  { value: "HOTEL", key: "serviceHotel" }, { value: "FLIGHT", key: "serviceFlight" }
+];
 const statuses: { value: Status; key: "statusInquiry" | "statusQuotation" | "statusPending" | "statusOnHold" | "statusConfirmed" | "statusPartiallyPaid" | "statusFullyPaid" | "statusCompleted" | "statusCancelled" | "statusRefunded" }[] = [
   { value: "INQUIRY", key: "statusInquiry" }, { value: "QUOTATION", key: "statusQuotation" }, { value: "PENDING", key: "statusPending" },
   { value: "ON_HOLD", key: "statusOnHold" }, { value: "CONFIRMED", key: "statusConfirmed" }, { value: "PARTIALLY_PAID", key: "statusPartiallyPaid" },
