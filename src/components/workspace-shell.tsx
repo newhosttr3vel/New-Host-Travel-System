@@ -67,7 +67,7 @@ export function WorkspaceShell({
   const sections: { label: string; items: NavItem[] }[] = [
     {
       label: ar ? "مركز القيادة" : "COMMAND CENTER",
-      items: [{ href: "/dashboard", key: "dashboard", icon: LayoutDashboard }],
+      items: [{ href: "/dashboard", key: "dashboard" as const, icon: LayoutDashboard }],
     },
     {
       label: ar ? "إدارة أعمال السفر" : "TRAVEL BUSINESS",
@@ -86,7 +86,7 @@ export function WorkspaceShell({
     {
       label: ar ? "الحسابات والمالية" : "FINANCE",
       items: hasPermission(role, "finance:read")
-        ? [{ href: "/finance", key: "finance", icon: WalletCards }]
+        ? [{ href: "/finance", key: "finance" as const, icon: WalletCards }]
         : [],
     },
   ].filter((section) => section.items.length > 0);
