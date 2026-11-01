@@ -36,14 +36,12 @@ type Reservation = {
   createdAt: string;
 };
 type ReservationForm = {
-  customerId: string; supplierId: string; serviceType: ServiceType; startDate: string; endDate: string;
+  customerId: string; supplierId: string; serviceType: ServiceType | ""; startDate: string; endDate: string;
   currency: string; saleAmount: string; costAmount: string; notes: string;
 };
-const emptyForm: ReservationForm = { customerId: "", supplierId: "", serviceType: "HOTEL", startDate: "", endDate: "", currency: "EGP", saleAmount: "0.00", costAmount: "0.00", notes: "" };
+const emptyForm: ReservationForm = { customerId: "", supplierId: "", serviceType: "", startDate: "", endDate: "", currency: "EGP", saleAmount: "0.00", costAmount: "0.00", notes: "" };
 const serviceTypes: { value: ServiceType; key: "serviceHotel" | "serviceFlight" | "serviceVisa" | "serviceTransport" | "serviceUmrah" | "serviceHajj" | "serviceTour" | "serviceOther" }[] = [
-  { value: "HOTEL", key: "serviceHotel" }, { value: "FLIGHT", key: "serviceFlight" }, { value: "VISA", key: "serviceVisa" },
-  { value: "TRANSPORT", key: "serviceTransport" }, { value: "UMRAH_PACKAGE", key: "serviceUmrah" },
-  { value: "HAJJ_PACKAGE", key: "serviceHajj" }, { value: "TOUR", key: "serviceTour" }, { value: "OTHER", key: "serviceOther" }
+  { value: "HOTEL", key: "serviceHotel" }, { value: "FLIGHT", key: "serviceFlight" }
 ];
 const statuses: { value: Status; key: "statusInquiry" | "statusQuotation" | "statusPending" | "statusOnHold" | "statusConfirmed" | "statusPartiallyPaid" | "statusFullyPaid" | "statusCompleted" | "statusCancelled" | "statusRefunded" }[] = [
   { value: "INQUIRY", key: "statusInquiry" }, { value: "QUOTATION", key: "statusQuotation" }, { value: "PENDING", key: "statusPending" },
@@ -101,7 +99,7 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
           setItems(reservationResult.items as Reservation[]);
           setPages(Math.max(1, reservationResult.pagination.pages));
           setTotal(reservationResult.pagination.total);
-          setCustomers(customerResponse.ok ? (customerResult.items as CustomerOption[]) : []);
+          setCustomers(customerResponse.ok ? (customerResult.items as CustomerOption[]).filter((customer) => customer.type === "CORPORATE") : []);
           setSuppliers(supplierResponse.ok ? (supplierResult.items as SupplierOption[]) : []);
         }
       } catch (reason) {
@@ -181,6 +179,19 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
   return <div className="customer-layout">
     {error && <div className="alert" role="alert">{error}</div>}
     {success && <div className="alert success" role="status">{success}</div>}
+    {showForm && canWrite && !form.serviceType && !editingId && (
+      <section className="panel service-choice-panel">
+        <div className="panel-header"><div><div className="ops-section-kicker">NEW RESERVATION</div><h2 className="panel-title">{locale === "ar" ? "اختر نوع الخدمة" : "Choose a service"}</h2><div className="panel-subtitle">{locale === "ar" ? "ابدأ باختيار نوع الحجز، وسيظهر لك النموذج المناسب تلقائيًا." : "Choose the booking type to open its dedicated form."}</div></div><button className="icon-button" type="button" onClick={() => setShowForm(false)} aria-label={t(locale, "cancel")}><X size={16}/></button></div>
+        <div className="service-choice-grid">
+          <button type="button" className="service-choice-card" onClick={() => setForm((current) => ({ ...current, serviceType: "HOTEL" }))}>
+            <span className="service-choice-icon">▦</span><strong>{locale === "ar" ? "حجز فندقي" : "Hotel booking"}</strong><span>{locale === "ar" ? "إقامة، غرف، وجبات، وأسعار يومية" : "Stay, rooms, meals and nightly rates"}</span>
+          </button>
+          <button type="button" className="service-choice-card" onClick={() => setForm((current) => ({ ...current, serviceType: "FLIGHT" }))}>
+            <span className="service-choice-icon">✈</span><strong>{locale === "ar" ? "حجز طيران" : "Flight booking"}</strong><span>{locale === "ar" ? "حجز تذاكر الطيران" : "Air ticket reservations"}</span>
+          </button>
+        </div>
+      </section>
+    )}
     {showForm && canWrite && form.serviceType === "HOTEL" ? (
       <HotelReservationForm
         locale={locale}
@@ -216,11 +227,11 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
     {showForm && canWrite && form.serviceType !== "HOTEL" && <section className="panel form-panel">
       <div className="panel-header"><div><h2 className="panel-title">{t(locale, editingId ? "editReservation" : "createReservation")}</h2><div className="panel-subtitle">{locale === "ar" ? "تُحفظ تفاصيل الخدمة والعميل والسعر في قاعدة البيانات" : "Service, customer and pricing details are saved in the database"}</div></div><button className="icon-button" type="button" onClick={() => { setShowForm(false); setEditingId(null); }} aria-label={t(locale, "cancel")}><X size={16} /></button></div>
       <form className="panel-body auth-form" onSubmit={submit}>
-        {customers.length === 0 && <div className="alert">{locale === "ar" ? "يجب إضافة عميل واحد على الأقل قبل إنشاء الحجز." : "Add at least one customer before creating a reservation."}</div>}
+        {customers.length === 0 && <div className="alert">{locale === "ar" ? "لا توجد شركات عملاء مسجلة. أضف الشركة من قائمة العملاء مع اختيار نوع (شركة)." : "No B2B client companies found. Add a Corporate customer first."}</div>}
         <div className="form-grid">
-          <label className="field"><span className="field-label">{t(locale, "customerLabel")} *</span><select className="select" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} required><option value="">{t(locale, "selectCustomer")}</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          <label className="field"><span className="field-label">{t(locale, "supplierLabel")}</span><select className="select" value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}><option value="">{t(locale, "selectSupplier")}</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-          <label className="field"><span className="field-label">{t(locale, "serviceTypeLabel")} *</span><select className="select" value={form.serviceType} onChange={(e) => setForm({ ...form, serviceType: e.target.value as ServiceType })}>{serviceTypes.map((s) => <option key={s.value} value={s.value}>{t(locale, s.key)}</option>)}</select></label>
+          <label className="field"><span className="field-label">{locale === "ar" ? "شركة العميل (B2B)" : "Client company (B2B)"} *</span><select className="select" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} required><option value="">{t(locale, "selectCustomer")}</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          <label className="field"><span className="field-label">{locale === "ar" ? "شركة الطيران / المورد" : "Airline / Supplier"}</span><select className="select" value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}><option value="">{t(locale, "selectSupplier")}</option>{suppliers.filter((s) => s.category === "AIRLINE").map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+          <label className="field"><span className="field-label">{locale === "ar" ? "نوع الخدمة" : "Service type"}</span><input className="input" value={locale === "ar" ? "طيران" : "Flight"} readOnly /></label>
           <label className="field"><span className="field-label">{t(locale, "defaultCurrency")}</span><select className="select" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}><option value="EGP">EGP — {t(locale, "currencyEGP")}</option><option value="SAR">SAR — {t(locale, "currencySAR")}</option><option value="USD">USD — {t(locale, "currencyUSD")}</option></select></label>
           <label className="field"><span className="field-label">{t(locale, "startDate")}</span><input className="input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} /></label>
           <label className="field"><span className="field-label">{t(locale, "endDate")}</span><input className="input" type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} min={form.startDate || undefined} /></label>
