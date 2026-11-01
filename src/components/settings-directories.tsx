@@ -11,23 +11,29 @@ type DirectoryTab = "hotels" | "suppliers" | "clients";
 
 export function SettingsDirectories({
   locale,
+  canViewHotels,
+  canViewSuppliers,
+  canViewClients,
   canManageHotels,
   canManageSuppliers,
   canManageClients,
   canArchiveClients,
 }: {
   locale: Locale;
+  canViewHotels: boolean;
+  canViewSuppliers: boolean;
+  canViewClients: boolean;
   canManageHotels: boolean;
   canManageSuppliers: boolean;
   canManageClients: boolean;
   canArchiveClients: boolean;
 }) {
   const ar = locale === "ar";
-  const [activeTab, setActiveTab] = useState<DirectoryTab>("hotels");
+  const [activeTab, setActiveTab] = useState<DirectoryTab>(canViewHotels ? "hotels" : canViewSuppliers ? "suppliers" : "clients");
   const tabs = [
-    { id: "hotels" as const, label: ar ? "الفنادق" : "Hotels", description: ar ? "أسماء أماكن الإقامة" : "Hotel properties", icon: Hotel },
-    { id: "suppliers" as const, label: ar ? "شركات الموردين" : "Supplier companies", description: ar ? "الشركات التي تشتري منها" : "Companies you buy from", icon: Store },
-    { id: "clients" as const, label: ar ? "شركات العملاء" : "Client companies", description: ar ? "الشركات التي تبيع لها" : "Companies you sell to", icon: Users },
+    ...(canViewHotels ? [{ id: "hotels" as const, label: ar ? "الفنادق" : "Hotels", description: ar ? "أسماء أماكن الإقامة" : "Hotel properties", icon: Hotel }] : []),
+    ...(canViewSuppliers ? [{ id: "suppliers" as const, label: ar ? "شركات الموردين" : "Supplier companies", description: ar ? "الشركات التي تشتري منها" : "Companies you buy from", icon: Store }] : []),
+    ...(canViewClients ? [{ id: "clients" as const, label: ar ? "شركات العملاء" : "Client companies", description: ar ? "الشركات التي تبيع لها" : "Companies you sell to", icon: Users }] : []),
   ];
   return <div className="settings-directory-layout">
     <section className="settings-directory-intro">
@@ -49,9 +55,9 @@ export function SettingsDirectories({
       })}
     </div>
     <div className="settings-directory-content">
-      {activeTab === "hotels" && <HotelDirectoryClient locale={locale} canWrite={canManageHotels} />}
-      {activeTab === "suppliers" && <SuppliersClient locale={locale} canWrite={canManageSuppliers} />}
-      {activeTab === "clients" && <CustomersClient locale={locale} canWrite={canManageClients} canArchive={canArchiveClients} />}
+      {activeTab === "hotels" && canViewHotels && <HotelDirectoryClient locale={locale} canWrite={canManageHotels} />}
+      {activeTab === "suppliers" && canViewSuppliers && <SuppliersClient locale={locale} canWrite={canManageSuppliers} />}
+      {activeTab === "clients" && canViewClients && <CustomersClient locale={locale} canWrite={canManageClients} canArchive={canArchiveClients} />}
     </div>
   </div>;
 }
