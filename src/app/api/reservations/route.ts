@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission } from "@/lib/api-auth";
 import { hasPermission } from "@/lib/permissions";
+import { runReservationTransaction } from "@/lib/reservation-errors";
 import { hotelReservationDetailsSchema, normalizeHotelReservation } from "@/lib/hotel-pricing";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -193,7 +194,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const outcome = await runReservationTransaction("create", () => prisma.$transaction(async (tx) => {
     const customer = await tx.customer.findFirst({ where: { id: input.customerId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true, nationality: true, type: true } });
     if (!customer) return { error: "CUSTOMER_NOT_FOUND" as const };
     if ((input.serviceType === "HOTEL" || input.serviceType === "FLIGHT") && customer.type !== "CORPORATE") return { error: "CORPORATE_CLIENT_REQUIRED" as const };
@@ -246,7 +247,9 @@ export async function POST(request: Request) {
       data: { tenantId: access.membership.tenantId, userId: access.session.user.id, action: "RESERVATION_CREATED", entityType: "Reservation", entityId: created.id, metadata: { reference: created.reference } }
     });
     return { item: created };
-  });
+  }));
+  if (!outcome.ok) return outcome.response;
+  const result = outcome.value;
   if ("error" in result) return Response.json({ error: result.error }, { status: 400 });
   return Response.json({ item: serializeReservation(result.item, canReadCosts) }, { status: 201 });
 }
