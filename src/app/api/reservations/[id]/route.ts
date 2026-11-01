@@ -7,12 +7,12 @@ import { hotelReservationDetailsSchema, normalizeHotelReservation, restorePersis
 import type { Prisma } from "@/generated/prisma/client";
 
 type RouteContext = { params: Promise<{ id: string }> };
-const dateOnly = z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).refine((value) => {
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 });
 const optionalDate = z.union([dateOnly, z.literal("")]).optional();
-const money = z.string().regex(/^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,2})?$/);
+const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
 const patchSchema = z.object({
   customerId: z.string().trim().min(1).max(80).optional(),
   supplierId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
