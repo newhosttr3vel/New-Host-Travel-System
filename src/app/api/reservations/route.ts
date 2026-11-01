@@ -191,6 +191,7 @@ export async function POST(request: Request) {
     if ((input.serviceType === "HOTEL" || input.serviceType === "FLIGHT") && customer.type !== "CORPORATE") return { error: "CORPORATE_CLIENT_REQUIRED" as const };
     if (input.serviceType === "FLIGHT" && !input.supplierId) return { error: "AIRLINE_SUPPLIER_REQUIRED" as const };
     const supplierId = input.supplierId || null;
+    if (input.serviceType === "HOTEL" && !supplierId) return { error: "HOTEL_SUPPLIER_REQUIRED" as const };
     if (supplierId) {
       const supplier = await tx.supplier.findFirst({ where: { id: supplierId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true, name: true, category: true } });
       if (!supplier) return { error: "SUPPLIER_NOT_FOUND" as const };
