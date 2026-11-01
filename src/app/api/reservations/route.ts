@@ -72,14 +72,17 @@ function serializeReservation(item: ReservationRecord, canReadCosts: boolean) {
 
 function hotelDetailsCreateData(
   tenantId: string,
-  supplierName: string | null,
+  hotelId: string,
+  hotelName: string,
+  
   customerNationality: string | null,
   input: NonNullable<z.infer<typeof createSchema>["hotelDetails"]>,
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ) {
   return {
     tenantId,
-    hotelName: supplierName,
+    hotelId,
+    hotelName,
     clientNationality: input.clientNationality || customerNationality,
     guestName: input.guestName,
     guestNationality: input.guestNationality || null,
@@ -198,6 +201,13 @@ export async function POST(request: Request) {
       if (input.serviceType === "HOTEL" && supplier.category !== "HOTEL") return { error: "HOTEL_SUPPLIER_REQUIRED" as const };
       if (input.serviceType === "FLIGHT" && supplier.category !== "AIRLINE") return { error: "AIRLINE_SUPPLIER_REQUIRED" as const };
     }
+    const hotel = input.hotelDetails
+      ? await tx.hotel.findFirst({
+          where: { id: input.hotelDetails.hotelId, tenantId: access.membership.tenantId, archivedAt: null },
+          select: { id: true, name: true }
+        })
+      : null;
+    if (input.hotelDetails && !hotel) return { error: "HOTEL_NOT_FOUND" as const };
     const reference = `NHT-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const created = await tx.reservation.create({
       data: {
@@ -217,7 +227,8 @@ export async function POST(request: Request) {
         ...(hotelPricing && input.hotelDetails ? {
           hotelDetail: { create: hotelDetailsCreateData(
             access.membership.tenantId,
-            supplierId ? (await tx.supplier.findFirst({ where: { id: supplierId, tenantId: access.membership.tenantId }, select: { name: true } }))?.name ?? null : null,
+            hotel!.id,
+            hotel!.name,
             customer.nationality,
             input.hotelDetails,
             hotelPricing
