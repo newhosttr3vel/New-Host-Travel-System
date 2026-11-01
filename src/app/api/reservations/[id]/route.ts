@@ -180,7 +180,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (input.hotelDetails && effectiveServiceType !== "HOTEL") {
       return { error: "HOTEL_DETAILS_ONLY_FOR_HOTEL" as const };
     }
-    if (effectiveServiceType === "HOTEL" && supplierId && supplier?.category !== "HOTEL") {
+    if (effectiveServiceType === "HOTEL" && (!supplierId || supplier?.category !== "HOTEL")) {
       return { error: "HOTEL_SUPPLIER_REQUIRED" as const };
     }
     if (effectiveServiceType === "FLIGHT" && (!supplierId || supplier?.category !== "AIRLINE")) {
