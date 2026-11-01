@@ -78,11 +78,12 @@ function hotelDetailsCreateData(
   customerNationality: string | null,
   input: NonNullable<z.infer<typeof createSchema>["hotelDetails"]>,
   pricing: ReturnType<typeof normalizeHotelReservation>,
-) {
+): Prisma.HotelReservationDetailUncheckedCreateWithoutReservationInput {
   return {
-    // Nested create uses explicit Prisma relations instead of scalar foreign keys.
-    tenant: { connect: { id: tenantId } },
-    hotel: { connect: { id_tenantId: { id: hotelId, tenantId } } },
+    // This is the unchecked nested input selected by Reservation.create,
+    // which already supplies the tenant-scoped customer/supplier scalar IDs.
+    tenantId,
+    hotelId,
     hotelName,
     clientNationality: input.clientNationality || customerNationality,
     guestName: input.guestName,
@@ -115,7 +116,7 @@ function hotelDetailsCreateData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
-        tenant: { connect: { id: tenantId } },
+        tenantId,
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
@@ -123,10 +124,7 @@ function hotelDetailsCreateData(
         children: room.children,
         sortOrder: room.sortOrder,
         nightlyRates: {
-          create: room.rates.map((rate) => ({
-            tenant: { connect: { id: tenantId } },
-            ...rate,
-          }))
+          create: room.rates.map((rate) => ({ tenantId, ...rate }))
         }
       }))
     }
