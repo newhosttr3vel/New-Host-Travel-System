@@ -16,6 +16,7 @@ import { getTenantContext } from "@/lib/tenant-context";
 import { currentLocale } from "@/lib/i18n";
 import { t } from "@/lib/messages";
 import { hasPermission } from "@/lib/permissions";
+import { sumBaseCents, sumOutstandingBaseCents } from "@/lib/dashboard-finance";
 
 const followUpStatuses = ["INQUIRY", "QUOTATION", "PENDING", "ON_HOLD"] as const;
 const confirmedStatuses = ["CONFIRMED", "PARTIALLY_PAID", "FULLY_PAID"] as const;
@@ -55,6 +56,20 @@ export default async function DashboardPage() {
   const canReadCustomers = hasPermission(membership.role, "customers:read");
   const canReadSuppliers = hasPermission(membership.role, "suppliers:read");
   const canReadReservations = hasPermission(membership.role, "reservations:read");
+  const canReadFinance = hasPermission(membership.role, "finance:read");
+
+  const now = new Date();
+  const dateParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: membership.tenant.timeZone || "Africa/Cairo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const localYear = Number(dateParts.find((part) => part.type === "year")?.value);
+  const localMonth = Number(dateParts.find((part) => part.type === "month")?.value);
+  const localDay = Number(dateParts.find((part) => part.type === "day")?.value);
+  // Date-only finance fields are stored at 12:00 UTC; these bounds follow the tenant calendar.
+  const monthStart = new Date(Date.UTC(localYear, localMonth - 1, 1, 12));
+  const todayEnd = new Date(Date.UTC(localYear, localMonth - 1, localDay + 1, 12));
+  const monthRange = { gte: monthStart, lt: todayEnd };
 
   const [
     customers,
@@ -135,6 +150,48 @@ export default async function DashboardPage() {
       ? new Intl.DateTimeFormat(dateLocale, { day: "2-digit", month: "short", year: "numeric" }).format(value)
       : "—";
 
+  const salesBaseCents = sumBaseCents(invoiceSalesGroups.map((group) => ({
+    amount: group._sum.subtotal,
+    exchangeRate: group.exchangeRate,
+  })));
+  const supplierCostsBaseCents = sumBaseCents(supplierCostGroups.map((group) => ({
+    amount: group._sum.subtotal,
+    exchangeRate: group.exchangeRate,
+  })));
+  const receiptsBaseCents = sumBaseCents(customerReceiptGroups.map((group) => ({
+    amount: group._sum.amount,
+    exchangeRate: group.exchangeRate,
+  })));
+  const supplierPaymentsBaseCents = sumBaseCents(supplierPaymentGroups.map((group) => ({
+    amount: group._sum.amount,
+    exchangeRate: group.exchangeRate,
+  })));
+  const receivablesBaseCents = sumOutstandingBaseCents(openInvoiceGroups.map((group) => ({
+    total: group._sum.total,
+    paidAmount: group._sum.paidAmount,
+    exchangeRate: group.exchangeRate,
+  })));
+  const payablesBaseCents = sumOutstandingBaseCents(openSupplierBillGroups.map((group) => ({
+    total: group._sum.total,
+    paidAmount: group._sum.paidAmount,
+    exchangeRate: group.exchangeRate,
+  })));
+  const billedSpreadBaseCents = salesBaseCents - supplierCostsBaseCents;
+  const baseCurrency = membership.tenant.defaultCurrency || "EGP";
+  const formatCurrency = (cents: bigint) => {
+    const value = Number(cents) / 100;
+    try {
+      return new Intl.NumberFormat(dateLocale, {
+        style: "currency", currency: baseCurrency, maximumFractionDigits: 2,
+      }).format(value);
+    } catch {
+      return `${new Intl.NumberFormat(dateLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${baseCurrency}`;
+    }
+  };
+  const monthLabel = new Intl.DateTimeFormat(dateLocale, {
+    month: "long", year: "numeric", timeZone: membership.tenant.timeZone || "Africa/Cairo",
+  }).format(now);
+
   const stats = [
     {
       key: ar ? "إجمالي ملفات الحجز" : "Total booking files",
@@ -214,6 +271,63 @@ export default async function DashboardPage() {
           );
         })}
       </section>
+
+      {canReadFinance && (
+        <section className="finance-overview" aria-label={ar ? "المؤشرات المالية" : "Financial overview"}>
+          <div className="finance-overview-heading">
+            <div>
+              <div className="ops-section-kicker">{ar ? "FINANCE SNAPSHOT" : "FINANCE SNAPSHOT"}</div>
+              <h2 className="panel-title">{ar ? "المؤشرات المالية" : "Financial overview"}</h2>
+              <p className="panel-subtitle">
+                {ar ? `حركة الشهر الحالي · ${monthLabel} · جميع القيم بعملة الشركة الأساسية ${baseCurrency}` : `Current month · ${monthLabel} · All values in the company base currency (${baseCurrency})`}
+              </p>
+            </div>
+            <Link className="btn btn-secondary" href="/finance">{ar ? "فتح الإدارة المالية" : "Open finance"}</Link>
+          </div>
+          <div className="finance-metric-grid">
+            <article className="finance-metric-card tone-blue">
+              <span>{ar ? "مبيعات الفواتير" : "Invoiced sales"}</span>
+              <strong dir="auto">{formatCurrency(salesBaseCents)}</strong>
+              <small>{ar ? "إجمالي البنود قبل الضريبة — هذا الشهر" : "Invoice line subtotal before tax · month to date"}</small>
+            </article>
+            <article className="finance-metric-card tone-amber">
+              <span>{ar ? "تكلفة فواتير الموردين" : "Supplier bill costs"}</span>
+              <strong dir="auto">{formatCurrency(supplierCostsBaseCents)}</strong>
+              <small>{ar ? "بنود فواتير الموردين قبل الضريبة — هذا الشهر" : "Supplier bill line subtotal before tax · month to date"}</small>
+            </article>
+            <article className="finance-metric-card tone-green">
+              <span>{ar ? "الفرق المسجل مبدئيًا" : "Preliminary billed spread"}</span>
+              <strong dir="auto">{formatCurrency(billedSpreadBaseCents)}</strong>
+              <small>{ar ? "المبيعات ناقص تكاليف الموردين، قبل المصروفات التشغيلية والتسويات" : "Sales less supplier bills, before operating expenses and adjustments"}</small>
+            </article>
+            <article className="finance-metric-card tone-violet">
+              <span>{ar ? "تحصيلات العملاء" : "Customer collections"}</span>
+              <strong dir="auto">{formatCurrency(receiptsBaseCents)}</strong>
+              <small>{ar ? "إيصالات العملاء المسجلة — هذا الشهر" : "Customer receipts recorded · month to date"}</small>
+            </article>
+            <article className="finance-metric-card tone-blue">
+              <span>{ar ? "مديونيات العملاء" : "Customer receivables"}</span>
+              <strong dir="auto">{formatCurrency(receivablesBaseCents)}</strong>
+              <small>{ar ? "الرصيد المفتوح على الفواتير غير الملغاة" : "Outstanding balance on non-void invoices"}</small>
+            </article>
+            <article className="finance-metric-card tone-amber">
+              <span>{ar ? "مستحقات الموردين" : "Supplier payables"}</span>
+              <strong dir="auto">{formatCurrency(payablesBaseCents)}</strong>
+              <small>{ar ? "الرصيد المفتوح على فواتير الموردين" : "Outstanding supplier bill balances"}</small>
+            </article>
+            <article className="finance-metric-card tone-slate">
+              <span>{ar ? "مدفوعات الموردين" : "Supplier payments"}</span>
+              <strong dir="auto">{formatCurrency(supplierPaymentsBaseCents)}</strong>
+              <small>{ar ? "مدفوعات الموردين المسجلة — هذا الشهر" : "Supplier payments recorded · month to date"}</small>
+            </article>
+          </div>
+          <p className="finance-overview-note">
+            {ar
+              ? "ملاحظة محاسبية: الفرق المسجل ليس صافي ربح الشركة؛ لا يشمل المصروفات التشغيلية أو التسويات أو الاعتراف المحاسبي خارج الفواتير المعروضة. تم تحويل العملات باستخدام سعر الصرف المحفوظ مع كل مستند، دون تغيير الأسعار التاريخية."
+              : "Accounting note: the billed spread is not company net profit. It excludes operating expenses, adjustments and accounting recognition outside these invoices. Foreign amounts use each document's stored exchange-rate snapshot; historical rates are never overwritten."}
+          </p>
+        </section>
+      )}
 
       <div className="ops-dashboard-grid">
         <section className="panel ops-panel">
