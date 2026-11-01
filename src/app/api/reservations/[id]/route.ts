@@ -78,10 +78,8 @@ function hotelDetailsData(
   pricing: ReturnType<typeof normalizeHotelReservation>,
 ) {
   return {
-    // Connect both required tenant-scoped relations explicitly. Nested child
-    // rows also connect to the same tenant because each model owns that relation.
-    tenant: { connect: { id: tenantId } },
-    hotel: { connect: { id_tenantId: { id: hotelId, tenantId } } },
+    tenantId,
+    hotelId,
     hotelName,
     clientNationality: input.clientNationality || clientNationality,
     guestName: input.guestName,
@@ -114,7 +112,7 @@ function hotelDetailsData(
     pricesIncludeVat: input.pricesIncludeVat,
     rooms: {
       create: pricing.rooms.map((room) => ({
-        tenant: { connect: { id: tenantId } },
+        tenantId,
         roomCount: room.roomCount,
         roomType: room.roomType,
         mealPlan: room.mealPlan,
@@ -122,10 +120,7 @@ function hotelDetailsData(
         children: room.children,
         sortOrder: room.sortOrder,
         nightlyRates: {
-          create: room.rates.map((rate) => ({
-            tenant: { connect: { id: tenantId } },
-            ...rate,
-          }))
+          create: room.rates.map((rate) => ({ tenantId, ...rate }))
         }
       }))
     }
@@ -267,12 +262,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       const { rooms, ...detailFields } = createData;
       await tx.hotelReservationDetail.upsert({
         where: { reservationId_tenantId: { reservationId: id, tenantId: access.membership.tenantId } },
-        create: {
-          reservation: {
-            connect: { id_tenantId: { id, tenantId: access.membership.tenantId } },
-          },
-          ...createData,
-        },
+        create: { reservationId: id, ...createData },
         update: {
           ...detailFields,
           rooms: { deleteMany: {}, create: rooms.create },
