@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { Archive, Check, ChevronLeft, ChevronRight, Hotel, MapPin, Pencil, Plus, Search, X } from "lucide-react";
+import { Archive, Check, ChevronLeft, ChevronRight, Hotel, Pencil, Plus, Search, X } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
 type HotelRecord = { id: string; name: string; city: string | null; country: string | null; notes: string | null; createdAt: string };
