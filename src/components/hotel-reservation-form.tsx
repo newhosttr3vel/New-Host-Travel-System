@@ -456,6 +456,7 @@ export function HotelReservationForm({
       let result: {
         error?: string;
         issues?: Array<{ path?: string; message?: string }>;
+        debug?: { name?: string; code?: string; message?: string };
       } = {};
       try {
         result = responseText ? JSON.parse(responseText) as typeof result : {};
@@ -464,11 +465,15 @@ export function HotelReservationForm({
       }
       if (!response.ok) {
         const code = result.error || `HTTP_${response.status}`;
-        const issueText = (result.issues ?? [])
+        const validationText = (result.issues ?? [])
           .map((issue) => [issue.path, issue.message].filter(Boolean).join(": "))
           .filter(Boolean)
           .join("؛ ");
-        throw new Error(issueText ? `${code}::${issueText}` : code);
+        const databaseText = result.debug
+          ? [result.debug.name, result.debug.code, result.debug.message].filter(Boolean).join(" — ")
+          : "";
+        const details = [validationText, databaseText].filter(Boolean).join(" | ");
+        throw new Error(details ? `${code}::${details}` : code);
       }
       onSaved(ar ? (initialReservation ? "تم تحديث الحجز الفندقي بنجاح." : "تم إنشاء الحجز الفندقي بنجاح.") : (initialReservation ? "Hotel reservation updated." : "Hotel reservation created."));
     } catch (reason) {
