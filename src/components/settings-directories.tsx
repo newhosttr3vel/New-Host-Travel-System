@@ -57,7 +57,7 @@ export function SettingsDirectories({
     <div className="settings-directory-content">
       {activeTab === "hotels" && canViewHotels && <HotelDirectoryClient locale={locale} canWrite={canManageHotels} />}
       {activeTab === "suppliers" && canViewSuppliers && <SuppliersClient locale={locale} canWrite={canManageSuppliers} />}
-      {activeTab === "clients" && canViewClients && <CustomersClient locale={locale} canWrite={canManageClients} canArchive={canArchiveClients} />}
+      {activeTab === "clients" && canViewClients && <CustomersClient locale={locale} canWrite={canManageClients} canArchive={canArchiveClients} corporateOnly />}
     </div>
   </div>;
 }
