@@ -6,6 +6,7 @@ import type { Locale } from "@/lib/messages";
 
 type CustomerOption = { id: string; name: string; type: "INDIVIDUAL" | "CORPORATE"; nationality?: string | null };
 type SupplierOption = { id: string; name: string; category: string };
+type HotelOption = { id: string; name: string; city?: string | null; country?: string | null };
 type NightRate = {
   stayDate: string;
   saleRoomRate: string;
@@ -76,6 +77,8 @@ type HotelRoomSaved = {
 type ExistingHotelDetail = Partial<{
   [Key in keyof HotelDetail as HotelDetail[Key] extends string ? Key : never]: string | null;
 }> & {
+  hotelId?: string | null;
+  hotelName?: string | null;
   tags?: string[];
   isManualRate?: boolean;
   pricesIncludeVat?: boolean;
@@ -100,6 +103,7 @@ type Props = {
   canReadCosts: boolean;
   customers: CustomerOption[];
   suppliers: SupplierOption[];
+  hotels: HotelOption[];
   initialReservation: ExistingReservation | null;
   draft?: { customerId?: string; startDate?: string; endDate?: string; currency?: string };
   companyName: string;
@@ -259,15 +263,15 @@ const channels = [
 ] as const;
 
 export function HotelReservationForm({
-  locale, canReadCosts, customers, suppliers, initialReservation, draft, companyName,
+  locale, canReadCosts, customers, suppliers, hotels, initialReservation, draft, companyName,
   onCancel, onSaved,
 }: Props) {
   const ar = locale === "ar";
-  const hotels = useMemo(() => suppliers.filter((supplier) => supplier.category === "HOTEL"), [suppliers]);
   const initialStart = normalizeDate(initialReservation?.startDate);
   const initialEnd = normalizeDate(initialReservation?.endDate);
   const [customerId, setCustomerId] = useState(initialReservation?.customer.id ?? draft?.customerId ?? "");
-  const [hotelId, setHotelId] = useState(initialReservation?.supplier?.id ?? "");
+  const [hotelId, setHotelId] = useState(initialReservation?.hotelDetail?.hotelId ?? "");
+  const [supplierId, setSupplierId] = useState(initialReservation?.supplier?.id ?? "");
   const [startDate, setStartDate] = useState(initialStart || draft?.startDate || "");
   const [endDate, setEndDate] = useState(initialEnd || draft?.endDate || "");
   const [currency, setCurrency] = useState(initialReservation?.currency ?? draft?.currency ?? "EGP");
@@ -382,12 +386,13 @@ export function HotelReservationForm({
     try {
       if (!customerId) throw new Error("CUSTOMER_REQUIRED");
       if (!hotelId) throw new Error("HOTEL_REQUIRED");
+      if (!supplierId) throw new Error("HOTEL_SUPPLIER_REQUIRED");
       if (!startDate || !endDate || !totalNights) throw new Error("DATES_REQUIRED");
       if (!detail.guestName.trim()) throw new Error("GUEST_REQUIRED");
       if (!rooms.length || rooms.some((room) => !room.roomType.trim())) throw new Error("ROOM_REQUIRED");
       const payload = {
         customerId,
-        supplierId: hotelId,
+        supplierId,
         serviceType: "HOTEL",
         startDate,
         endDate,
@@ -397,6 +402,7 @@ export function HotelReservationForm({
         notes: detail.reservationRemarks,
         hotelDetails: {
           ...detail,
+          hotelId,
           clientOptionDate: detail.clientOptionDate,
           hotelOptionDate: detail.hotelOptionDate,
           rooms: rooms.map((room) => ({
@@ -428,7 +434,8 @@ export function HotelReservationForm({
       const code = reason instanceof Error ? reason.message : "SAVE_FAILED";
       const messages: Record<string, string> = ar ? {
         CUSTOMER_REQUIRED: "اختر العميل أولًا.",
-        HOTEL_REQUIRED: "اختر الفندق. يجب تسجيل الفندق ضمن الموردين بتصنيف «فندق».",
+        HOTEL_REQUIRED: "اختر الفندق من قائمة الفنادق في الإعدادات.",
+        HOTEL_SUPPLIER_REQUIRED: "اختر شركة المورد التي تشتري منها الحجز.",
         DATES_REQUIRED: "أدخل تاريخ الوصول والمغادرة، ويجب أن يكون المغادرة بعد الوصول.",
         GUEST_REQUIRED: "أدخل اسم النزيل الرئيسي.",
         ROOM_REQUIRED: "أضف غرفة واحدة على الأقل وأدخل نوع الغرفة.",
@@ -440,7 +447,8 @@ export function HotelReservationForm({
         HOTEL_SUPPLIER_REQUIRED: "الفندق المختار يجب أن يكون مصنفًا كفندق ضمن الموردين.",
       } : {
         CUSTOMER_REQUIRED: "Select a client.",
-        HOTEL_REQUIRED: "Select a hotel registered under suppliers with the Hotel category.",
+        HOTEL_REQUIRED: "Select a hotel from the hotel directory in Settings.",
+        HOTEL_SUPPLIER_REQUIRED: "Select the supplier company providing this booking.",
         DATES_REQUIRED: "Enter arrival and departure dates. Departure must be after arrival.",
         GUEST_REQUIRED: "Enter the lead guest name.",
         ROOM_REQUIRED: "Add at least one room and specify its type.",
@@ -521,7 +529,7 @@ export function HotelReservationForm({
       <form className="hotel-booking-form" onSubmit={submit}>
         {error && <div className="alert" role="alert">{error}</div>}
         {customers.length === 0 && <div className="alert">{ar ? "أضف شركة عميلة من قائمة العملاء (نوع العميل: شركة) قبل إنشاء الحجز." : "Add a Corporate client company before creating a reservation."}</div>}
-        {hotels.length === 0 && <div className="alert">{ar ? "لا توجد فنادق مسجلة. أضف الفندق أولًا من الموردين واختر تصنيف «فندق»." : "No hotels are registered. Add a supplier and set its category to Hotel first."}</div>}
+        {hotels.length === 0 && <div className="alert">{ar ? "لا توجد فنادق مسجلة. افتح الإعدادات ثم قائمة الفنادق وأضف الفندق أولًا." : "No hotels are registered. Add a hotel from Settings → Hotels first."}</div>}{suppliers.every((supplier) => supplier.category !== "HOTEL") && <div className="alert">{ar ? "لا توجد شركات موردين لخدمة الفنادق. أضف شركة مورد بتصنيف فندق من الإعدادات." : "No hotel suppliers found. Add a supplier company with the Hotel category in Settings."}</div>}
 
         {section(<CalendarDays size={17} />, ar ? "تفاصيل الحجز" : "Reservation details", ar ? "شركة العميل والمورد وتواريخ الإقامة وبيانات النزيل" : "Client company, supplier, stay dates and guest details", <>
           <div className="hotel-grid hotel-grid-4">
@@ -549,10 +557,17 @@ export function HotelReservationForm({
               <select className="hotel-select" value={detail.clientNationality || selectedCustomer?.nationality || ""} onChange={(event) => updateDetail("clientNationality", event.target.value)}><option value="">{ar ? "اختر الجنسية" : "Select nationality"}</option>{nationalities.map(([value, arabic, english]) => <option key={value} value={value}>{ar ? arabic : english}</option>)}</select>
             </label>
             <label className="hotel-field">
-              <span className="hotel-label">{ar ? "المورد / الفندق" : "Supplier / Hotel"} *</span>
+              <span className="hotel-label">{ar ? "الفندق (مكان الإقامة)" : "Hotel property"} *</span>
               <select className="hotel-select" value={hotelId} onChange={(event) => setHotelId(event.target.value)} required>
-                <option value="">{ar ? "اختر المورد / الفندق" : "Select supplier / hotel"}</option>
-                {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
+                <option value="">{ar ? "اختر الفندق" : "Select hotel"}</option>
+                {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}{hotel.city ? ` — ${hotel.city}` : ""}</option>)}
+              </select>
+            </label>
+            <label className="hotel-field">
+              <span className="hotel-label">{ar ? "شركة المورد (تشتري منها)" : "Supplier company"} *</span>
+              <select className="hotel-select" value={supplierId} onChange={(event) => setSupplierId(event.target.value)} required>
+                <option value="">{ar ? "اختر شركة المورد" : "Select supplier company"}</option>
+                {suppliers.filter((supplier) => supplier.category === "HOTEL").map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
               </select>
             </label>
             {field(ar ? "اسم النزيل الرئيسي" : "Guest name", detail.guestName, (value) => updateDetail("guestName", value), { required: true, placeholder: ar ? "اسم النزيل كما في جواز السفر" : "Guest name as in passport" })}
