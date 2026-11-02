@@ -8,7 +8,7 @@ This setup runs the development environment in GitHub Codespaces. It does not re
 2. Switch the branch to `release/web-v1`.
 3. Click **Code**, open the **Codespaces** tab, and choose **Create codespace on release/web-v1**.
 4. On first creation, Codespaces builds a cloud development container, starts PostgreSQL in a private Compose network, installs dependencies, generates Prisma, applies migrations, and creates an ignored `.env` with a random development-only authentication secret.
-5. Wait for the browser editor to open. The development server starts when the Codespace attaches, and GitHub forwards port 3000 privately. If you do not see the preview, open the **Ports** panel and open port 3000.
+5. Wait for the browser editor to open. The development server starts when the Codespace attaches, and GitHub forwards port 3000 privately. Every `npm run dev` now runs `prisma generate` first, so the ignored `src/generated/prisma` client is recreated automatically after a fresh clone or branch update. If you see `Can't resolve '@/generated/prisma/client'`, run `npm run db:generate` once, then restart the dev server. If you do not see the preview, open the **Ports** panel and open port 3000.
 
 ## Where the data lives
 
