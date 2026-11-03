@@ -45,6 +45,34 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
           /switch company context/
         );
       });
+
+      const auditEvent = await prisma.auditEvent.create({
+        data: {
+          tenantId: a.id,
+          userId,
+          action: "RLS_TEST_EVENT",
+          entityType: "SecurityTest",
+          entityId: suffix
+        }
+      });
+      await assert.rejects(
+        prisma.auditEvent.update({
+          where: { id: auditEvent.id },
+          data: { action: "MUTATED_EVENT" }
+        })
+      );
+      await assert.rejects(
+        prisma.auditEvent.delete({ where: { id: auditEvent.id } })
+      );
+      await assert.rejects(
+        admin.auditEvent.update({
+          where: { id: auditEvent.id },
+          data: { action: "ADMIN_MUTATION" }
+        }),
+        /audit_events is append-only/
+      );
+      const unchangedEvent = await admin.auditEvent.findUnique({ where: { id: auditEvent.id } });
+      assert.equal(unchangedEvent?.action, "RLS_TEST_EVENT");
     });
   } finally {
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });
