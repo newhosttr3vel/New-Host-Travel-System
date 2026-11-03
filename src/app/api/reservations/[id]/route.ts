@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { canTransitionReservationStatus } from "@/lib/reservation-workflow";
 import { hasPermission } from "@/lib/permissions";
 import { runReservationTransaction } from "@/lib/reservation-errors";
@@ -133,6 +133,7 @@ function hotelDetailsData(
 export async function PATCH(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
 
@@ -314,6 +315,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.reservation.updateMany({
