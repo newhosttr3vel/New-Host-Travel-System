@@ -1,29 +1,63 @@
-# Security posture and remaining requirements
+# Security posture and production requirements
 
-## Controls in the current slice
+## Controls implemented in this branch
 
-- Better Auth manages password storage and session lifecycle.
-- Production auth rate limiting is explicitly enabled, with shared PostgreSQL storage and stricter per-endpoint limits for email sign-in (5 attempts/minute) and sign-up (3 attempts/hour).
-- Production configuration refuses a missing or too-short BETTER_AUTH_SECRET.
-- Protected workspace pages redirect unauthenticated visitors and route newly registered users to workspace onboarding.
-- Customer, supplier and reservation API endpoints check the session, tenant membership and server-side role permission.
-- Customer/supplier/reservation queries scope records to the resolved tenant; reservation customer and optional supplier relationships are constrained by composite database foreign keys plus a tenant consistency check.
-- Workspace creation is serialized per user with a PostgreSQL transaction-scoped advisory lock, preventing parallel first-time onboarding requests from creating duplicate workspaces.
-- Workspace creation and customer/supplier/reservation create, update and archive actions write audit events.
-- Reservation supplier-cost values are returned and editable only to roles with finance:read; non-finance users cannot set the cost through the API.
-- Validation uses Zod; errors do not return customer records across tenant boundaries.
-- Response headers include X-Content-Type-Options, Referrer-Policy, X-Frame-Options and Permissions-Policy.
-- Demo seed data is fictional, opt-in and blocked when NODE_ENV=production.
+- Better Auth manages password storage and sessions. Production requires verified email addresses, sends verification and reset links through the configured Resend account, expires both links after one hour, and revokes existing sessions after a password reset.
+- Production authentication rate limits use shared PostgreSQL storage: five email sign-in attempts per minute and three sign-up attempts per hour.
+- Tenant-owned PostgreSQL tables have row-level security enabled. The application runtime uses a non-owner `new_host_app` role with `NOBYPASSRLS`; request context is applied through transaction-local `app.user_id` and `app.tenant_id` settings. Policies deny tenant rows when context is missing or mismatched.
+- The runtime Prisma client requires a separate `APP_DATABASE_URL` in production. `DATABASE_URL` remains the migration/admin connection and must not be exposed to the application process.
+- Tenant membership rows are visible only to the authenticated user or within the currently selected tenant. Other tenant-owned rows require both a selected tenant and a membership for the current user.
+- Audit events are append-only: the application role has no update/delete rights and a database trigger rejects updates and deletes.
+- Branch assignments are stored independently from company membership. Owners and administrators see all branches; other roles see only reservations and documents for explicitly assigned branches. Unassigned employees see no branch-specific records.
+- Reservations carry a branch reference protected by a composite tenant foreign key. Existing tenants and memberships are backfilled into a Main Branch.
+- Passport and travel attachments use a private S3-compatible bucket, random object keys, MIME signature checks, a 15 MB ceiling, SHA-256 metadata, and 60-second signed download URLs.
+- The document API checks company and branch access on list, upload and download operations and writes an audit event on upload.
+- Workspace onboarding creates an owner, Main Branch, branch assignment and default ledger accounts in a serialized transaction.
+- CI is configured to migrate as an admin and run RLS integration tests using a separate non-owner login.
+- A scheduled GitHub Actions workflow creates encrypted PostgreSQL dumps and uploads them to a private S3 bucket; a 35-day lifecycle policy template is included. Existing local backup/restore scripts remain available.
 
-## Must be completed before production use
+## External setup required before enabling production
 
-1. Enable PostgreSQL row-level security with a non-owner application database role and add tests proving tenant isolation. The current app-level tenant filters and composite foreign keys are not a substitute for RLS.
-2. Configure email verification and secure password-reset delivery; email verification is currently disabled because no mail delivery provider is configured.
-3. Add automated integration and end-to-end tests for login, onboarding, and attempts to read, update, archive or export another tenant's data. The new onboarding integration test covers concurrent workspace creation, not the full auth journey.
-4. Add branch-level permissions, invitation lifecycle, review of exceptional support access and immutable financial audit policies.
-5. Add private object storage and short-lived authorization for passport and travel-document attachments.
-6. `package-lock.json` is now committed and CI uses `npm ci` on subsequent runs. The audited dependency tree pins the affected minimatch paths to 11.0.4; the latest CI `npm audit` report is clean (0 vulnerabilities). Keep Dependabot enabled and investigate all new audit findings before merging dependency updates. ESLint 9 is end-of-life; the current Next.js ESLint plugin chain declares peer support only through ESLint 9, so upgrade the lint toolchain together when compatible plugin releases are available. Add secret scanning, database backups, restore drills, observability, incident response and a retention policy.
-7. Review HTTPS, cookies, CSP, trusted origins, logging and PostgreSQL grants in the actual hosting environment.
-8. Obtain an appropriate independent security review and jurisdiction-specific legal/tax review before relying on the product commercially.
+### PostgreSQL roles
 
-No security certification, country-specific regulatory compliance or production hardening is claimed.
+1. Apply migrations using `DATABASE_URL`.
+2. Create a separate PostgreSQL login for the web service, for example:
+
+   ```sql
+   CREATE ROLE new_host_runtime LOGIN PASSWORD 'use-a-long-random-secret'
+     NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT;
+   GRANT new_host_app TO new_host_runtime;
+   ```
+
+3. Set `APP_DATABASE_URL` to that login. The login must not own tables, be a superuser, or have `BYPASSRLS`.
+4. Do not set `APP_DATABASE_URL` equal to the migration/admin connection string.
+
+### Email
+
+- Configure a Resend API key and a verified sender domain/address.
+- Set `RESEND_API_KEY` and `AUTH_EMAIL_FROM` in the production secret manager.
+- Test a real registration, verification-link click, expired token, reset link, and post-reset session revocation before enabling real users.
+
+### Private document bucket
+
+- Configure `S3_BUCKET`, `S3_REGION`, and either workload identity or `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY`. Set `S3_ENDPOINT` only for an S3-compatible provider with a custom endpoint.
+- Block public access, disable public ACLs, enable encryption at rest and apply a retention/lifecycle policy appropriate for travel identity documents.
+- Grant only the application identity the necessary object read/write/delete permissions. Do not place document links in public pages or logs.
+
+### Backups
+
+- Configure GitHub Actions repository variables `AWS_BACKUP_ROLE_ARN`, `AWS_BACKUP_BUCKET`, `AWS_BACKUP_REGION`, and secret `BACKUP_DATABASE_URL`.
+- Set up AWS OIDC trust for this repository and the backup workflow. The backup database credential should be read-only and permitted to run `pg_dump`.
+- Apply `infra/backup-lifecycle.json` to the target bucket and verify encryption, access logging and retention.
+- Run and document a restore drill. A successful upload alone is not proof that a backup can be restored.
+
+## Remaining security work
+
+- Full authenticated API integration coverage for every financial endpoint, tenant-scoped export path, and every read/update/archive workflow.
+- A browser E2E suite for registration, email delivery, invitations, tenant switching, branch access, responsive Arabic RTL/English LTR, and keyboard accessibility.
+- A complete invitation lifecycle, explicit exceptional support-access controls, and review of every role/permission combination.
+- Branch-level scope for finance records and reports, beyond the reservation/document workflows added here.
+- Operational observability, alerting, secret scanning, incident response, data-retention policy, restore drills and a third-party security assessment.
+- Validate CSP, HTTPS, trusted origins, host permissions, rate limits and database grants in the chosen production provider.
+
+No certification, legal/tax compliance or independent penetration test is claimed. Keep all real passport, identity and payment documents out of the system until provider configuration and independent security review are complete.
