@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-set -euo pipefail
-cd /workspaces/new-host-travel-system
+set -Eeuo pipefail
 
-# Refresh the ignored auth base URL and trusted-origin environment values
-# whenever this Codespace attaches (its public host may differ from an older .env).
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+  echo "[codespaces] Node.js/npm is unavailable. This Codespace is likely in recovery mode."
+  echo "[codespaces] Run Codespaces: Rebuild Container after updating from release/web-v1."
+  exit 1
+fi
+
+# Refresh the ignored auth URL whenever this Codespace attaches.
 node scripts/codespaces-setup.mjs
 
 LOG_FILE=/tmp/new-host-travel-dev.log

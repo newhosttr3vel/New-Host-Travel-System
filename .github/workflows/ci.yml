@@ -40,8 +40,25 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22.18.0
-      - name: Check local startup helper syntax
-        run: node --check scripts/local.mjs
+      - name: Validate Codespaces bootstrap configuration
+        run: |
+          node --check scripts/local.mjs
+          node --check scripts/codespaces-setup.mjs
+          node --check scripts/repair-swc.mjs
+          bash -n .devcontainer/post-create.sh .devcontainer/start-dev.sh
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const config = JSON.parse(readFileSync(".devcontainer/devcontainer.json", "utf8"));
+          const compose = readFileSync(".devcontainer/docker-compose.yml", "utf8");
+          const folder = config.workspaceFolder;
+          if (!folder || !folder.startsWith("/workspaces/")) throw new Error("workspaceFolder must be under /workspaces.");
+          if (config.remoteUser !== "vscode") throw new Error("Codespaces must use the existing vscode user from the Node devcontainer image.");
+          if (!compose.includes("working_dir: " + folder)) throw new Error("Compose working_dir does not match workspaceFolder.");
+          if (!compose.includes("..:" + folder + ":cached")) throw new Error("Compose bind mount does not match workspaceFolder.");
+          if (!config.features?.["ghcr.io/devcontainers/features/git-lfs:1"]) throw new Error("Git LFS feature is missing.");
+          if (!config.postCreateCommand?.includes("post-create.sh")) throw new Error("postCreateCommand is missing.");
+          console.log("Codespaces config, workspace casing and bootstrap scripts are valid.");
+          NODE
       - name: Resolve and install locked dependencies
         run: |
           npm install --package-lock-only --ignore-scripts
