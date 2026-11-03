@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ idempotencyKey: z.string().uuid() });
@@ -80,6 +80,7 @@ function dateInTimeZone(timeZone: string): Date {
 export async function POST(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
 
   let body: unknown;
