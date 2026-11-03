@@ -40,7 +40,8 @@ export const auth = betterAuth({
     enabled: !isDevelopment,
     window: 60,
     max: 120,
-    storage: "memory",
+    storage: "database",
+    modelName: "rateLimit",
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60 * 60, max: 3 },
