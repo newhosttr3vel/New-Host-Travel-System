@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@/lib/prisma";
+import { sendAuthEmail } from "@/lib/email";
 
 const secret = process.env.BETTER_AUTH_SECRET;
 if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
@@ -33,7 +34,25 @@ export const auth = betterAuth({
     ...(isDevelopment ? ["https://*.app.github.dev"] : []),
   ],
   database: prismaAdapter(prisma, { provider: "postgresql" }),
-  emailAndPassword: { enabled: true, requireEmailVerification: false, minPasswordLength: 12, maxPasswordLength: 128 },
+  emailVerification: {
+    sendOnSignUp: !isDevelopment,
+    sendOnSignIn: !isDevelopment,
+    expiresIn: 60 * 60,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendAuthEmail(user.email, "verify", url);
+    }
+  },
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: !isDevelopment,
+    minPasswordLength: 12,
+    maxPasswordLength: 128,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendAuthEmail(user.email, "reset", url);
+    }
+  },
   // Apply stricter limits to password authentication and registration.
   // Production rate limiting is explicitly enabled; local development remains convenient.
   rateLimit: {
