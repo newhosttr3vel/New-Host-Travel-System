@@ -69,6 +69,9 @@ jobs:
             package-lock.json
           if-no-files-found: error
           retention-days: 14
+      - name: Enforce clean dependency audit
+        run: |
+          node -e "const audit = require('./npm-audit.json'); const total = audit.metadata?.vulnerabilities?.total ?? 0; if (total > 0) { console.error('Dependency audit reported ' + total + ' vulnerabilities.'); process.exit(1); }"
       - name: Validate PostgreSQL migrations
         run: npm run db:migrate
       - run: npm run lint
