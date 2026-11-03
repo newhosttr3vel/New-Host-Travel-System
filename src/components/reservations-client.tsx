@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Archive, CalendarDays, Check, ChevronLeft, ChevronRight, ClipboardList, Pencil, Plus, Search, X } from "lucide-react";
 import { t, type Locale } from "@/lib/messages";
 import { HotelReservationForm } from "@/components/hotel-reservation-form";
+import { fetchAllPages } from "@/lib/paginated-fetch";
 
 type ServiceType = "HOTEL" | "FLIGHT" | "VISA" | "TRANSPORT" | "UMRAH_PACKAGE" | "HAJJ_PACKAGE" | "TOUR" | "OTHER";
 type Status = "INQUIRY" | "QUOTATION" | "PENDING" | "ON_HOLD" | "CONFIRMED" | "PARTIALLY_PAID" | "FULLY_PAID" | "COMPLETED" | "CANCELLED" | "REFUNDED";
@@ -89,23 +90,21 @@ export function ReservationsClient({ locale, canWrite, canReadCosts, companyName
       try {
         const params = new URLSearchParams({ page: String(page), pageSize: "25" });
         if (appliedSearch) params.set("search", appliedSearch);
-        const [reservationResponse, customerResponse, supplierResponse, hotelResponse] = await Promise.all([
+        const [reservationResponse, customerItems, supplierItems, hotelItems] = await Promise.all([
           fetch(`/api/reservations?${params.toString()}`, { cache: "no-store" }),
-          fetch("/api/customers?page=1&pageSize=100", { cache: "no-store" }),
-          fetch("/api/suppliers?page=1&pageSize=100", { cache: "no-store" }),
-          fetch("/api/hotels?page=1&pageSize=100", { cache: "no-store" })
+          fetchAllPages<CustomerOption>("/api/customers"),
+          fetchAllPages<SupplierOption>("/api/suppliers"),
+          fetchAllPages<HotelOption>("/api/hotels")
         ]);
-        const [reservationResult, customerResult, supplierResult, hotelResult] = await Promise.all([
-          reservationResponse.json(), customerResponse.json(), supplierResponse.json(), hotelResponse.json()
-        ]);
+        const reservationResult = await reservationResponse.json();
         if (!reservationResponse.ok) throw new Error(reservationResponse.status === 403 ? "FORBIDDEN" : reservationResult.error || "LOAD_FAILED");
         if (active) {
           setItems(reservationResult.items as Reservation[]);
           setPages(Math.max(1, reservationResult.pagination.pages));
           setTotal(reservationResult.pagination.total);
-          setCustomers(customerResponse.ok ? (customerResult.items as CustomerOption[]).filter((customer) => customer.type === "CORPORATE") : []);
-          setSuppliers(supplierResponse.ok ? (supplierResult.items as SupplierOption[]) : []);
-          setHotels(hotelResponse.ok ? (hotelResult.items as HotelOption[]) : []);
+          setCustomers(customerItems.filter((customer) => customer.type === "CORPORATE"));
+          setSuppliers(supplierItems);
+          setHotels(hotelItems);
         }
       } catch (reason) {
         if (active) setError(reason instanceof Error && reason.message === "FORBIDDEN" ? t(locale, "accessDenied") : t(locale, "genericError"));

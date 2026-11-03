@@ -159,6 +159,14 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+  @@index([lastRequest])
+  @@map("rateLimit")
+}
 model Tenant {
   id              String             @id @default(cuid())
   name            String
