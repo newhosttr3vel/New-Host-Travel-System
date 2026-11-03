@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { branchScopeWhere } from "@/lib/branch-access";
 import { signPrivateDocumentDownload, isPrivateDocumentStorageConfigured } from "@/lib/document-storage";
 
@@ -8,6 +8,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   if (!isPrivateDocumentStorageConfigured()) {
     return Response.json({ error: "DOCUMENT_STORAGE_NOT_CONFIGURED" }, { status: 503 });
   }
