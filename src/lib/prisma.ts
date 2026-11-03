@@ -39,7 +39,7 @@ function onlyValue(values: Set<string>, key: string): string | undefined {
   return values.values().next().value;
 }
 async function writeRlsSettings(tx: AnyRecord, state: RlsState) {
-  const queryRaw = tx.$queryRaw as (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
+  const queryRaw = (tx.$queryRaw as (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>).bind(tx);
   await queryRaw`SELECT
     set_config('app.user_id', ${state.userId ?? ""}, true),
     set_config('app.tenant_id', ${state.tenantId ?? ""}, true)
