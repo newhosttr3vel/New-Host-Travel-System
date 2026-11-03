@@ -8,10 +8,10 @@
 - The runtime Prisma client requires a separate `APP_DATABASE_URL` in production. `DATABASE_URL` remains the migration/admin connection and must not be exposed to the application process.
 - Tenant membership rows are visible only to the authenticated user or within the currently selected tenant. Other tenant-owned rows require both a selected tenant and a membership for the current user.
 - Audit events are append-only for normal application traffic: the `new_host_app` role has no UPDATE or DELETE privileges on `audit_events`. Privileged migration/admin credentials can still perform maintenance and must be tightly restricted and audited.
-- Branch assignments are stored independently from company membership. Owners and administrators see all branches; other roles see only reservations and documents for explicitly assigned branches. Unassigned employees see no branch-specific records.
+- Branch assignments are stored independently from company membership. Owners and administrators see all branches; other employees see reservations, travel documents and branch-scoped financial records only for explicitly assigned branches. Unassigned employees see no branch-specific records.
 - Reservations carry a branch reference protected by a composite tenant foreign key. Existing tenants and memberships are backfilled into a Main Branch.
 - Passport and travel attachments use a private S3-compatible bucket, random object keys, MIME signature checks, a 15 MB ceiling, SHA-256 metadata, and 60-second signed download URLs.
-- The document API checks company and branch access on list, upload and download operations and writes an audit event on upload.
+- The document API checks company, branch and explicit `documents:read` / `documents:write` permissions on list, upload and download operations and writes an audit event on upload. Read-only, sales, accounting and auditor roles do not automatically receive passport-document access.
 - Workspace onboarding creates an owner, Main Branch, branch assignment and default ledger accounts in a serialized transaction.
 - CI is configured to migrate as an admin and run RLS integration tests using a separate non-owner login.
 - A scheduled GitHub Actions workflow creates encrypted PostgreSQL dumps and uploads them to a private S3 bucket; a 35-day lifecycle policy template is included. Existing local backup/restore scripts remain available.
@@ -53,10 +53,10 @@
 
 ## Remaining security work
 
-- Full authenticated API integration coverage for every financial endpoint, tenant-scoped export path, and every read/update/archive workflow.
+- Broader authenticated API integration coverage for every financial mutation and tenant-scoped read/update/archive workflow. The repository does not currently expose a data-export API; every future export endpoint must apply the same tenant and branch filters and receive cross-company denial tests.
 - A browser E2E suite for registration, email delivery, invitations, tenant switching, branch access, responsive Arabic RTL/English LTR, and keyboard accessibility.
 - A complete invitation lifecycle, explicit exceptional support-access controls, and review of every role/permission combination.
-- Branch-level scope for finance records and reports, beyond the reservation/document workflows added here.
+- Extend integration tests across all finance endpoint mutations and any future exports. Existing journal, invoice, supplier-bill, payment, trial-balance and dashboard queries are branch-scoped.
 - Operational observability, alerting, secret scanning, incident response, data-retention policy, restore drills and a third-party security assessment.
 - Validate CSP, HTTPS, trusted origins, host permissions, rate limits and database grants in the chosen production provider.
 
