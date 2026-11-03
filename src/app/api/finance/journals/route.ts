@@ -96,16 +96,16 @@ export async function GET(request: Request) {
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
   const pageSize = Number.isInteger(requestedSize) && requestedSize > 0 ? Math.min(requestedSize, 100) : 20;
   const where = { tenantId: access.membership.tenantId, status: "POSTED" as const };
-  const [items, total] = await prisma.$transaction([
-    prisma.journalEntry.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.journalEntry.findMany({
       where,
       include: entryInclude,
       orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.journalEntry.count({ where })
-  ]);
+    tx.journalEntry.count({ where })
+]));
   const canReadFinance = hasPermission(access.membership.role, "finance:read");
   return Response.json({
     baseCurrency: access.membership.tenant.defaultCurrency,
