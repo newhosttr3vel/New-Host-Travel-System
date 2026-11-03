@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   if (!access.ok) {
     const read = await requireTenantPermission(request, "reservations:read");
     if (!read.ok) return read.response;
+    activateTenantRequestContext(read);
     const items = await prisma.branch.findMany({
       where: { tenantId: read.membership.tenantId, id: { in: read.membership.branchAssignments.map((item) => item.branchId) }, isActive: true },
       orderBy: { name: "asc" },
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
     });
     return Response.json({ items });
   }
+  activateTenantRequestContext(access);
   const [items, memberships] = await prisma.$transaction(async (tx) => Promise.all([
     tx.branch.findMany({
       where: { tenantId: access.membership.tenantId },
