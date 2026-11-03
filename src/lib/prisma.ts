@@ -7,6 +7,13 @@ type RlsState = { userId?: string; tenantId?: string };
 type AnyRecord = Record<string, any>;
 
 const contextStorage = new AsyncLocalStorage<TenantRlsContext>();
+const modelDelegates = new Set([
+  "user", "session", "account", "verification", "rateLimit", "tenant", "tenantMembership",
+  "branch", "branchMembership", "customer", "hotel", "supplier", "reservation",
+  "hotelReservationDetail", "hotelReservationRoom", "hotelReservationNightRate", "auditEvent",
+  "document", "ledgerAccount", "journalEntry", "journalLine", "invoice", "invoiceLine",
+  "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment"
+]);
 const tenantModels = new Set([
   "Tenant", "TenantMembership", "Branch", "BranchMembership", "Customer", "Hotel", "Supplier",
   "Reservation", "HotelReservationDetail", "HotelReservationRoom", "HotelReservationNightRate",
@@ -70,7 +77,7 @@ function wrapTransactionClient(tx: AnyRecord, state: RlsState): AnyRecord {
   return new Proxy(tx, {
     get(target, property, receiver) {
       const value = Reflect.get(target, property, receiver);
-      if (typeof property !== "string" || property.startsWith("$") || !value || typeof value !== "object") {
+      if (typeof property !== "string" || !modelDelegates.has(property) || !value || typeof value !== "object") {
         return typeof value === "function" ? value.bind(target) : value;
       }
       return new Proxy(value, {
@@ -115,7 +122,7 @@ export const prisma = new Proxy(rawPrisma, {
         }, options as never);
       };
     }
-    if (typeof property === "string" && !property.startsWith("$")) {
+    if (typeof property === "string" && modelDelegates.has(property)) {
       const delegate = Reflect.get(target, property, target);
       if (delegate && typeof delegate === "object") {
         return new Proxy(delegate, {
