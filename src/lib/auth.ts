@@ -34,6 +34,18 @@ export const auth = betterAuth({
   ],
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: { enabled: true, requireEmailVerification: false, minPasswordLength: 12, maxPasswordLength: 128 },
+  // Apply stricter limits to password authentication and registration.
+  // Production rate limiting is explicitly enabled; local development remains convenient.
+  rateLimit: {
+    enabled: !isDevelopment,
+    window: 60,
+    max: 120,
+    storage: "memory",
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60 * 60, max: 3 },
+    },
+  },
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 12, cookieCache: { enabled: true, maxAge: 60 * 5 } },
   advanced: {
     trustedProxyHeaders: isDevelopment,
