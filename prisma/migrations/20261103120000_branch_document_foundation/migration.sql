@@ -5,7 +5,7 @@ ALTER TABLE "reservations" ADD COLUMN "branch_id" TEXT;
 INSERT INTO "branches" ("id", "tenant_id", "name", "slug", "is_active", "created_at", "updated_at")
 SELECT 'main-' || t."id", t."id", 'Main Branch', 'main', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM "tenants" t
-WHERE NOT EXISTS (SELECT 1 FROM "branches" b WHERE b."tenant_id" = t."id");
+WHERE NOT EXISTS (SELECT 1 FROM "branches" b WHERE b."tenant_id" = t."id" AND b."slug" = 'main');
 
 UPDATE "reservations" r
 SET "branch_id" = b."id"
