@@ -14,6 +14,8 @@ import { GET as listReservations } from "../src/app/api/reservations/route";
 import { PATCH as patchReservation, DELETE as archiveReservation } from "../src/app/api/reservations/[id]/route";
 import { GET as listFinanceAccounts } from "../src/app/api/finance/accounts/route";
 import { GET as trialBalance } from "../src/app/api/finance/trial-balance/route";
+import { GET as listBranches, POST as createBranch } from "../src/app/api/branches/route";
+import { POST as assignBranchMember } from "../src/app/api/branches/[id]/members/route";
 
 test("customer API denies cross-company read, update and archive attempts", {
   skip: process.env.RUN_DB_TESTS !== "true" || !process.env.APP_DATABASE_URL
@@ -93,6 +95,26 @@ test("customer API denies cross-company read, update and archive attempts", {
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
+
+    const branchesResponse = await listBranches(request("/api/branches"));
+    assert.equal(branchesResponse.status, 200);
+    const branchBody = await branchesResponse.json() as {
+      items: Array<{ id: string; slug: string }>;
+      memberships: Array<{ id: string; role: string }>;
+    };
+    const mainBranch = branchBody.items.find((item) => item.slug === "main");
+    const ownerMembership = branchBody.memberships.find((item) => item.role === "OWNER");
+    assert.ok(mainBranch, "onboarding should provision a main branch");
+    assert.ok(ownerMembership, "branch directory should include the owner's membership");
+
+    const newBranchResponse = await createBranch(request("/api/branches", "POST", { name: "Integration Test Branch" }));
+    assert.equal(newBranchResponse.status, 201, await newBranchResponse.clone().text());
+    const newBranchBody = await newBranchResponse.json() as { item: { id: string } };
+    const assignmentResponse = await assignBranchMember(
+      request("/api/branches/" + newBranchBody.item.id + "/members", "POST", { membershipId: ownerMembership.id }),
+      { params: Promise.resolve({ id: newBranchBody.item.id }) }
+    );
+    assert.equal(assignmentResponse.status, 201, await assignmentResponse.clone().text());
 
     const listResponse = await listCustomers(request("/api/customers"));
     assert.equal(listResponse.status, 200);
