@@ -13,7 +13,7 @@ Unit tests check role grants (including inherited JavaScript object-property nam
 ## Remaining test additions
 
 - Registration, login, session expiry and password-reset behavior.
-- Tenant onboarding duplicate-workspace behavior and tenant-aware API authorization failures.
+- Tenant-aware API authorization failures, including read, update, archive and export attempts against another tenant.
 - Customer and supplier CRUD validation, pagination, search and audit events.
 - Cross-tenant API read, update, archive and export denial (current integration test covers database-enforced reservation relationship isolation).
 - Supplier contract workflows and reservation concurrency/idempotency.
@@ -22,6 +22,6 @@ Unit tests check role grants (including inherited JavaScript object-property nam
 - Secure file delivery.
 - Arabic RTL, English LTR, keyboard accessibility and responsive browser tests.
 
-The repository currently has no committed package-lock.json. CI therefore uses npm install, which can resolve a different dependency tree on a later run. The workflow captures the generated lockfile and npm audit JSON as artifacts so the dependency findings can be pinned and remediated before switching CI to npm ci.
+`package-lock.json` is committed. CI uses `npm ci` when the lockfile is present, runs the dependency audit, and stores both the lockfile and JSON audit report as workflow artifacts. The latest CI audit reports zero known vulnerabilities.
 
 Only report checks as passing after a completed GitHub Actions run (or an actual local invocation) confirms them. Build success alone does not prove business workflows or tenant boundaries are safe.
