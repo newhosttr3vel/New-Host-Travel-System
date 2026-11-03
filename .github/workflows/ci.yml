@@ -81,7 +81,10 @@ jobs:
           const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
           await client.connect();
           try {
-            await client.query("DO $ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ci_runtime') THEN CREATE ROLE ci_runtime LOGIN PASSWORD 'ci_runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT; END IF; END $");
+            const exists = await client.query("SELECT 1 FROM pg_roles WHERE rolname = 'ci_runtime'");
+            if (exists.rowCount === 0) {
+              await client.query("CREATE ROLE ci_runtime LOGIN PASSWORD 'ci_runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT");
+            }
             await client.query("GRANT new_host_app TO ci_runtime");
           } finally { await client.end(); }
           NODE
