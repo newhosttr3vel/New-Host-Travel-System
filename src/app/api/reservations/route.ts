@@ -147,16 +147,16 @@ export async function GET(request: Request) {
       { customer: { name: { contains: search, mode: "insensitive" as const } } }
     ] } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.reservation.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.reservation.findMany({
       where,
       include: reservationInclude,
       orderBy: [{ createdAt: "desc" }, { reference: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.reservation.count({ where })
-  ]);
+    tx.reservation.count({ where })
+]));
   return Response.json({
     items: items.map((item) => serializeReservation(item, canReadCosts)),
     pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) }
