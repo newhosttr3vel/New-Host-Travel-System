@@ -82,10 +82,10 @@ export async function GET(request: Request) {
     ...(status && ["ISSUED", "PARTIALLY_PAID", "PAID", "VOID"].includes(status)
       ? { status: status as "ISSUED" | "PARTIALLY_PAID" | "PAID" | "VOID" } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.supplierBill.findMany({ where, include, orderBy: [{ billDate: "desc" }, { createdAt: "desc" }], skip: (page - 1) * pageSize, take: pageSize }),
-    prisma.supplierBill.count({ where })
-  ]);
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.supplierBill.findMany({ where, include, orderBy: [{ billDate: "desc" }, { createdAt: "desc" }], skip: (page - 1) * pageSize, take: pageSize }),
+    tx.supplierBill.count({ where })
+]));
   return Response.json({
     baseCurrency: access.membership.tenant.defaultCurrency,
     items: items.map(publicBill),
