@@ -6,7 +6,7 @@ The application requires a Node.js web service and PostgreSQL. It cannot run as 
 
 1. Create a PostgreSQL database and set `DATABASE_URL` to a migration/admin connection.
 2. Run `npm ci`, `npm run db:generate` and `npm run db:migrate` from a trusted environment.
-3. These migrations create the `new_host_app` NOLOGIN/NOBYPASSRLS role, enable tenant RLS, and create the append-only audit trigger.
+3. These migrations create the `new_host_app` NOLOGIN/NOBYPASSRLS role, enable tenant RLS and restrict UPDATE/DELETE on audit events for the runtime role.
 4. Create a separate PostgreSQL LOGIN user and grant membership in the runtime role:
 
    ```sql
@@ -28,7 +28,7 @@ Create an S3-compatible bucket with public access blocked and server-side encryp
 
 ## 4. Branch administration
 
-Every existing company is migrated into a Main Branch, and current employees are assigned there to preserve visibility. Owners/administrators can create additional branches and assign tenant members in Settings. Reservation and document APIs enforce branch membership; finance branch-level restrictions are not yet implemented for all finance reports and exports.
+Every existing company is migrated into a Main Branch, and current employees are assigned there to preserve visibility. Owners/administrators can create additional branches and assign tenant members in Settings. Reservation, document and existing finance APIs enforce branch membership. Journal entries, invoices, supplier bills, payments, trial balance and dashboard financial totals are filtered by assigned branch. There is no data-export API yet; any future export must apply the same branch filter.
 
 ## 5. Scheduled backups
 
@@ -44,7 +44,7 @@ Set `DATABASE_URL`, `APP_DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`,
 
 - Complete authenticated API authorization coverage for all finance, report and export routes, plus an end-to-end browser suite.
 - Test live email provider, private storage and scheduled backup/restore with the actual account configuration.
-- Add the full invitation lifecycle, finance branch scoping, observability, alerting, incident response, secret scanning and retention controls.
+- Add the full invitation lifecycle, broaden finance API mutation tests, add tenant/branch-safe export endpoints only when required, and implement observability, alerting, incident response, secret scanning and retention controls.
 - Obtain independent security and jurisdiction-specific legal/tax reviews.
 
 No security certification, regulatory approval or independent penetration test is claimed.
