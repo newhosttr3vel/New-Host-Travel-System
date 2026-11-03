@@ -7,7 +7,7 @@
 - Tenant-owned PostgreSQL tables have row-level security enabled. The application runtime uses a non-owner `new_host_app` role with `NOBYPASSRLS`; request context is applied through transaction-local `app.user_id` and `app.tenant_id` settings. Policies deny tenant rows when context is missing or mismatched.
 - The runtime Prisma client requires a separate `APP_DATABASE_URL` in production. `DATABASE_URL` remains the migration/admin connection and must not be exposed to the application process.
 - Tenant membership rows are visible only to the authenticated user or within the currently selected tenant. Other tenant-owned rows require both a selected tenant and a membership for the current user.
-- Audit events are append-only: the application role has no update/delete rights and a database trigger rejects updates and deletes.
+- Audit events are append-only for normal application traffic: the `new_host_app` role has no UPDATE or DELETE privileges on `audit_events`. Privileged migration/admin credentials can still perform maintenance and must be tightly restricted and audited.
 - Branch assignments are stored independently from company membership. Owners and administrators see all branches; other roles see only reservations and documents for explicitly assigned branches. Unassigned employees see no branch-specific records.
 - Reservations carry a branch reference protected by a composite tenant foreign key. Existing tenants and memberships are backfilled into a Main Branch.
 - Passport and travel attachments use a private S3-compatible bucket, random object keys, MIME signature checks, a 15 MB ceiling, SHA-256 metadata, and 60-second signed download URLs.
