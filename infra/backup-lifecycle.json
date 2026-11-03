@@ -1,0 +1,12 @@
+{
+  "Rules": [
+    {
+      "ID": "expire-new-host-travel-database-backups",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "new-host-travel/postgres/" },
+      "Expiration": { "Days": 35 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 35 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+    }
+  ]
+}
