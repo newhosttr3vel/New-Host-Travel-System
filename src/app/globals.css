@@ -751,7 +751,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   min-width: 0;
   padding: clamp(30px, 4.2vw, 58px);
   background: #fff;
-  direction: inherit;
 }
 .auth-form-inner { width: 100%; max-width: 425px; margin: auto; }
 .auth-top-actions {
@@ -929,7 +928,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     radial-gradient(circle at 80% 19%, rgba(119, 231, 183, .25), transparent 27%),
     radial-gradient(circle at 8% 85%, rgba(0, 39, 31, .35), transparent 36%),
     linear-gradient(145deg, #0e8b64 0%, #087454 44%, #064b3d 100%);
-  direction: inherit;
 }
 .auth-visual-v2::before {
   content: "";
