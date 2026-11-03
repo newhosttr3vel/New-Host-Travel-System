@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { amountToCents, centsToAmount, normalizeJournalLines, JournalValidationError } from "@/lib/finance-journal";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
@@ -73,6 +73,7 @@ function dayAtNoon(value: string) { return new Date(value + "T12:00:00.000Z"); }
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   let body: unknown;
   try { body = await request.json(); }
