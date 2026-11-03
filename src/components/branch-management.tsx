@@ -34,7 +34,26 @@ export function BranchManagement({ locale }: { locale: Locale }) {
     }
   }, [ar]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadInitialBranches() {
+      try {
+        const response = await fetch("/api/branches", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "LOAD_FAILED");
+        if (!cancelled) {
+          setBranches(data.items ?? []);
+          setMembers(data.memberships ?? []);
+        }
+      } catch {
+        if (!cancelled) setError(ar ? "تعذر تحميل بيانات الفروع." : "Could not load branches.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void loadInitialBranches();
+    return () => { cancelled = true; };
+  }, [ar]);
 
   async function createBranch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
