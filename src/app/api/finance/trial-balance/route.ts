@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 function toCents(value: string): bigint {
   if (!/^\d+(?:\.\d{1,2})?$/.test(value)) {
@@ -17,6 +17,7 @@ function amount(cents: bigint): string {
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   const tenantId = access.membership.tenantId;
   const [accounts, sums] = await Promise.all([
