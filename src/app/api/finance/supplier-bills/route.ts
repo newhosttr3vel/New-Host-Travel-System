@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { calculateSupplierBillLines, calculateInvoiceTotal } from "@/lib/invoice-calculations";
 import { amountToCents, centsToAmount, normalizeJournalLines, rateToUnits, JournalValidationError } from "@/lib/finance-journal";
 
@@ -71,6 +71,7 @@ function publicBill(bill: Prisma.SupplierBillGetPayload<{ include: typeof includ
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const url = new URL(request.url);
   const p = Number(url.searchParams.get("page") ?? "1");
   const s = Number(url.searchParams.get("pageSize") ?? "25");
@@ -96,6 +97,7 @@ tx.supplierBill.findMany({ where, include, orderBy: [{ billDate: "desc" }, { cre
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); }
   catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
