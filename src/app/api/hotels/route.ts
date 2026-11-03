@@ -27,16 +27,16 @@ export async function GET(request: Request) {
       { country: { contains: search, mode: "insensitive" as const } }
     ] } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.hotel.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.hotel.findMany({
       where,
       select: { id: true, name: true, city: true, country: true, notes: true, createdAt: true, updatedAt: true },
       orderBy: [{ name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.hotel.count({ where })
-  ]);
+    tx.hotel.count({ where })
+]));
   return Response.json({ items, pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) } });
 }
 
