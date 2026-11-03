@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { defaultLedgerAccounts } from "@/lib/finance-accounts";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { withTenantRlsContext } from "@/lib/prisma";
 
 export type CreateWorkspaceInput = {
   userId: string;
@@ -21,7 +22,8 @@ function createSlug(name: string) {
  * create multiple owner workspaces before either membership is committed.
  */
 export async function createWorkspaceForUser(database: PrismaClient, input: CreateWorkspaceInput) {
-  return database.$transaction(async (tx) => {
+  const tenantId = "t" + randomUUID().replaceAll("-", "").slice(0, 24);
+  return withTenantRlsContext({ userId: input.userId, tenantId }, () => database.$transaction(async (tx) => {
     await tx.$queryRaw<{ acquired: boolean }[]>`
       WITH lock_result AS MATERIALIZED (
         SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
@@ -37,6 +39,7 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
 
     const tenant = await tx.tenant.create({
       data: {
+        id: tenantId,
         name: input.companyName,
         slug: createSlug(input.companyName),
         status: "TRIAL",
@@ -45,6 +48,7 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
         timeZone: input.timeZone,
       },
     });
+    const branch = await tx.branch.create({ data: { tenantId: tenant.id, name: "Main Branch", slug: "main" } });
     await tx.ledgerAccount.createMany({
       data: defaultLedgerAccounts.map((account) => ({
         tenantId: tenant.id,
@@ -52,8 +56,11 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
         isSystem: true,
       })),
     });
-    await tx.tenantMembership.create({
+    const membership = await tx.tenantMembership.create({
       data: { tenantId: tenant.id, userId: input.userId, role: "OWNER" },
+    });
+    await tx.branchMembership.create({
+      data: { tenantId: tenant.id, branchId: branch.id, membershipId: membership.id },
     });
     await tx.auditEvent.create({
       data: {
@@ -66,5 +73,5 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
     });
 
     return { tenantId: tenant.id };
-  });
+  }));
 }
