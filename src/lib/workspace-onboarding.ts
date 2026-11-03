@@ -48,6 +48,9 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
         timeZone: input.timeZone,
       },
     });
+    const membership = await tx.tenantMembership.create({
+      data: { tenantId: tenant.id, userId: input.userId, role: "OWNER" },
+    });
     const branch = await tx.branch.create({ data: { tenantId: tenant.id, name: "Main Branch", slug: "main" } });
     await tx.ledgerAccount.createMany({
       data: defaultLedgerAccounts.map((account) => ({
@@ -55,9 +58,6 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
         ...account,
         isSystem: true,
       })),
-    });
-    const membership = await tx.tenantMembership.create({
-      data: { tenantId: tenant.id, userId: input.userId, role: "OWNER" },
     });
     await tx.branchMembership.create({
       data: { tenantId: tenant.id, branchId: branch.id, membershipId: membership.id },
