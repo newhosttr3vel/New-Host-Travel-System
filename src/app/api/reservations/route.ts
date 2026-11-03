@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { hasPermission } from "@/lib/permissions";
 import { runReservationTransaction } from "@/lib/reservation-errors";
 import { hotelReservationDetailsSchema, normalizeHotelReservation } from "@/lib/hotel-pricing";
@@ -134,6 +134,7 @@ function hotelDetailsCreateData(
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 100);
@@ -169,6 +170,7 @@ tx.reservation.findMany({
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
   const parsed = createSchema.safeParse(body);
