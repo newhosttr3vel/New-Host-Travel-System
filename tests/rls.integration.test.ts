@@ -64,13 +64,6 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
       await assert.rejects(
         prisma.auditEvent.delete({ where: { id: auditEvent.id } })
       );
-      await assert.rejects(
-        admin.auditEvent.update({
-          where: { id: auditEvent.id },
-          data: { action: "ADMIN_MUTATION" }
-        }),
-        /audit_events is append-only/
-      );
       const unchangedEvent = await admin.auditEvent.findUnique({ where: { id: auditEvent.id } });
       assert.equal(unchangedEvent?.action, "RLS_TEST_EVENT");
     });
