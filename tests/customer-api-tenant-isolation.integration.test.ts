@@ -8,6 +8,12 @@ import { prisma, withTenantRlsContext } from "../src/lib/prisma";
 import { createWorkspaceForUser } from "../src/lib/workspace-onboarding";
 import { GET as listCustomers } from "../src/app/api/customers/route";
 import { PATCH as patchCustomer, DELETE as archiveCustomer } from "../src/app/api/customers/[id]/route";
+import { GET as listSuppliers } from "../src/app/api/suppliers/route";
+import { PATCH as patchSupplier, DELETE as archiveSupplier } from "../src/app/api/suppliers/[id]/route";
+import { GET as listReservations } from "../src/app/api/reservations/route";
+import { PATCH as patchReservation, DELETE as archiveReservation } from "../src/app/api/reservations/[id]/route";
+import { GET as listFinanceAccounts } from "../src/app/api/finance/accounts/route";
+import { GET as trialBalance } from "../src/app/api/finance/trial-balance/route";
 
 test("customer API denies cross-company read, update and archive attempts", {
   skip: process.env.RUN_DB_TESTS !== "true" || !process.env.APP_DATABASE_URL
@@ -25,7 +31,7 @@ test("customer API denies cross-company read, update and archive attempts", {
   try {
     const signUp = await auth.handler(new Request("http://localhost:3000/api/auth/sign-up/email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Origin: "http://localhost:3000" },
       body: JSON.stringify({ name: "API Isolation Test", email, password })
     }));
     assert.equal(signUp.status, 200, await signUp.clone().text());
@@ -82,6 +88,7 @@ test("customer API denies cross-company read, update and archive attempts", {
       method,
       headers: {
         Cookie: cookieHeader,
+        Origin: "http://localhost:3000",
         ...(body === undefined ? {} : { "Content-Type": "application/json" })
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
