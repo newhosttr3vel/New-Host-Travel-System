@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { canTransitionReservationStatus } from "@/lib/reservation-workflow";
 import { hasPermission } from "@/lib/permissions";
 import { runReservationTransaction } from "@/lib/reservation-errors";
 import { hotelReservationDetailsSchema, normalizeHotelReservation, restorePersistedHotelCosts } from "@/lib/hotel-pricing";
 import type { Prisma } from "@/generated/prisma/client";
+import { branchScopeWhere, canAccessBranch } from "@/lib/branch-access";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
@@ -26,6 +27,7 @@ const patchSchema = z.object({
   costAmount: money.optional(),
   notes: z.string().trim().max(2000).optional(),
   hotelDetails: hotelReservationDetailsSchema.optional(),
+  branchId: z.string().trim().min(1).max(80).optional(),
 }).refine((value) => Object.keys(value).length > 0, { message: "At least one field is required." });
 
 const reservationInclude = {
@@ -131,6 +133,7 @@ function hotelDetailsData(
 export async function PATCH(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
 
@@ -155,7 +158,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const outcome = await runReservationTransaction("update", () => prisma.$transaction(async (tx) => {
     const existing = await tx.reservation.findFirst({
-      where: { id, tenantId: access.membership.tenantId, archivedAt: null },
+      where: { id, tenantId: access.membership.tenantId, archivedAt: null, ...branchScopeWhere(access.membership) },
       include: {
         hotelDetail: {
           include: { rooms: { include: { nightlyRates: true } } }
@@ -163,6 +166,12 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     });
     if (!existing) return { error: "NOT_FOUND" as const };
+    const targetBranchId = input.branchId ?? existing.branchId;
+    const targetBranch = targetBranchId
+      ? await tx.branch.findFirst({ where: { id: targetBranchId, tenantId: access.membership.tenantId, isActive: true }, select: { id: true } })
+      : null;
+    if (!targetBranch) return { error: "BRANCH_NOT_FOUND" as const };
+    if (!canAccessBranch(access.membership, targetBranch.id)) return { error: "BRANCH_NOT_ASSIGNED" as const };
     if (input.status && !canTransitionReservationStatus(existing.status, input.status)) {
       return { error: "INVALID_STATUS_TRANSITION" as const, currentStatus: existing.status };
     }
@@ -232,6 +241,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const data = {
+      branchId: targetBranch.id,
       ...(input.customerId !== undefined ? { customerId: input.customerId } : {}),
       ...(input.supplierId !== undefined ? { supplierId: input.supplierId || null, supplierTenantId: input.supplierId ? access.membership.tenantId : null } : {}),
       ...(input.serviceType !== undefined ? { serviceType: input.serviceType } : {}),
@@ -246,7 +256,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     };
 
     const update = await tx.reservation.updateMany({
-      where: { id, tenantId: access.membership.tenantId, archivedAt: null, updatedAt: existing.updatedAt, status: existing.status },
+      where: { id, tenantId: access.membership.tenantId, archivedAt: null, updatedAt: existing.updatedAt, status: existing.status, ...branchScopeWhere(access.membership) },
       data
     });
     if (update.count !== 1) return { error: "CONFLICT" as const };
@@ -283,7 +293,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
     const item = await tx.reservation.findFirst({
-      where: { id, tenantId: access.membership.tenantId, archivedAt: null },
+      where: { id, tenantId: access.membership.tenantId, archivedAt: null, ...branchScopeWhere(access.membership) },
       include: reservationInclude
     });
     return { item };
@@ -293,7 +303,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if ("error" in result) {
     const statusCode =
-      result.error === "NOT_FOUND" ? 404 :
+      result.error === "NOT_FOUND" || result.error === "BRANCH_NOT_FOUND" ? 404 :
+      result.error === "BRANCH_NOT_ASSIGNED" ? 403 :
       result.error === "INVALID_STATUS_TRANSITION" || result.error === "CONFLICT" ? 409 : 400;
     return Response.json({ error: result.error, ...("currentStatus" in result ? { currentStatus: result.currentStatus } : {}) }, { status: statusCode });
   }
@@ -304,10 +315,11 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.reservation.updateMany({
-      where: { id, tenantId: access.membership.tenantId, archivedAt: null },
+      where: { id, tenantId: access.membership.tenantId, archivedAt: null, ...branchScopeWhere(access.membership) },
       data: { archivedAt: new Date() }
     });
     if (updated.count !== 1) return false;

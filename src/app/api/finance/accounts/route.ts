@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { ledgerAccountTypes } from "@/lib/finance-accounts";
 
 const createAccountSchema = z.object({
@@ -17,6 +17,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   const accounts = await prisma.ledgerAccount.findMany({
     where: { tenantId: access.membership.tenantId, isActive: true },
@@ -32,6 +33,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   let body: unknown;
   try {

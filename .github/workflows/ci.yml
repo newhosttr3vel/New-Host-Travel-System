@@ -25,6 +25,9 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://ci_user:ci_password@127.0.0.1:5432/new_host_travel?schema=public
+      APP_DATABASE_URL: postgresql://ci_runtime:ci_runtime_password@127.0.0.1:5432/new_host_travel?schema=public
+      RESEND_API_KEY: re_ci_dummy_key
+      AUTH_EMAIL_FROM: "New Host Travel <no-reply@example.test>"
       BETTER_AUTH_SECRET: ci-only-secret-that-is-long-enough-to-pass-validation
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:3000
@@ -39,13 +42,10 @@ jobs:
           node-version: 22.18.0
       - name: Check local startup helper syntax
         run: node --check scripts/local.mjs
-      - name: Install dependencies
+      - name: Resolve and install locked dependencies
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          npm install --package-lock-only --ignore-scripts
+          npm ci
       - name: Apply non-breaking dependency security updates
         run: npm audit fix || true
       - name: Persist generated dependency lockfile on this PR
@@ -74,6 +74,20 @@ jobs:
           node -e "const audit = require('./npm-audit.json'); const total = audit.metadata?.vulnerabilities?.total ?? 0; if (total > 0) { console.error('Dependency audit reported ' + total + ' vulnerabilities.'); process.exit(1); }"
       - name: Validate PostgreSQL migrations
         run: npm run db:migrate
+      - name: Provision a non-owner runtime login for RLS tests
+        run: |
+          node --input-type=module <<'NODE'
+          import pg from "pg";
+          const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+          await client.connect();
+          try {
+            const exists = await client.query("SELECT 1 FROM pg_roles WHERE rolname = 'ci_runtime'");
+            if (exists.rowCount === 0) {
+              await client.query("CREATE ROLE ci_runtime LOGIN PASSWORD 'ci_runtime_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS INHERIT");
+            }
+            await client.query("GRANT new_host_app TO ci_runtime");
+          } finally { await client.end(); }
+          NODE
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

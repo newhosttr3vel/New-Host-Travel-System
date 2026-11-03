@@ -2,26 +2,30 @@
 
 ## Automated commands
 
-Run npm run lint, npm run typecheck, npm test and npm run build.
+Run `npm run lint`, `npm run typecheck`, `npm test` and `npm run build`.
 
-The GitHub Actions workflow runs those commands for pushes to main and pull requests. It uses placeholder values for environment variables and has no production database credentials or deployment step.
+CI runs PostgreSQL 16, applies migrations as the migration/admin account, provisions a separate non-owner `ci_runtime` login that inherits `new_host_app`, and uses it via `APP_DATABASE_URL` for application and integration tests.
 
-## Current coverage
+## Automated coverage
 
-Unit tests check role grants (including inherited JavaScript object-property names), read-only restrictions, fail-closed handling for unknown roles, reservation lifecycle transitions, and loading all pages of customer/supplier/hotel directory options. PostgreSQL integration tests cover balanced billing journals, hotel reservation persistence, reservation relationship tenant isolation, and concurrent onboarding attempts. The current CI workflow applies migrations before running database integration tests.
+- Role grants, inherited JavaScript property names, read-only restrictions and unknown-role denial.
+- Full customer/supplier/hotel directory pagination.
+- Branch access rules (owners/admins, assigned employees and unassigned employees), plus authenticated branch list/create/member-assignment API coverage.
+- Reservation status transitions, date and hotel-price calculations.
+- PostgreSQL foreign-key tenant consistency and concurrent workspace onboarding.
+- RLS cross-tenant read/write denial with a non-owner runtime connection; audit UPDATE/DELETE are denied to the runtime role.
+- Authenticated customer/supplier/reservation API cross-tenant list, update and archive denial; finance-account and trial-balance tenant filtering.
+- Branch filters on reservations, documents, journal entries, invoices, supplier bills, payments, trial balance and dashboard financial totals.
+- Explicit document read/write permissions independent from general reservation access.
+- Private-document MIME signature and filename validation.
+- Finance journal balancing, invoice/payment calculations, hotel reservation persistence and reservation relationship tenant isolation.
 
-## Remaining test additions
+## Provider- and browser-dependent verification
 
-- Registration, login, session expiry and password-reset behavior.
-- Tenant-aware API authorization failures, including read, update, archive and export attempts against another tenant.
-- Customer and supplier CRUD validation, pagination, search and audit events.
-- Cross-tenant API read, update, archive and export denial (current integration test covers database-enforced reservation relationship isolation).
-- Supplier contract workflows and reservation concurrency/idempotency.
-- Hotel allocation concurrency limits.
-- Decimal financial calculations, payment allocation, refunds and balanced ledger posting.
-- Secure file delivery.
-- Arabic RTL, English LTR, keyboard accessibility and responsive browser tests.
+- Configure a real Resend sender and verify registration email, verification link, expired token, password reset and session revocation.
+- Configure a private S3 bucket and verify upload, signed download expiry, access denial, retention and deletion.
+- Configure GitHub Actions OIDC to the private backup bucket, execute the scheduled backup, then perform a restore drill against an isolated database.
+- Browser E2E for invitations, every role/permission pair, branch administration, Arabic RTL, English LTR, keyboard accessibility and responsive layouts.
+- Expand authenticated integration tests to all financial create/payment/reversal routes. No data-export API exists in the repository today; future export endpoints must be tested for tenant and branch filtering.
 
-`package-lock.json` is committed. CI uses `npm ci` when the lockfile is present, runs the dependency audit, and stores both the lockfile and JSON audit report as workflow artifacts. The latest CI audit reports zero known vulnerabilities.
-
-Only report checks as passing after a completed GitHub Actions run (or an actual local invocation) confirms them. Build success alone does not prove business workflows or tenant boundaries are safe.
+CI passing proves only the automated checks in that run. It does not prove provider credentials, mail delivery, object storage, scheduled cloud backups, restore success or a browser workflow unless those checks actually run.

@@ -2,8 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { amountToCents, centsToAmount, normalizeJournalLines, JournalValidationError } from "@/lib/finance-journal";
+import { branchScopeWhere } from "@/lib/branch-access";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T12:00:00.000Z");
@@ -38,6 +39,7 @@ function publicPayment(payment: Prisma.SupplierPaymentGetPayload<{ include: type
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); }
   catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
@@ -60,14 +62,14 @@ export async function POST(request: Request) {
   const requestHash = createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
   try {
     const outcome = await prisma.$transaction(async (tx) => {
-      const prior = await tx.supplierPayment.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey }, include });
+      const prior = await tx.supplierPayment.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) }, include });
       if (prior) {
         if (prior.requestHash !== requestHash) return { error: "IDEMPOTENCY_KEY_REUSED" as const };
         return { item: prior, replay: true as const };
       }
       const bill = await tx.supplierBill.findFirst({
-        where: { id: input.supplierBillId, tenantId },
-        select: { id: true, reference: true, status: true, currency: true, exchangeRate: true, total: true, paidAmount: true, updatedAt: true }
+        where: { id: input.supplierBillId, tenantId, ...branchScopeWhere(access.membership) },
+        select: { id: true, reference: true, status: true, currency: true, exchangeRate: true, total: true, paidAmount: true, updatedAt: true, branchId: true }
       });
       if (!bill) return { error: "SUPPLIER_BILL_NOT_FOUND" as const };
       if (bill.status === "VOID") return { error: "SUPPLIER_BILL_VOID" as const };
@@ -89,7 +91,7 @@ export async function POST(request: Request) {
         { accountId: account.id, memo: "Supplier bill " + bill.reference, debit: "0.00", credit: centsToAmount(cents) }
       ], bill.exchangeRate.toString());
       const journal = await tx.journalEntry.create({ data: {
-        tenantId, reference: "J-" + number, entryDate: date, description: "Supplier payment " + number + " - " + bill.reference,
+        tenantId, branchId: bill.branchId, reference: "J-" + number, entryDate: date, description: "Supplier payment " + number + " - " + bill.reference,
         currency: bill.currency, exchangeRate: journalLines.exchangeRate, status: "POSTED", sourceType: "SUPPLIER_PAYMENT",
         idempotencyKey: "supplier-payment:" + input.idempotencyKey, requestHash, createdById: access.session.user.id
       } });
@@ -98,7 +100,7 @@ export async function POST(request: Request) {
         debit: line.debit, credit: line.credit, baseDebit: line.baseDebit, baseCredit: line.baseCredit
       })) });
       const payment = await tx.supplierPayment.create({ data: {
-        tenantId, supplierBillId: bill.id, accountId: account.id, journalEntryId: journal.id,
+        tenantId, branchId: bill.branchId, supplierBillId: bill.id, accountId: account.id, journalEntryId: journal.id,
         paymentNumber: number, paymentDate: date, method: input.method, amount: centsToAmount(cents),
         currency: bill.currency, exchangeRate: journalLines.exchangeRate, idempotencyKey: input.idempotencyKey,
         requestHash, reference: input.reference?.trim() || null, notes: input.notes?.trim() || null, createdById: access.session.user.id
@@ -135,7 +137,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "SUPPLIER_BILL_BALANCE_CHANGED", message: "The supplier bill changed; reload and retry." }, { status: 409 });
     }
     if (isPrismaCode(error, "P2002")) {
-      const prior = await prisma.supplierPayment.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey }, include });
+      const prior = await prisma.supplierPayment.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) }, include });
       if (prior && prior.requestHash === requestHash) return Response.json({ item: publicPayment(prior), replay: true }, { status: 200 });
       return Response.json({ error: "SUPPLIER_PAYMENT_CONFLICT" }, { status: 409 });
     }

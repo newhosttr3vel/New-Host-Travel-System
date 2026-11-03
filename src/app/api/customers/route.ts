@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 const customerSchema = z.object({
   name: z.string().trim().min(2).max(160),
@@ -14,6 +14,7 @@ const customerSchema = z.object({
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "customers:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 120);
@@ -37,22 +38,23 @@ export async function GET(request: Request) {
     } : {})
   };
 
-  const [items, total] = await prisma.$transaction([
-    prisma.customer.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.customer.findMany({
       where,
       select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, nationality: true, notes: true, createdAt: true, updatedAt: true },
       orderBy: [{ createdAt: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.customer.count({ where })
-  ]);
+    tx.customer.count({ where })
+]));
   return Response.json({ items, pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) } });
 }
 
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "customers:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }

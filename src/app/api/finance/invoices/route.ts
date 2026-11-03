@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { calculateInvoiceLines, calculateInvoiceTotal } from "@/lib/invoice-calculations";
 import { amountToCents, centsToAmount, normalizeJournalLines, rateToUnits, JournalValidationError } from "@/lib/finance-journal";
+import { branchScopeWhere, resolveBranchForMember } from "@/lib/branch-access";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T12:00:00.000Z");
@@ -13,6 +14,7 @@ const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
 const invoiceSchema = z.object({
   customerId: z.string().trim().min(1).max(80),
   reservationId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
+  branchId: z.string().trim().min(1).max(80).optional(),
   issueDate: dateOnly,
   dueDate: z.union([dateOnly, z.literal("")]).optional(),
   currency: z.string().regex(/^[A-Z]{3}$/),
@@ -144,6 +146,7 @@ function dayAtNoon(value: string): Date {
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const url = new URL(request.url);
   const requestedPage = Number(url.searchParams.get("page") ?? "1");
   const requestedSize = Number(url.searchParams.get("pageSize") ?? "25");
@@ -152,18 +155,19 @@ export async function GET(request: Request) {
   const status = url.searchParams.get("status");
   const where = {
     tenantId: access.membership.tenantId,
+    ...branchScopeWhere(access.membership),
     ...(status && ["ISSUED", "PARTIALLY_PAID", "PAID", "VOID"].includes(status) ? { status: status as "ISSUED" | "PARTIALLY_PAID" | "PAID" | "VOID" } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.invoice.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.invoice.findMany({
       where,
       include: invoiceInclude,
       orderBy: [{ issueDate: "desc" }, { createdAt: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.invoice.count({ where })
-  ]);
+    tx.invoice.count({ where })
+]));
   return Response.json({
     baseCurrency: access.membership.tenant.defaultCurrency,
     items: items.map((item) => publicInvoice(item as unknown as InvoiceRecord)),
@@ -174,6 +178,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   let body: unknown;
   try { body = await request.json(); }
@@ -225,7 +230,7 @@ export async function POST(request: Request) {
   try {
     const outcome = await prisma.$transaction(async (tx) => {
       const previous = await tx.invoice.findFirst({
-        where: { tenantId, idempotencyKey: input.idempotencyKey },
+        where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) },
         include
       });
       if (previous) {
@@ -239,12 +244,24 @@ export async function POST(request: Request) {
       });
       if (!customer) return { error: "CUSTOMER_NOT_FOUND" as const };
 
+      let branchId: string;
       if (reservationId) {
         const reservation = await tx.reservation.findFirst({
-          where: { id: reservationId, tenantId, customerId: customer.id, archivedAt: null },
-          select: { id: true }
+          where: { id: reservationId, tenantId, customerId: customer.id, archivedAt: null, ...branchScopeWhere(access.membership) },
+          select: { id: true, branchId: true }
         });
         if (!reservation) return { error: "RESERVATION_NOT_FOUND" as const };
+        if (!reservation.branchId) return { error: "BRANCH_NOT_FOUND" as const };
+        branchId = reservation.branchId;
+      } else {
+        const resolved = await resolveBranchForMember(access.membership, input.branchId, (candidate) =>
+          tx.branch.findFirst({
+            where: { tenantId, isActive: true, ...(candidate ? { id: candidate } : { slug: "main" }) },
+            select: { id: true }
+          })
+        );
+        if (!resolved.ok) return { error: resolved.error };
+        branchId = resolved.branchId;
       }
 
       if (input.currency === access.membership.tenant.defaultCurrency && rateToUnits(input.exchangeRate) !== 100_000_000n) {
@@ -287,6 +304,7 @@ export async function POST(request: Request) {
       const journal = await tx.journalEntry.create({
         data: {
           tenantId,
+          branchId,
           reference: "J-" + reference,
           entryDate: date,
           description: "Invoice " + reference + " - " + customer.name,
@@ -309,6 +327,7 @@ export async function POST(request: Request) {
       const invoice = await tx.invoice.create({
         data: {
           tenantId,
+          branchId,
           customerId: customer.id,
           reservationId: reservationId ?? null,
           journalEntryId: journal.id,
@@ -354,13 +373,15 @@ export async function POST(request: Request) {
       const messages: Record<string, string> = {
         IDEMPOTENCY_KEY_REUSED: "Idempotency key is already used for different invoice data.",
         CUSTOMER_NOT_FOUND: "Customer not found in this company.",
-        RESERVATION_NOT_FOUND: "Reservation not found for this customer.",
+        RESERVATION_NOT_FOUND: "Reservation not found for this customer or assigned branch.",
+        BRANCH_NOT_FOUND: "The selected branch does not exist or is inactive.",
+        BRANCH_NOT_ASSIGNED: "You are not assigned to the selected branch.",
         BASE_CURRENCY_RATE_MUST_BE_ONE: "The base currency exchange rate must be 1.",
         RECEIVABLE_ACCOUNT_MISSING: "Default receivable account 1100 is missing or inactive.",
         REVENUE_ACCOUNT_INVALID: "Every selected revenue account must be active and belong to this company.",
         VAT_ACCOUNT_MISSING: "Default VAT payable account 2200 is missing or inactive."
       };
-      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
+      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : outcome.error === "BRANCH_NOT_ASSIGNED" ? 403 : outcome.error === "RESERVATION_NOT_FOUND" || outcome.error === "BRANCH_NOT_FOUND" ? 404 : 400 });
     }
     return Response.json({ item: publicInvoice(outcome.item as unknown as InvoiceRecord), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
@@ -369,7 +390,7 @@ export async function POST(request: Request) {
     }
     if (isPrismaCode(error, "P2002")) {
       const prior = await prisma.invoice.findFirst({
-        where: { tenantId, idempotencyKey: input.idempotencyKey },
+        where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) },
         include
       });
       if (prior && prior.requestHash === requestHash) {

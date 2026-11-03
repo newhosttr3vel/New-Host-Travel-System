@@ -2,9 +2,10 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { calculateSupplierBillLines, calculateInvoiceTotal } from "@/lib/invoice-calculations";
 import { amountToCents, centsToAmount, normalizeJournalLines, rateToUnits, JournalValidationError } from "@/lib/finance-journal";
+import { branchScopeWhere, resolveBranchForMember } from "@/lib/branch-access";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T12:00:00.000Z");
@@ -14,6 +15,7 @@ const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
 const schema = z.object({
   supplierId: z.string().trim().min(1).max(80),
   reservationId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
+  branchId: z.string().trim().min(1).max(80).optional(),
   billDate: dateOnly,
   dueDate: z.union([dateOnly, z.literal("")]).optional(),
   supplierReference: z.string().trim().max(120).optional(),
@@ -71,6 +73,7 @@ function publicBill(bill: Prisma.SupplierBillGetPayload<{ include: typeof includ
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const url = new URL(request.url);
   const p = Number(url.searchParams.get("page") ?? "1");
   const s = Number(url.searchParams.get("pageSize") ?? "25");
@@ -79,13 +82,14 @@ export async function GET(request: Request) {
   const status = url.searchParams.get("status");
   const where = {
     tenantId: access.membership.tenantId,
+    ...branchScopeWhere(access.membership),
     ...(status && ["ISSUED", "PARTIALLY_PAID", "PAID", "VOID"].includes(status)
       ? { status: status as "ISSUED" | "PARTIALLY_PAID" | "PAID" | "VOID" } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.supplierBill.findMany({ where, include, orderBy: [{ billDate: "desc" }, { createdAt: "desc" }], skip: (page - 1) * pageSize, take: pageSize }),
-    prisma.supplierBill.count({ where })
-  ]);
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.supplierBill.findMany({ where, include, orderBy: [{ billDate: "desc" }, { createdAt: "desc" }], skip: (page - 1) * pageSize, take: pageSize }),
+    tx.supplierBill.count({ where })
+]));
   return Response.json({
     baseCurrency: access.membership.tenant.defaultCurrency,
     items: items.map(publicBill),
@@ -96,6 +100,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); }
   catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
@@ -117,7 +122,7 @@ export async function POST(request: Request) {
     throw error;
   }
   const canonical = {
-    supplierId: input.supplierId, reservationId: reservationId ?? null, billDate: input.billDate, dueDate: dueDate ?? null,
+    supplierId: input.supplierId, reservationId: reservationId ?? null, branchId: input.branchId ?? null, billDate: input.billDate, dueDate: dueDate ?? null,
     supplierReference: input.supplierReference?.trim() ?? "", currency: input.currency, exchangeRate: input.exchangeRate,
     subtotal: totals.subtotal, taxAmount: totals.taxAmount, total: totals.total, notes: input.notes?.trim() ?? "",
     lines: calculated.lines.map((line) => ({ description: line.description, quantity: line.quantity, unitPrice: line.unitPrice, amount: line.amount, expenseAccountId: line.expenseAccountId }))
@@ -125,16 +130,31 @@ export async function POST(request: Request) {
   const requestHash = createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
   try {
     const outcome = await prisma.$transaction(async (tx) => {
-      const prior = await tx.supplierBill.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey }, include });
+      const prior = await tx.supplierBill.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) }, include });
       if (prior) {
         if (prior.requestHash !== requestHash) return { error: "IDEMPOTENCY_KEY_REUSED" as const };
         return { item: prior, replay: true as const };
       }
       const supplier = await tx.supplier.findFirst({ where: { id: input.supplierId, tenantId, archivedAt: null }, select: { id: true, name: true } });
       if (!supplier) return { error: "SUPPLIER_NOT_FOUND" as const };
+      let branchId: string;
       if (reservationId) {
-        const reservation = await tx.reservation.findFirst({ where: { id: reservationId, tenantId, archivedAt: null }, select: { id: true, supplierId: true } });
+        const reservation = await tx.reservation.findFirst({
+          where: { id: reservationId, tenantId, archivedAt: null, ...branchScopeWhere(access.membership) },
+          select: { id: true, supplierId: true, branchId: true }
+        });
         if (!reservation || (reservation.supplierId && reservation.supplierId !== supplier.id)) return { error: "RESERVATION_NOT_FOUND" as const };
+        if (!reservation.branchId) return { error: "BRANCH_NOT_FOUND" as const };
+        branchId = reservation.branchId;
+      } else {
+        const resolved = await resolveBranchForMember(access.membership, input.branchId, (candidate) =>
+          tx.branch.findFirst({
+            where: { tenantId, isActive: true, ...(candidate ? { id: candidate } : { slug: "main" }) },
+            select: { id: true }
+          })
+        );
+        if (!resolved.ok) return { error: resolved.error };
+        branchId = resolved.branchId;
       }
       if (input.currency === access.membership.tenant.defaultCurrency && rateToUnits(input.exchangeRate) !== 100_000_000n) {
         return { error: "BASE_CURRENCY_RATE_MUST_BE_ONE" as const };
@@ -158,7 +178,7 @@ export async function POST(request: Request) {
       ];
       const journalLines = normalizeJournalLines(rawLines, input.exchangeRate);
       const journal = await tx.journalEntry.create({ data: {
-        tenantId, reference: "J-" + reference, entryDate: billDate, description: "Supplier bill " + reference + " - " + supplier.name,
+        tenantId, branchId, reference: "J-" + reference, entryDate: billDate, description: "Supplier bill " + reference + " - " + supplier.name,
         currency: input.currency, exchangeRate: journalLines.exchangeRate, status: "POSTED", sourceType: "SUPPLIER_BILL",
         idempotencyKey: "supplier-bill:" + input.idempotencyKey, requestHash, createdById: access.session.user.id
       } });
@@ -167,7 +187,7 @@ export async function POST(request: Request) {
         debit: line.debit, credit: line.credit, baseDebit: line.baseDebit, baseCredit: line.baseCredit
       })) });
       const bill = await tx.supplierBill.create({ data: {
-        tenantId, supplierId: supplier.id, reservationId: reservationId ?? null, journalEntryId: journal.id,
+        tenantId, branchId, supplierId: supplier.id, reservationId: reservationId ?? null, journalEntryId: journal.id,
         reference, supplierReference: input.supplierReference?.trim() || null, billDate,
         dueDate: dueDate ? dayAtNoon(dueDate) : null, status: "ISSUED", currency: input.currency,
         exchangeRate: journalLines.exchangeRate, subtotal: totals.subtotal, taxAmount: totals.taxAmount, total: totals.total,
@@ -190,18 +210,20 @@ export async function POST(request: Request) {
         IDEMPOTENCY_KEY_REUSED: "Idempotency key used for different bill data.",
         SUPPLIER_NOT_FOUND: "Supplier not found or archived in this company.",
         RESERVATION_NOT_FOUND: "Reservation not found or linked to another supplier.",
+        BRANCH_NOT_FOUND: "The selected branch does not exist or is inactive.",
+        BRANCH_NOT_ASSIGNED: "You are not assigned to the selected branch.",
         BASE_CURRENCY_RATE_MUST_BE_ONE: "Base currency exchange rate must be 1.",
         PAYABLE_ACCOUNT_MISSING: "Default accounts payable account 2000 is missing or inactive.",
         EXPENSE_ACCOUNT_INVALID: "Each expense account must be active and belong to this company.",
         INPUT_VAT_ACCOUNT_MISSING: "Recoverable VAT account 1300 is missing or inactive."
       };
-      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] ?? "Bill could not be posted." }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : 400 });
+      return Response.json({ error: outcome.error, message: messages[outcome.error ?? "UNKNOWN_ERROR"] ?? "Bill could not be posted." }, { status: outcome.error === "IDEMPOTENCY_KEY_REUSED" ? 409 : outcome.error === "BRANCH_NOT_ASSIGNED" ? 403 : outcome.error === "BRANCH_NOT_FOUND" ? 404 : 400 });
     }
     return Response.json({ item: publicBill(outcome.item), replay: outcome.replay }, { status: outcome.replay ? 200 : 201 });
   } catch (error) {
     if (error instanceof JournalValidationError) return Response.json({ error: "INVALID_BILL_AMOUNT", message: error.message }, { status: 400 });
     if (isPrismaCode(error, "P2002")) {
-      const prior = await prisma.supplierBill.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey }, include });
+      const prior = await prisma.supplierBill.findFirst({ where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) }, include });
       if (prior && prior.requestHash === requestHash) return Response.json({ item: publicBill(prior), replay: true }, { status: 200 });
       return Response.json({ error: "BILL_CONFLICT" }, { status: 409 });
     }

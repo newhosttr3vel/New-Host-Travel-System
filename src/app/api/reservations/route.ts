@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { hasPermission } from "@/lib/permissions";
 import { runReservationTransaction } from "@/lib/reservation-errors";
 import { hotelReservationDetailsSchema, normalizeHotelReservation } from "@/lib/hotel-pricing";
 import type { Prisma } from "@/generated/prisma/client";
+import { branchScopeWhere, canAccessBranch } from "@/lib/branch-access";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
@@ -23,7 +24,8 @@ const createSchema = z.object({
   saleAmount: money.default("0"),
   costAmount: money.default("0"),
   notes: z.string().trim().max(2000).optional(),
-  hotelDetails: hotelReservationDetailsSchema.optional()
+  hotelDetails: hotelReservationDetailsSchema.optional(),
+  branchId: z.string().trim().min(1).max(80).optional()
 }).superRefine((value, context) => {
   if (value.startDate && value.endDate && value.startDate !== "" && value.endDate !== "" && value.endDate < value.startDate) {
     context.addIssue({ code: "custom", path: ["endDate"], message: "End date must not be earlier than start date." });
@@ -132,6 +134,7 @@ function hotelDetailsCreateData(
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 100);
@@ -142,21 +145,22 @@ export async function GET(request: Request) {
   const where = {
     tenantId: access.membership.tenantId,
     archivedAt: null,
+    ...branchScopeWhere(access.membership),
     ...(search ? { OR: [
       { reference: { contains: search, mode: "insensitive" as const } },
       { customer: { name: { contains: search, mode: "insensitive" as const } } }
     ] } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.reservation.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.reservation.findMany({
       where,
       include: reservationInclude,
       orderBy: [{ createdAt: "desc" }, { reference: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.reservation.count({ where })
-  ]);
+    tx.reservation.count({ where })
+]));
   return Response.json({
     items: items.map((item) => serializeReservation(item, canReadCosts)),
     pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) }
@@ -166,6 +170,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
   const parsed = createSchema.safeParse(body);
@@ -195,6 +200,13 @@ export async function POST(request: Request) {
   }
 
   const outcome = await runReservationTransaction("create", () => prisma.$transaction(async (tx) => {
+    const assignedBranchIds = access.membership.branchAssignments.map((item) => item.branchId);
+    const requestedBranchId = input.branchId ?? (access.membership.role === "OWNER" || access.membership.role === "ADMINISTRATOR" ? undefined : assignedBranchIds[0]);
+    const branch = requestedBranchId
+      ? await tx.branch.findFirst({ where: { id: requestedBranchId, tenantId: access.membership.tenantId, isActive: true }, select: { id: true } })
+      : await tx.branch.findFirst({ where: { tenantId: access.membership.tenantId, slug: "main", isActive: true }, select: { id: true } });
+    if (!branch) return { error: "BRANCH_NOT_FOUND" as const };
+    if (!canAccessBranch(access.membership, branch.id)) return { error: "BRANCH_NOT_ASSIGNED" as const };
     const customer = await tx.customer.findFirst({ where: { id: input.customerId, tenantId: access.membership.tenantId, archivedAt: null }, select: { id: true, nationality: true, type: true } });
     if (!customer) return { error: "CUSTOMER_NOT_FOUND" as const };
     if ((input.serviceType === "HOTEL" || input.serviceType === "FLIGHT") && customer.type !== "CORPORATE") return { error: "CORPORATE_CLIENT_REQUIRED" as const };
@@ -218,6 +230,7 @@ export async function POST(request: Request) {
     const created = await tx.reservation.create({
       data: {
         tenantId: access.membership.tenantId,
+        branchId: branch.id,
         customerId: input.customerId,
         supplierId,
         supplierTenantId: supplierId ? access.membership.tenantId : null,
@@ -249,6 +262,6 @@ export async function POST(request: Request) {
   }));
   if (!outcome.ok) return outcome.response;
   const result = outcome.value;
-  if ("error" in result) return Response.json({ error: result.error }, { status: 400 });
+  if ("error" in result) return Response.json({ error: result.error }, { status: result.error === "BRANCH_NOT_ASSIGNED" ? 403 : 400 });
   return Response.json({ item: serializeReservation(result.item, canReadCosts) }, { status: 201 });
 }

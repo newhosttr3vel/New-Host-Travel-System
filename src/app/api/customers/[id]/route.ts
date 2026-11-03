@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const customerPatchSchema = z.object({
@@ -15,6 +15,7 @@ const customerPatchSchema = z.object({
 export async function PATCH(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "customers:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
 
   let body: unknown;
@@ -53,6 +54,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "customers:archive");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.customer.updateMany({

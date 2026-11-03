@@ -20,6 +20,9 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
       prisma.tenant.create({ data: { name: "Billing Test B", slug: "billing-b-" + suffix } })
     ]);
     createdTenantIds.push(tenantA.id, tenantB.id);
+    const mainBranch = await prisma.branch.create({
+      data: { tenantId: tenantA.id, name: "Main Branch", slug: "main" }
+    });
 
     const [customerA, customerB] = await Promise.all([
       prisma.customer.create({ data: { tenantId: tenantA.id, name: "Billing Customer A" } }),
@@ -35,7 +38,7 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
     const issued = await prisma.$transaction(async (tx) => {
       const journal = await tx.journalEntry.create({
         data: {
-          tenantId: tenantA.id, reference: "INV-J-" + suffix,
+          tenantId: tenantA.id, branchId: mainBranch.id, reference: "INV-J-" + suffix,
           entryDate: new Date("2026-10-28T12:00:00.000Z"),
           description: "Test invoice issuance", currency: "EGP", exchangeRate: "1",
           status: "POSTED", sourceType: "INVOICE",
@@ -48,7 +51,7 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
         { tenantId: tenantA.id, journalEntryId: journal.id, accountId: vat.id, debit: "0", credit: "15.00", baseDebit: "0", baseCredit: "15.00" }
       ] });
       const invoice = await tx.invoice.create({ data: {
-        tenantId: tenantA.id, customerId: customerA.id, journalEntryId: journal.id,
+        tenantId: tenantA.id, branchId: mainBranch.id, customerId: customerA.id, journalEntryId: journal.id,
         reference: "INV-" + suffix, issueDate: new Date("2026-10-28T12:00:00.000Z"),
         status: "ISSUED", currency: "EGP", exchangeRate: "1",
         subtotal: "100.00", taxAmount: "15.00", total: "115.00", paidAmount: "0.00",
@@ -67,7 +70,7 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
     const paid = await prisma.$transaction(async (tx) => {
       const journal = await tx.journalEntry.create({
         data: {
-          tenantId: tenantA.id, reference: "RCPT-J-" + suffix,
+          tenantId: tenantA.id, branchId: mainBranch.id, reference: "RCPT-J-" + suffix,
           entryDate: new Date("2026-10-28T12:00:00.000Z"),
           description: "Test partial collection", currency: "EGP", exchangeRate: "1",
           status: "POSTED", sourceType: "CUSTOMER_PAYMENT",
@@ -79,7 +82,7 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
         { tenantId: tenantA.id, journalEntryId: journal.id, accountId: ar.id, debit: "0", credit: "40.00", baseDebit: "0", baseCredit: "40.00" }
       ] });
       const payment = await tx.customerPayment.create({ data: {
-        tenantId: tenantA.id, invoiceId: issued.invoice.id, accountId: cash.id, journalEntryId: journal.id,
+        tenantId: tenantA.id, branchId: mainBranch.id, invoiceId: issued.invoice.id, accountId: cash.id, journalEntryId: journal.id,
         receiptNumber: "RCT-" + suffix, paymentDate: new Date("2026-10-28T12:00:00.000Z"),
         method: "CASH", amount: "40.00", currency: "EGP", exchangeRate: "1",
         idempotencyKey: "receipt-key-" + suffix, requestHash: "receipt-hash-" + suffix
@@ -101,7 +104,7 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
     const crossTenantJournal = await prisma.$transaction(async (tx) => {
       const journal = await tx.journalEntry.create({
         data: {
-          tenantId: tenantA.id, reference: "CROSS-J-" + suffix,
+          tenantId: tenantA.id, branchId: mainBranch.id, reference: "CROSS-J-" + suffix,
           entryDate: new Date("2026-10-28T12:00:00.000Z"), description: "Cross-tenant invoice guard",
           currency: "EGP", exchangeRate: "1", status: "POSTED", sourceType: "MANUAL",
           idempotencyKey: "cross-tenant-journal-" + suffix, requestHash: "cross-tenant-" + suffix
@@ -114,7 +117,7 @@ test("invoice issuance and customer receipt flow remain balanced and tenant-isol
       return journal;
     });
     await assert.rejects(prisma.invoice.create({ data: {
-      tenantId: tenantA.id, customerId: customerB.id, journalEntryId: crossTenantJournal.id,
+      tenantId: tenantA.id, branchId: mainBranch.id, customerId: customerB.id, journalEntryId: crossTenantJournal.id,
       reference: "BAD-INV-" + suffix, issueDate: new Date("2026-10-28T12:00:00.000Z"),
       currency: "EGP", exchangeRate: "1", subtotal: "1.00", taxAmount: "0.00", total: "1.00",
       paidAmount: "0.00", idempotencyKey: "bad-invoice-" + suffix, requestHash: "bad-hash-" + suffix
