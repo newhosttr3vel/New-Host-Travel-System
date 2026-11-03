@@ -78,3 +78,19 @@ CREATE POLICY tenant_isolation ON public.tenants
     id = NULLIF(current_setting('app.tenant_id', true), '')
     AND NULLIF(current_setting('app.user_id', true), '') IS NOT NULL
   );
+
+
+-- Financial and security audit events are append-only for the application role.
+REVOKE UPDATE, DELETE ON TABLE public.audit_events FROM new_host_app;
+CREATE OR REPLACE FUNCTION public.reject_audit_event_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_events is append-only; updates and deletes are forbidden';
+END;
+$$;
+DROP TRIGGER IF EXISTS audit_events_append_only ON public.audit_events;
+CREATE TRIGGER audit_events_append_only
+BEFORE UPDATE OR DELETE ON public.audit_events
+FOR EACH ROW EXECUTE FUNCTION public.reject_audit_event_mutation();
