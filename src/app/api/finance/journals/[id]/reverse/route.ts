@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
+import { branchScopeWhere } from "@/lib/branch-access";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ idempotencyKey: z.string().uuid() });
@@ -96,7 +97,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const tenantId = access.membership.tenantId;
   const prior = await prisma.journalEntry.findFirst({
-    where: { tenantId, idempotencyKey: parsed.data.idempotencyKey },
+    where: { tenantId, idempotencyKey: parsed.data.idempotencyKey, ...branchScopeWhere(access.membership) },
     include: includeEntry
   });
   if (prior) {
@@ -107,7 +108,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const original = await prisma.journalEntry.findFirst({
-    where: { id, tenantId, status: "POSTED" },
+    where: { id, tenantId, status: "POSTED", ...branchScopeWhere(access.membership) },
     include: includeEntry
   });
   if (!original) return Response.json({ error: "JOURNAL_NOT_FOUND" }, { status: 404 });
@@ -143,13 +144,13 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const currentReversal = await tx.journalEntry.findFirst({
-        where: { tenantId, reversalOfId: original.id },
+        where: { tenantId, reversalOfId: original.id, ...branchScopeWhere(access.membership) },
         select: { id: true, reference: true }
       });
       if (currentReversal) return { error: "ALREADY_REVERSED" as const, reference: currentReversal.reference };
 
       const priorIdempotent = await tx.journalEntry.findFirst({
-        where: { tenantId, idempotencyKey: parsed.data.idempotencyKey },
+        where: { tenantId, idempotencyKey: parsed.data.idempotencyKey, ...branchScopeWhere(access.membership) },
         select: { id: true, sourceType: true, reversalOfId: true }
       });
       if (priorIdempotent) {
@@ -166,6 +167,7 @@ export async function POST(request: Request, context: RouteContext) {
       const created = await tx.journalEntry.create({
         data: {
           tenantId,
+          branchId: original.branchId,
           reference,
           entryDate,
           description: "Reverse " + original.reference + " — " + original.description,
