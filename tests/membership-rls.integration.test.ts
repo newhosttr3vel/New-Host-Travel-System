@@ -5,11 +5,19 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
 function isPostgresPermissionDenied(error: unknown): boolean {
-  if (typeof error !== "object" || error === null || !("code" in error)) return false;
-  if (error.code === "42501") return true;
-  if (error.code !== "P2010" || !("meta" in error)) return false;
-  const meta = error.meta;
-  return typeof meta === "object" && meta !== null && "code" in meta && meta.code === "42501";
+  if (typeof error !== "object" || error === null) return false;
+  if ("code" in error && error.code === "42501") return true;
+  const messages: string[] = [];
+  if ("message" in error && typeof error.message === "string") messages.push(error.message);
+  if ("meta" in error && typeof error.meta === "object" && error.meta !== null) {
+    const meta = error.meta as Record<string, unknown>;
+    if (typeof meta.code === "string") messages.push(meta.code);
+    if (typeof meta.message === "string") messages.push(meta.message);
+  }
+  const combined = messages.join(" ");
+  return combined.includes("42501") ||
+    combined.includes("row-level security policy") ||
+    combined.includes("permission denied for table");
 }
 
 test("RLS prevents self-joining another tenant and creating memberships for other users", {
