@@ -4,7 +4,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 export type TenantRlsContext = { userId: string; tenantId?: string };
 type RlsState = { userId?: string; tenantId?: string };
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 
 const contextStorage = new AsyncLocalStorage<TenantRlsContext>();
 const modelDelegates = new Set([
@@ -39,7 +39,8 @@ function onlyValue(values: Set<string>, key: string): string | undefined {
   return values.values().next().value;
 }
 async function writeRlsSettings(tx: AnyRecord, state: RlsState) {
-  await tx.$queryRaw`SELECT
+  const queryRaw = tx.$queryRaw as (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
+  await queryRaw`SELECT
     set_config('app.user_id', ${state.userId ?? ""}, true),
     set_config('app.tenant_id', ${state.tenantId ?? ""}, true)
   `;
@@ -117,8 +118,8 @@ export const prisma = new Proxy(rawPrisma, {
         return rawPrisma.$transaction(async (tx) => {
           const current = contextStorage.getStore();
           const state: RlsState = { userId: current?.userId, tenantId: current?.tenantId };
-          await writeRlsSettings(tx as AnyRecord, state);
-          return (callback as (client: unknown) => Promise<unknown>)(wrapTransactionClient(tx as AnyRecord, state));
+          await writeRlsSettings(tx as unknown as AnyRecord, state);
+          return (callback as (client: unknown) => Promise<unknown>)(wrapTransactionClient(tx as unknown as AnyRecord, state));
         }, options as never);
       };
     }
@@ -132,10 +133,14 @@ export const prisma = new Proxy(rawPrisma, {
             return async (...args: unknown[]) => rawPrisma.$transaction(async (tx) => {
               const current = contextStorage.getStore();
               const state: RlsState = { userId: current?.userId, tenantId: current?.tenantId };
-              await writeRlsSettings(tx as AnyRecord, state);
-              const scoped = wrapTransactionClient(tx as AnyRecord, state);
+              await writeRlsSettings(tx as unknown as AnyRecord, state);
+              const scoped = wrapTransactionClient(tx as unknown as AnyRecord, state);
               const scopedDelegate = scoped[property] as AnyRecord;
-              return scopedDelegate[operation](...args);
+              const scopedMethod = scopedDelegate[operation];
+              if (typeof scopedMethod !== "function") {
+                throw new Error("Unsupported Prisma model operation: " + operation);
+              }
+              return Reflect.apply(scopedMethod, scopedDelegate, args);
             });
           }
         });
