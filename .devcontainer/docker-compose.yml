@@ -1,6 +1,6 @@
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
+    image: mcr.microsoft.com/devcontainers/universal:2
     init: true
     command: sleep infinity
     working_dir: /workspaces/New-Host-Travel-System
