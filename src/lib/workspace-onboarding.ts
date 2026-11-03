@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { defaultLedgerAccounts } from "@/lib/finance-accounts";
-import { prisma } from "@/lib/prisma";
+import type { PrismaClient } from "@/generated/prisma/client";
 
 export type CreateWorkspaceInput = {
   userId: string;
@@ -20,8 +20,8 @@ function createSlug(name: string) {
  * Serializes onboarding attempts for one user so parallel requests cannot
  * create multiple owner workspaces before either membership is committed.
  */
-export async function createWorkspaceForUser(input: CreateWorkspaceInput) {
-  return prisma.$transaction(async (tx) => {
+export async function createWorkspaceForUser(database: PrismaClient, input: CreateWorkspaceInput) {
+  return database.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`;
 
     const existing = await tx.tenantMembership.findFirst({
