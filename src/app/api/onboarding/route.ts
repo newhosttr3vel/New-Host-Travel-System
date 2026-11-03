@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { createWorkspaceForUser } from "@/lib/workspace-onboarding";
 
 const onboardingSchema = z.object({
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "VALIDATION_ERROR", details: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
-  const workspace = await createWorkspaceForUser({
+  const workspace = await createWorkspaceForUser(prisma, {
     userId: session.user.id,
     companyName: data.companyName,
     defaultCurrency: data.defaultCurrency,
