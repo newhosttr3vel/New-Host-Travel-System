@@ -3,9 +3,9 @@ services:
     image: mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
     init: true
     command: sleep infinity
-    working_dir: /workspaces/new-host-travel-system
+    working_dir: /workspaces/New-Host-Travel-System
     volumes:
-      - ..:/workspaces/new-host-travel-system:cached
+      - ..:/workspaces/New-Host-Travel-System:cached
     environment:
       DATABASE_URL: postgresql://app_user:codespaces_dev_only_change_me@db:5432/new_host_travel?schema=public
       CODESPACES: ${CODESPACES:-false}
