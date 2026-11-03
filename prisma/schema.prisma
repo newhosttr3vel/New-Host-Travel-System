@@ -224,6 +224,11 @@ model Branch {
   memberships BranchMembership[]
   reservations Reservation[]
   documents Document[]
+  journalEntries JournalEntry[]
+  invoices Invoice[]
+  customerPayments CustomerPayment[]
+  supplierBills SupplierBill[]
+  supplierPayments SupplierPayment[]
   @@unique([id, tenantId])
   @@unique([tenantId, slug])
   @@index([tenantId, isActive])
@@ -490,6 +495,7 @@ model LedgerAccount {
 model JournalEntry {
   id             String             @id @default(cuid())
   tenantId       String
+  branchId       String
   reference      String
   entryDate      DateTime
   description    String
@@ -504,6 +510,7 @@ model JournalEntry {
   postedAt       DateTime           @default(now())
   createdAt      DateTime           @default(now())
   tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch         Branch             @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   lines          JournalLine[]
   reversalOf     JournalEntry?      @relation("JournalReversals", fields: [reversalOfId, tenantId], references: [id, tenantId], onDelete: NoAction)
   reversals      JournalEntry[]     @relation("JournalReversals")
@@ -517,6 +524,7 @@ model JournalEntry {
   @@unique([tenantId, reversalOfId])
   @@index([tenantId, entryDate, status])
   @@index([tenantId, sourceType, entryDate])
+  @@index([tenantId, branchId, entryDate])
   @@map("journal_entries")
 }
 
@@ -542,6 +550,7 @@ model JournalLine {
 model Invoice {
   id              String       @id @default(cuid())
   tenantId        String
+  branchId        String
   customerId      String
   reservationId   String?
   journalEntryId  String
@@ -562,6 +571,7 @@ model Invoice {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch        @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   customer        Customer      @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   reservation     Reservation?  @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: NoAction)
   journalEntry    JournalEntry  @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
@@ -573,6 +583,7 @@ model Invoice {
   @@unique([tenantId, journalEntryId])
   @@index([tenantId, status, issueDate])
   @@index([tenantId, customerId, issueDate])
+  @@index([tenantId, branchId, issueDate])
   @@map("invoices")
 }
 
@@ -596,6 +607,7 @@ model InvoiceLine {
 model CustomerPayment {
   id              String                @id @default(cuid())
   tenantId        String
+  branchId        String
   invoiceId       String
   accountId       String
   journalEntryId  String
@@ -612,6 +624,7 @@ model CustomerPayment {
   createdById     String?
   createdAt       DateTime              @default(now())
   tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch                @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   invoice         Invoice               @relation(fields: [invoiceId, tenantId], references: [id, tenantId], onDelete: Restrict)
   account         LedgerAccount         @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
   journalEntry    JournalEntry          @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
@@ -621,6 +634,7 @@ model CustomerPayment {
   @@unique([tenantId, journalEntryId])
   @@index([tenantId, paymentDate])
   @@index([tenantId, invoiceId, paymentDate])
+  @@index([tenantId, branchId, paymentDate])
   @@map("customer_payments")
 }
 
@@ -628,6 +642,7 @@ model CustomerPayment {
 model SupplierBill {
   id              String            @id @default(cuid())
   tenantId        String
+  branchId        String
   supplierId      String
   reservationId   String?
   journalEntryId  String
@@ -649,6 +664,7 @@ model SupplierBill {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch             @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier        Supplier           @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
   reservation     Reservation?       @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: NoAction)
   journalEntry    JournalEntry       @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
@@ -660,6 +676,7 @@ model SupplierBill {
   @@unique([tenantId, journalEntryId])
   @@index([tenantId, status, billDate])
   @@index([tenantId, supplierId, billDate])
+  @@index([tenantId, branchId, billDate])
   @@map("supplier_bills")
 }
 
@@ -683,6 +700,7 @@ model SupplierBillLine {
 model SupplierPayment {
   id              String                @id @default(cuid())
   tenantId        String
+  branchId        String
   supplierBillId  String
   accountId       String
   journalEntryId  String
@@ -699,6 +717,7 @@ model SupplierPayment {
   createdById     String?
   createdAt       DateTime              @default(now())
   tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch          Branch                @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplierBill    SupplierBill          @relation(fields: [supplierBillId, tenantId], references: [id, tenantId], onDelete: Restrict)
   account         LedgerAccount         @relation(fields: [accountId, tenantId], references: [id, tenantId], onDelete: Restrict)
   journalEntry    JournalEntry          @relation(fields: [journalEntryId, tenantId], references: [id, tenantId], onDelete: NoAction)
@@ -708,5 +727,6 @@ model SupplierPayment {
   @@unique([tenantId, journalEntryId])
   @@index([tenantId, paymentDate])
   @@index([tenantId, supplierBillId, paymentDate])
+  @@index([tenantId, branchId, paymentDate])
   @@map("supplier_payments")
 }
