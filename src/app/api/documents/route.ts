@@ -8,7 +8,7 @@ import { detectAllowedDocumentMime, MAX_DOCUMENT_BYTES, safeOriginalDocumentName
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const access = await requireTenantPermission(request, "reservations:read");
+  const access = await requireTenantPermission(request, "documents:read");
   if (!access.ok) return access.response;
   activateTenantRequestContext(access);
   const reservationId = new URL(request.url).searchParams.get("reservationId");
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const access = await requireTenantPermission(request, "reservations:write");
+  const access = await requireTenantPermission(request, "documents:write");
   if (!access.ok) return access.response;
   activateTenantRequestContext(access);
   if (!isPrivateDocumentStorageConfigured()) {
