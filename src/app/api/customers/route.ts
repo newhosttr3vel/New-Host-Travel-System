@@ -37,16 +37,16 @@ export async function GET(request: Request) {
     } : {})
   };
 
-  const [items, total] = await prisma.$transaction([
-    prisma.customer.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.customer.findMany({
       where,
       select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, nationality: true, notes: true, createdAt: true, updatedAt: true },
       orderBy: [{ createdAt: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.customer.count({ where })
-  ]);
+    tx.customer.count({ where })
+]));
   return Response.json({ items, pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) } });
 }
 
