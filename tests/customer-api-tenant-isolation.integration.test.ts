@@ -57,6 +57,26 @@ test("customer API denies cross-company read, update and archive attempts", {
     const foreignCustomer = await admin.customer.create({
       data: { tenantId: tenantB, name: "Foreign tenant customer" }
     });
+    const foreignSupplier = await admin.supplier.create({
+      data: { tenantId: tenantB, name: "Foreign tenant supplier", category: "OTHER" }
+    });
+    const foreignReservation = await admin.reservation.create({
+      data: {
+        tenantId: tenantB,
+        customerId: foreignCustomer.id,
+        reference: "FOREIGN-" + suffix,
+        serviceType: "OTHER"
+      }
+    });
+    const foreignAccount = await admin.ledgerAccount.create({
+      data: {
+        tenantId: tenantB,
+        code: "TEST-" + suffix.slice(0, 8),
+        name: "Foreign asset",
+        nameEn: "Foreign asset",
+        type: "ASSET"
+      }
+    });
 
     const request = (path: string, method = "GET", body?: unknown) => new Request("http://localhost:3000" + path, {
       method,
@@ -73,21 +93,65 @@ test("customer API denies cross-company read, update and archive attempts", {
     assert.ok(listBody.items.some((item) => item.id === ownCustomer.id));
     assert.ok(!listBody.items.some((item) => item.id === foreignCustomer.id));
 
-    const routeContext = { params: Promise.resolve({ id: foreignCustomer.id }) };
-    const patchResponse = await patchCustomer(
+    const supplierList = await listSuppliers(request("/api/suppliers"));
+    assert.equal(supplierList.status, 200);
+    const supplierListBody = await supplierList.json() as { items: Array<{ id: string }> };
+    assert.ok(!supplierListBody.items.some((item) => item.id === foreignSupplier.id));
+
+    const reservationList = await listReservations(request("/api/reservations"));
+    assert.equal(reservationList.status, 200);
+    const reservationListBody = await reservationList.json() as { items: Array<{ id: string }> };
+    assert.ok(!reservationListBody.items.some((item) => item.id === foreignReservation.id));
+
+    const financeList = await listFinanceAccounts(request("/api/finance/accounts"));
+    assert.equal(financeList.status, 200);
+    const financeListBody = await financeList.json() as { items: Array<{ id: string }> };
+    assert.ok(!financeListBody.items.some((item) => item.id === foreignAccount.id));
+
+    const balanceResponse = await trialBalance(request("/api/finance/trial-balance"));
+    assert.equal(balanceResponse.status, 200);
+    const balanceBody = await balanceResponse.json() as { items: Array<{ id: string }> };
+    assert.ok(!balanceBody.items.some((item) => item.id === foreignAccount.id));
+
+    const customerContext = { params: Promise.resolve({ id: foreignCustomer.id }) };
+    assert.equal((await patchCustomer(
       request("/api/customers/" + foreignCustomer.id, "PATCH", { name: "Attempted foreign update" }),
-      routeContext
-    );
-    assert.equal(patchResponse.status, 404);
-    const archiveResponse = await archiveCustomer(
+      customerContext
+    )).status, 404);
+    assert.equal((await archiveCustomer(
       request("/api/customers/" + foreignCustomer.id, "DELETE"),
-      routeContext
-    );
-    assert.equal(archiveResponse.status, 404);
+      customerContext
+    )).status, 404);
+
+    const supplierContext = { params: Promise.resolve({ id: foreignSupplier.id }) };
+    assert.equal((await patchSupplier(
+      request("/api/suppliers/" + foreignSupplier.id, "PATCH", { name: "Attempted foreign supplier update" }),
+      supplierContext
+    )).status, 404);
+    assert.equal((await archiveSupplier(
+      request("/api/suppliers/" + foreignSupplier.id, "DELETE"),
+      supplierContext
+    )).status, 404);
+
+    const reservationContext = { params: Promise.resolve({ id: foreignReservation.id }) };
+    assert.equal((await patchReservation(
+      request("/api/reservations/" + foreignReservation.id, "PATCH", { notes: "Attempted foreign reservation update" }),
+      reservationContext
+    )).status, 404);
+    assert.equal((await archiveReservation(
+      request("/api/reservations/" + foreignReservation.id, "DELETE"),
+      reservationContext
+    )).status, 404);
 
     const afterAttempt = await admin.customer.findUnique({ where: { id: foreignCustomer.id } });
     assert.equal(afterAttempt?.name, "Foreign tenant customer");
     assert.equal(afterAttempt?.archivedAt, null);
+    const supplierAfterAttempt = await admin.supplier.findUnique({ where: { id: foreignSupplier.id } });
+    assert.equal(supplierAfterAttempt?.name, "Foreign tenant supplier");
+    assert.equal(supplierAfterAttempt?.archivedAt, null);
+    const reservationAfterAttempt = await admin.reservation.findUnique({ where: { id: foreignReservation.id } });
+    assert.equal(reservationAfterAttempt?.notes, null);
+    assert.equal(reservationAfterAttempt?.archivedAt, null);
   } finally {
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
