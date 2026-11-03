@@ -22,3 +22,9 @@ test("finance role cannot administer company settings", () => {
 test("unknown roles fail closed", () => {
   assert.equal(hasPermission("PLATFORM_ADMIN", "customers:read"), false);
 });
+
+test("prototype property names are treated as unknown roles", () => {
+  assert.equal(hasPermission("toString", "customers:read"), false);
+  assert.equal(hasPermission("constructor", "finance:read"), false);
+  assert.equal(hasPermission("__proto__", "users:manage"), false);
+});
