@@ -31,16 +31,16 @@ export async function GET(request: Request) {
       { phone: { contains: search, mode: "insensitive" as const } }
     ] } : {})
   };
-  const [items, total] = await prisma.$transaction([
-    prisma.supplier.findMany({
+  const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
+tx.supplier.findMany({
       where,
       select: { id: true, name: true, category: true, contactName: true, email: true, phone: true, paymentTerms: true, notes: true, createdAt: true, updatedAt: true },
       orderBy: [{ createdAt: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize
     }),
-    prisma.supplier.count({ where })
-  ]);
+    tx.supplier.count({ where })
+]));
   return Response.json({ items, pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) } });
 }
 
