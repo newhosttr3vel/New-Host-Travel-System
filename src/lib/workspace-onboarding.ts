@@ -22,7 +22,12 @@ function createSlug(name: string) {
  */
 export async function createWorkspaceForUser(database: PrismaClient, input: CreateWorkspaceInput) {
   return database.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))`;
+    await tx.$queryRaw<{ acquired: boolean }[]>\`
+      WITH lock_result AS MATERIALIZED (
+        SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
+      )
+      SELECT TRUE AS acquired FROM lock_result
+    \`;
 
     const existing = await tx.tenantMembership.findFirst({
       where: { userId: input.userId },
