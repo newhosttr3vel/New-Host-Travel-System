@@ -17,6 +17,7 @@ import { currentLocale } from "@/lib/i18n";
 import { t } from "@/lib/messages";
 import { hasPermission } from "@/lib/permissions";
 import { sumBaseCents, sumOutstandingBaseCents } from "@/lib/dashboard-finance";
+import { branchScopeWhere } from "@/lib/branch-access";
 
 const followUpStatuses = ["INQUIRY", "QUOTATION", "PENDING", "ON_HOLD"] as const;
 const confirmedStatuses = ["CONFIRMED", "PARTIALLY_PAID", "FULLY_PAID"] as const;
@@ -89,34 +90,34 @@ export default async function DashboardPage() {
     supplierPaymentGroups,
   ] = await Promise.all([
     canReadCustomers
-      ? prisma.customer.count({ where: { tenantId, archivedAt: null } })
+      ? prisma.customer.count({ where: { tenantId, ...branchScopeWhere(membership), archivedAt: null } })
       : Promise.resolve(null),
     canReadSuppliers
-      ? prisma.supplier.count({ where: { tenantId, archivedAt: null } })
+      ? prisma.supplier.count({ where: { tenantId, ...branchScopeWhere(membership), archivedAt: null } })
       : Promise.resolve(null),
     canReadReservations
-      ? prisma.reservation.count({ where: { tenantId, archivedAt: null } })
+      ? prisma.reservation.count({ where: { tenantId, ...branchScopeWhere(membership), archivedAt: null } })
       : Promise.resolve(null),
     canReadReservations
       ? prisma.reservation.count({
-          where: { tenantId, archivedAt: null, status: { in: [...followUpStatuses] } },
+          where: { tenantId, ...branchScopeWhere(membership), archivedAt: null, status: { in: [...followUpStatuses] } },
         })
       : Promise.resolve(null),
     canReadReservations
       ? prisma.reservation.count({
-          where: { tenantId, archivedAt: null, status: { in: [...confirmedStatuses] } },
+          where: { tenantId, ...branchScopeWhere(membership), archivedAt: null, status: { in: [...confirmedStatuses] } },
         })
       : Promise.resolve(null),
     canReadReservations
       ? prisma.reservation.groupBy({
           by: ["status"],
-          where: { tenantId, archivedAt: null },
+          where: { tenantId, ...branchScopeWhere(membership), archivedAt: null },
           _count: { _all: true },
         })
       : Promise.resolve([]),
     canReadReservations
       ? prisma.reservation.findMany({
-          where: { tenantId, archivedAt: null },
+          where: { tenantId, ...branchScopeWhere(membership), archivedAt: null },
           orderBy: { updatedAt: "desc" },
           take: 8,
           include: { customer: { select: { name: true } } },
@@ -126,6 +127,7 @@ export default async function DashboardPage() {
       ? prisma.reservation.findMany({
           where: {
             tenantId,
+            ...branchScopeWhere(membership),
             archivedAt: null,
             status: { in: [...followUpStatuses] },
           },
@@ -137,42 +139,42 @@ export default async function DashboardPage() {
     canReadFinance
       ? prisma.invoice.groupBy({
           by: ["currency", "exchangeRate"],
-          where: { tenantId, issueDate: monthRange, status: { not: "VOID" } },
+          where: { tenantId, ...branchScopeWhere(membership), issueDate: monthRange, status: { not: "VOID" } },
           _sum: { subtotal: true },
         })
       : Promise.resolve([]),
     canReadFinance
       ? prisma.supplierBill.groupBy({
           by: ["currency", "exchangeRate"],
-          where: { tenantId, billDate: monthRange, status: { not: "VOID" } },
+          where: { tenantId, ...branchScopeWhere(membership), billDate: monthRange, status: { not: "VOID" } },
           _sum: { subtotal: true },
         })
       : Promise.resolve([]),
     canReadFinance
       ? prisma.invoice.groupBy({
           by: ["currency", "exchangeRate"],
-          where: { tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
+          where: { tenantId, ...branchScopeWhere(membership), status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
           _sum: { total: true, paidAmount: true },
         })
       : Promise.resolve([]),
     canReadFinance
       ? prisma.supplierBill.groupBy({
           by: ["currency", "exchangeRate"],
-          where: { tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
+          where: { tenantId, ...branchScopeWhere(membership), status: { in: ["ISSUED", "PARTIALLY_PAID"] } },
           _sum: { total: true, paidAmount: true },
         })
       : Promise.resolve([]),
     canReadFinance
       ? prisma.customerPayment.groupBy({
           by: ["currency", "exchangeRate"],
-          where: { tenantId, paymentDate: monthRange },
+          where: { tenantId, ...branchScopeWhere(membership), paymentDate: monthRange },
           _sum: { amount: true },
         })
       : Promise.resolve([]),
     canReadFinance
       ? prisma.supplierPayment.groupBy({
           by: ["currency", "exchangeRate"],
-          where: { tenantId, paymentDate: monthRange },
+          where: { tenantId, ...branchScopeWhere(membership), paymentDate: monthRange },
           _sum: { amount: true },
         })
       : Promise.resolve([]),
