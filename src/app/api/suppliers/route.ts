@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 const supplierSchema = z.object({
   name: z.string().trim().min(2).max(160),
@@ -15,6 +15,7 @@ const supplierSchema = z.object({
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "suppliers:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 120);
   const p = Number(url.searchParams.get("page") ?? "1");
@@ -47,6 +48,7 @@ tx.supplier.findMany({
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "suppliers:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
   const parsed = supplierSchema.safeParse(body);
