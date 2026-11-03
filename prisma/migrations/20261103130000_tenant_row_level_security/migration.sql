@@ -81,19 +81,3 @@ CREATE POLICY tenant_isolation ON public.tenants
 
 -- Financial and security audit events are append-only for the application role.
 REVOKE UPDATE, DELETE ON TABLE public.audit_events FROM new_host_app;
-CREATE OR REPLACE FUNCTION public.reject_audit_event_mutation()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  -- Permit only a tenant-owned cascading purge; direct updates/deletes remain forbidden.
-  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN
-    RETURN OLD;
-  END IF;
-  RAISE EXCEPTION 'audit_events is append-only; updates and direct deletes are forbidden';
-END;
-$$;
-DROP TRIGGER IF EXISTS audit_events_append_only ON public.audit_events;
-CREATE TRIGGER audit_events_append_only
-BEFORE UPDATE OR DELETE ON public.audit_events
-FOR EACH ROW EXECUTE FUNCTION public.reject_audit_event_mutation();
