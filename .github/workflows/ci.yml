@@ -37,6 +37,17 @@ jobs:
       - name: Check local startup helper syntax
         run: node --check scripts/local.mjs
       - run: npm install
+      - name: Capture generated dependency lockfile and audit report
+        run: npm audit --json > npm-audit.json || true
+      - name: Upload dependency audit and lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-and-lockfile
+          path: |
+            npm-audit.json
+            package-lock.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Validate PostgreSQL migrations
         run: npm run db:migrate
       - run: npm run lint
