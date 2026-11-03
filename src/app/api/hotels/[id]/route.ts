@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 const hotelSchema = z.object({
@@ -13,6 +13,7 @@ const hotelSchema = z.object({
 export async function PATCH(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "suppliers:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
@@ -53,6 +54,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   const access = await requireTenantPermission(request, "suppliers:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const { id } = await context.params;
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.hotel.updateMany({
