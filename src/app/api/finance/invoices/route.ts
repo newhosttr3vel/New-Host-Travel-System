@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { calculateInvoiceLines, calculateInvoiceTotal } from "@/lib/invoice-calculations";
 import { amountToCents, centsToAmount, normalizeJournalLines, rateToUnits, JournalValidationError } from "@/lib/finance-journal";
 
@@ -144,6 +144,7 @@ function dayAtNoon(value: string): Date {
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "finance:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const url = new URL(request.url);
   const requestedPage = Number(url.searchParams.get("page") ?? "1");
   const requestedSize = Number(url.searchParams.get("pageSize") ?? "25");
@@ -174,6 +175,7 @@ tx.invoice.findMany({
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "finance:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
 
   let body: unknown;
   try { body = await request.json(); }
