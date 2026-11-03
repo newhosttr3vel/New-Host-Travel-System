@@ -5,23 +5,23 @@ ALTER TABLE "supplier_bills" ADD COLUMN "branchId" TEXT;
 ALTER TABLE "supplier_payments" ADD COLUMN "branchId" TEXT;
 
 UPDATE "invoices" i
-SET "branchId" = COALESCE(r."branchId", b."id")
-FROM "branches" b
-LEFT JOIN "reservations" r ON r."id" = i."reservationId" AND r."tenantId" = i."tenantId"
-WHERE b."tenantId" = i."tenantId" AND b."slug" = 'main';
+SET "branchId" = COALESCE(
+  (SELECT r."branchId" FROM "reservations" r WHERE r."id" = i."reservationId" AND r."tenantId" = i."tenantId"),
+  (SELECT b."id" FROM "branches" b WHERE b."tenantId" = i."tenantId" AND b."slug" = 'main')
+);
 
 UPDATE "supplier_bills" sb
-SET "branchId" = COALESCE(r."branchId", b."id")
-FROM "branches" b
-LEFT JOIN "reservations" r ON r."id" = sb."reservationId" AND r."tenantId" = sb."tenantId"
-WHERE b."tenantId" = sb."tenantId" AND b."slug" = 'main';
+SET "branchId" = COALESCE(
+  (SELECT r."branchId" FROM "reservations" r WHERE r."id" = sb."reservationId" AND r."tenantId" = sb."tenantId"),
+  (SELECT b."id" FROM "branches" b WHERE b."tenantId" = sb."tenantId" AND b."slug" = 'main')
+);
 
 UPDATE "journal_entries" je
-SET "branchId" = COALESCE(i."branchId", sb."branchId", b."id")
-FROM "branches" b
-LEFT JOIN "invoices" i ON i."journalEntryId" = je."id" AND i."tenantId" = je."tenantId"
-LEFT JOIN "supplier_bills" sb ON sb."journalEntryId" = je."id" AND sb."tenantId" = je."tenantId"
-WHERE b."tenantId" = je."tenantId" AND b."slug" = 'main';
+SET "branchId" = COALESCE(
+  (SELECT i."branchId" FROM "invoices" i WHERE i."journalEntryId" = je."id" AND i."tenantId" = je."tenantId"),
+  (SELECT sb."branchId" FROM "supplier_bills" sb WHERE sb."journalEntryId" = je."id" AND sb."tenantId" = je."tenantId"),
+  (SELECT b."id" FROM "branches" b WHERE b."tenantId" = je."tenantId" AND b."slug" = 'main')
+);
 
 UPDATE "customer_payments" cp
 SET "branchId" = i."branchId"
