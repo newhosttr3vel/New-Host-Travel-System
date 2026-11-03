@@ -3,6 +3,7 @@ import { currentLocale } from "@/lib/i18n";
 import { getTenantContext } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
 import { SettingsDirectories } from "@/components/settings-directories";
+import { BranchManagement } from "@/components/branch-management";
 
 export default async function SettingsPage() {
   const locale = await currentLocale();
@@ -27,5 +28,6 @@ export default async function SettingsPage() {
       canManageClients={hasPermission(role, "customers:write")}
       canArchiveClients={hasPermission(role, "customers:archive")}
     />
+    {hasPermission(role, "settings:manage") && <BranchManagement locale={locale} />}
   </>;
 }
