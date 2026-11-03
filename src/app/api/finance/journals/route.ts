@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { normalizeJournalLines, JournalValidationError } from "@/lib/finance-journal";
 import { hasPermission } from "@/lib/permissions";
+import { branchScopeWhere, resolveBranchForMember } from "@/lib/branch-access";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
@@ -12,6 +13,7 @@ const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
 const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
 const createJournalSchema = z.object({
   entryDate: dateOnly,
+  branchId: z.string().trim().min(1).max(80).optional(),
   description: z.string().trim().min(3).max(500),
   currency: z.string().regex(/^[A-Z]{3}$/),
   exchangeRate: z.string().regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,8})?$/),
@@ -96,7 +98,7 @@ export async function GET(request: Request) {
   const requestedSize = Number(url.searchParams.get("pageSize") ?? "20");
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
   const pageSize = Number.isInteger(requestedSize) && requestedSize > 0 ? Math.min(requestedSize, 100) : 20;
-  const where = { tenantId: access.membership.tenantId, status: "POSTED" as const };
+  const where = { tenantId: access.membership.tenantId, status: "POSTED" as const, ...branchScopeWhere(access.membership) };
   const [items, total] = await prisma.$transaction(async (tx) => Promise.all([
 tx.journalEntry.findMany({
       where,
@@ -168,7 +170,7 @@ export async function POST(request: Request) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const prior = await tx.journalEntry.findFirst({
-        where: { tenantId, idempotencyKey: parsed.data.idempotencyKey },
+        where: { tenantId, idempotencyKey: parsed.data.idempotencyKey, ...branchScopeWhere(access.membership) },
         include: entryInclude
       });
       if (prior) {
@@ -176,6 +178,14 @@ export async function POST(request: Request) {
         return { entry: prior, replay: true };
       }
 
+      const resolved = await resolveBranchForMember(access.membership, parsed.data.branchId, (candidate) =>
+        tx.branch.findFirst({
+          where: { tenantId, isActive: true, ...(candidate ? { id: candidate } : { slug: "main" }) },
+          select: { id: true }
+        })
+      );
+      if (!resolved.ok) return { error: resolved.error };
+      const branchId = resolved.branchId;
       const accountIds = [...new Set(normalized.lines.map((line) => line.accountId))];
       const foundAccounts = await tx.ledgerAccount.findMany({
         where: { tenantId, isActive: true, id: { in: accountIds } },
@@ -187,6 +197,7 @@ export async function POST(request: Request) {
       const entry = await tx.journalEntry.create({
         data: {
           tenantId,
+          branchId,
           reference,
           entryDate: date,
           description: parsed.data.description,
