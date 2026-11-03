@@ -157,5 +157,6 @@ test("customer API denies cross-company read, update and archive attempts", {
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
     if (userId) await admin.user.deleteMany({ where: { id: userId } });
     await admin.$disconnect();
+    await prisma.$disconnect();
   }
 });
