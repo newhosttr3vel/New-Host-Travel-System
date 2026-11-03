@@ -1,0 +1,58 @@
+name: PostgreSQL backups
+
+on:
+  schedule:
+    - cron: "20 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate backup configuration
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          AWS_BACKUP_ROLE_ARN: ${{ vars.AWS_BACKUP_ROLE_ARN }}
+          AWS_BACKUP_BUCKET: ${{ vars.AWS_BACKUP_BUCKET }}
+          AWS_BACKUP_REGION: ${{ vars.AWS_BACKUP_REGION }}
+        run: |
+          test -n "$BACKUP_DATABASE_URL" || { echo "Missing BACKUP_DATABASE_URL secret"; exit 1; }
+          test -n "$AWS_BACKUP_ROLE_ARN" || { echo "Missing AWS_BACKUP_ROLE_ARN variable"; exit 1; }
+          test -n "$AWS_BACKUP_BUCKET" || { echo "Missing AWS_BACKUP_BUCKET variable"; exit 1; }
+          test -n "$AWS_BACKUP_REGION" || { echo "Missing AWS_BACKUP_REGION variable"; exit 1; }
+
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_BACKUP_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_BACKUP_REGION }}
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create encrypted backup
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          pg_dump --format=custom --no-owner --no-acl "$BACKUP_DATABASE_URL" > "backup/new-host-travel-$stamp.dump"
+          test -s "backup/new-host-travel-$stamp.dump"
+          sha256sum "backup/new-host-travel-$stamp.dump" > "backup/new-host-travel-$stamp.dump.sha256"
+          echo "BACKUP_FILE=backup/new-host-travel-$stamp.dump" >> "$GITHUB_ENV"
+          echo "BACKUP_HASH=backup/new-host-travel-$stamp.dump.sha256" >> "$GITHUB_ENV"
+
+      - name: Upload to private S3 backup bucket
+        env:
+          AWS_BACKUP_BUCKET: ${{ vars.AWS_BACKUP_BUCKET }}
+        run: |
+          set -euo pipefail
+          aws s3 cp "$BACKUP_FILE" "s3://$AWS_BACKUP_BUCKET/new-host-travel/postgres/$(basename "$BACKUP_FILE")" --sse AES256
+          aws s3 cp "$BACKUP_HASH" "s3://$AWS_BACKUP_BUCKET/new-host-travel/postgres/$(basename "$BACKUP_HASH")" --sse AES256
