@@ -16,6 +16,6 @@ const grants: Record<TenantRole, ReadonlySet<Permission>> = {
   READ_ONLY: new Set(["customers:read","suppliers:read","reservations:read"])
 };
 export function hasPermission(role: TenantRole | string, permission: Permission): boolean {
-  if (!(role in grants)) return false;
+  if (!Object.prototype.hasOwnProperty.call(grants, role)) return false;
   return grants[role as TenantRole].has(permission);
 }
