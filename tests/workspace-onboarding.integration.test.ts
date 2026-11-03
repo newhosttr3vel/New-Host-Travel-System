@@ -30,8 +30,8 @@ test("parallel onboarding requests create at most one workspace for a user", {
       timeZone: "Africa/Cairo",
     };
     const results = await Promise.all([
-      createWorkspaceForUser(input),
-      createWorkspaceForUser(input),
+      createWorkspaceForUser(prisma, input),
+      createWorkspaceForUser(prisma, input),
     ]);
 
     const created = results.filter((result) => result !== null);
@@ -50,7 +50,17 @@ test("parallel onboarding requests create at most one workspace for a user", {
     const accounts = await prisma.ledgerAccount.count({ where: { tenantId } });
     assert.ok(accounts > 0);
   } finally {
-    if (tenantId) await prisma.tenant.delete({ where: { id: tenantId } });
+    const userMemberships = await prisma.tenantMembership.findMany({
+      where: { userId },
+      select: { tenantId: true },
+    });
+    const tenantIds = [...new Set([
+      ...(tenantId ? [tenantId] : []),
+      ...userMemberships.map((membership) => membership.tenantId),
+    ])];
+    if (tenantIds.length > 0) {
+      await prisma.tenant.deleteMany({ where: { id: { in: tenantIds } } });
+    }
     await prisma.user.deleteMany({ where: { id: userId } });
     await prisma.$disconnect();
   }
