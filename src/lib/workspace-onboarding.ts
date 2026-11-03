@@ -27,7 +27,7 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
         SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
       )
       SELECT TRUE AS acquired FROM lock_result
-    \`;
+    `;
 
     const existing = await tx.tenantMembership.findFirst({
       where: { userId: input.userId },
