@@ -21,6 +21,9 @@ test("PostgreSQL accepts balanced journal entries and rejects unbalanced or cros
       data: { name: "Finance Integration B", slug: `finance-b-${suffix}` }
     });
     secondTenantId = secondTenant.id;
+    const mainBranch = await prisma.branch.create({
+      data: { tenantId: firstTenant.id, name: "Main Branch", slug: "main" }
+    });
 
     const cash = await prisma.ledgerAccount.create({
       data: { tenantId: firstTenant.id, code: `CASH-${suffix}`, name: "نقدية اختبار", nameEn: "Test cash", type: "ASSET" }
@@ -36,6 +39,7 @@ test("PostgreSQL accepts balanced journal entries and rejects unbalanced or cros
       const entry = await tx.journalEntry.create({
         data: {
           tenantId: firstTenant.id,
+          branchId: mainBranch.id,
           reference: `GOOD-${suffix}`,
           entryDate: new Date("2026-10-28T12:00:00.000Z"),
           description: "Balanced journal integration test",
@@ -58,6 +62,7 @@ test("PostgreSQL accepts balanced journal entries and rejects unbalanced or cros
       const entry = await tx.journalEntry.create({
         data: {
           tenantId: firstTenant.id,
+          branchId: mainBranch.id,
           reference: `BAD-${suffix}`,
           entryDate: new Date("2026-10-28T12:00:00.000Z"),
           description: "Intentionally unbalanced journal",
@@ -78,6 +83,7 @@ test("PostgreSQL accepts balanced journal entries and rejects unbalanced or cros
       const entry = await tx.journalEntry.create({
         data: {
           tenantId: firstTenant.id,
+          branchId: mainBranch.id,
           reference: `CROSS-${suffix}`,
           entryDate: new Date("2026-10-28T12:00:00.000Z"),
           description: "Intentionally cross-tenant journal",
