@@ -11,7 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma, setTenantRlsContext } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-context";
 import { currentLocale } from "@/lib/i18n";
 import { t } from "@/lib/messages";
@@ -49,6 +49,7 @@ export default async function DashboardPage() {
   const { session, membership } = await getTenantContext();
   if (!session) redirect("/login");
   if (!membership) redirect("/onboarding");
+  setTenantRlsContext({ userId: session.user.id, tenantId: membership.tenantId });
 
   const locale = await currentLocale();
   const ar = locale === "ar";
