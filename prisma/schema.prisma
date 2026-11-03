@@ -116,6 +116,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   memberships   TenantMembership[]
+  uploadedDocuments Document[] @relation("DocumentUploader")
   @@map("user")
 }
 model Session {
@@ -179,7 +180,9 @@ model Tenant {
   updatedAt       DateTime           @updatedAt
   memberships     TenantMembership[]
   branches        Branch[]
+  branchMemberships BranchMembership[]
   customers       Customer[]
+  documents       Document[]
   suppliers       Supplier[]
   hotels          Hotel[]
   reservations    Reservation[]
@@ -203,6 +206,8 @@ model TenantMembership {
   updatedAt DateTime  @updatedAt
   tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchAssignments BranchMembership[]
+  @@unique([id, tenantId])
   @@unique([tenantId, userId])
   @@index([userId, createdAt])
   @@map("tenant_memberships")
@@ -216,9 +221,27 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships BranchMembership[]
+  reservations Reservation[]
+  documents Document[]
+  @@unique([id, tenantId])
   @@unique([tenantId, slug])
   @@index([tenantId, isActive])
   @@map("branches")
+}
+model BranchMembership {
+  id           String   @id @default(cuid())
+  tenantId     String
+  branchId     String
+  membershipId String
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch   @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  membership   TenantMembership @relation(fields: [membershipId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  @@unique([id, tenantId])
+  @@unique([branchId, membershipId])
+  @@index([tenantId, membershipId])
+  @@map("branch_memberships")
 }
 model Customer {
   id           String       @id @default(cuid())
@@ -283,6 +306,7 @@ model Supplier {
 model Reservation {
   id          String                @id @default(cuid())
   tenantId    String
+  branchId    String?
   customerId  String
   supplierId  String?
   supplierTenantId String?
@@ -299,15 +323,18 @@ model Reservation {
   updatedAt   DateTime              @updatedAt
   archivedAt  DateTime?
   tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch?               @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
   invoices      Invoice[]
   supplierBills SupplierBill[]
   hotelDetail HotelReservationDetail?
+  documents   Document[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
   @@index([tenantId, status, startDate])
   @@index([tenantId, customerId])
+  @@index([tenantId, branchId, status, startDate])
   @@map("reservations")
 }
 
@@ -414,6 +441,28 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+
+model Document {
+  id            String   @id @default(cuid())
+  tenantId      String
+  branchId      String?
+  reservationId String?
+  uploadedById  String
+  objectKey     String   @unique
+  originalName  String
+  mimeType      String
+  size          Int
+  sha256        String
+  createdAt     DateTime @default(now())
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?  @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  reservation   Reservation? @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  uploadedBy    User     @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  @@unique([id, tenantId])
+  @@index([tenantId, reservationId, createdAt])
+  @@index([tenantId, branchId, createdAt])
+  @@map("documents")
+}
 
 model LedgerAccount {
   id           String            @id @default(cuid())
