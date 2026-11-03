@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 
 const branchSchema = z.object({ name: z.string().trim().min(2).max(100) });
 
@@ -35,6 +35,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "settings:manage");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: "INVALID_JSON" }, { status: 400 }); }
   const parsed = branchSchema.safeParse(body);
