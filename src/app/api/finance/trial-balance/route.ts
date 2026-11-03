@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
+import { branchScopeWhere } from "@/lib/branch-access";
 
 function toCents(value: string): bigint {
   if (!/^\d+(?:\.\d{1,2})?$/.test(value)) {
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
     }),
     prisma.journalLine.groupBy({
       by: ["accountId"],
-      where: { tenantId },
+      where: { tenantId, journalEntry: { is: { tenantId, ...branchScopeWhere(access.membership) } } },
       _sum: { baseDebit: true, baseCredit: true }
     })
   ]);
