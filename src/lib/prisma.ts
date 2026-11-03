@@ -113,7 +113,13 @@ export const prisma = new Proxy(rawPrisma, {
     if (property === "$transaction") {
       return (callback: unknown, options?: unknown) => {
         if (typeof callback !== "function") {
-          throw new Error("Tenant RLS requires interactive transaction callbacks; replace transaction arrays with a callback.");
+          // Better Auth uses Prisma array transactions for user/session records that are not tenant-owned.
+          // Tenant-scoped application code must run with an explicit request context and use callbacks.
+          const current = contextStorage.getStore();
+          if (Array.isArray(callback) && !current?.userId && !current?.tenantId) {
+            return rawPrisma.$transaction(callback as never, options as never);
+          }
+          throw new Error("Tenant RLS requires interactive transactions for tenant-scoped operations.");
         }
         return rawPrisma.$transaction(async (tx) => {
           const current = contextStorage.getStore();
