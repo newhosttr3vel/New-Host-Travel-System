@@ -1,4 +1,5 @@
 import { getTenantContext, TenantAccessError } from "@/lib/tenant-context";
+import { setTenantRlsContext } from "@/lib/prisma";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export async function requireTenantPermission(request: Request, permission: Permission) {
@@ -20,4 +21,20 @@ export async function requireTenantPermission(request: Request, permission: Perm
     }
     throw error;
   }
+}
+
+
+/**
+ * Call in the route-handler's own async context immediately after authorization.
+ * AsyncLocalStorage.enterWith inside a nested authorization helper does not
+ * propagate to a caller's already-created continuation.
+ */
+export function activateTenantRequestContext(access: {
+  session: { user: { id: string } };
+  membership: { tenantId: string };
+}) {
+  setTenantRlsContext({
+    userId: access.session.user.id,
+    tenantId: access.membership.tenantId
+  });
 }
