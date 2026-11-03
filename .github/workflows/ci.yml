@@ -53,7 +53,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "chore: lock audited dependency tree"
-            git push origin "HEAD:\${GITHUB_HEAD_REF}"
+            git push origin "HEAD:refs/heads/$GITHUB_HEAD_REF"
           fi
       - name: Capture generated dependency lockfile and audit report
         run: npm audit --json > npm-audit.json || true
