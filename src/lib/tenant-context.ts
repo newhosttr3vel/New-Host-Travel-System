@@ -19,13 +19,18 @@ export async function getTenantContext(requestHeaders?: Headers) {
   if (!session) return { session: null, membership: null };
   setTenantRlsContext({ userId: session.user.id });
   const requestedTenantId = currentHeaders.get("x-tenant-id");
-  const membership = await prisma.tenantMembership.findFirst({
+  const membershipBase = await prisma.tenantMembership.findFirst({
     where: { userId: session.user.id, ...(requestedTenantId ? { tenantId: requestedTenantId } : {}) },
-    include: { tenant: true, branchAssignments: { select: { branchId: true } } },
+    include: { tenant: true },
     orderBy: { createdAt: "asc" }
   });
-  if (requestedTenantId && !membership) throw new TenantAccessError();
-  if (membership) setTenantRlsContext({ userId: session.user.id, tenantId: membership.tenantId });
+  if (requestedTenantId && !membershipBase) throw new TenantAccessError();
+  if (!membershipBase) return { session, membership: null };
+  setTenantRlsContext({ userId: session.user.id, tenantId: membershipBase.tenantId });
+  const membership = await prisma.tenantMembership.findUnique({
+    where: { id: membershipBase.id },
+    include: { tenant: true, branchAssignments: { select: { branchId: true } } }
+  });
   if (membership?.tenant.status === "SUSPENDED" || membership?.tenant.status === "CANCELLED") {
     throw new TenantAccessError("This company workspace is currently unavailable.");
   }
