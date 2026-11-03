@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { amountToCents, centsToAmount, normalizeJournalLines, JournalValidationError } from "@/lib/finance-journal";
+import { branchScopeWhere } from "@/lib/branch-access";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T12:00:00.000Z");
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
   try {
     const outcome = await prisma.$transaction(async (tx) => {
       const prior = await tx.customerPayment.findFirst({
-        where: { tenantId, idempotencyKey: input.idempotencyKey },
+        where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) },
         include: paymentInclude
       });
       if (prior) {
@@ -114,10 +115,10 @@ export async function POST(request: Request) {
       }
 
       const invoice = await tx.invoice.findFirst({
-        where: { id: input.invoiceId, tenantId },
+        where: { id: input.invoiceId, tenantId, ...branchScopeWhere(access.membership) },
         select: {
           id: true, reference: true, status: true, currency: true, exchangeRate: true,
-          total: true, paidAmount: true, updatedAt: true, journalEntryId: true
+          total: true, paidAmount: true, updatedAt: true, journalEntryId: true, branchId: true
         }
       });
       if (!invoice) return { error: "INVOICE_NOT_FOUND" as const };
@@ -153,7 +154,7 @@ export async function POST(request: Request) {
 
       const journal = await tx.journalEntry.create({
         data: {
-          tenantId, reference: journalReference, entryDate: date,
+          tenantId, branchId: invoice.branchId, reference: journalReference, entryDate: date,
           description: "Customer receipt " + receiptNumber + " - " + invoice.reference,
           currency: invoice.currency, exchangeRate: normalized.exchangeRate,
           status: "POSTED", sourceType: "CUSTOMER_PAYMENT",
@@ -170,6 +171,7 @@ export async function POST(request: Request) {
       const payment = await tx.customerPayment.create({
         data: {
           tenantId,
+          branchId: invoice.branchId,
           invoiceId: invoice.id,
           accountId: account.id,
           journalEntryId: journal.id,
@@ -231,7 +233,7 @@ export async function POST(request: Request) {
     }
     if (isPrismaCode(error, "P2002")) {
       const prior = await prisma.customerPayment.findFirst({
-        where: { tenantId, idempotencyKey: input.idempotencyKey },
+        where: { tenantId, idempotencyKey: input.idempotencyKey, ...branchScopeWhere(access.membership) },
         include: paymentInclude
       });
       if (prior && prior.requestHash === requestHash) {
