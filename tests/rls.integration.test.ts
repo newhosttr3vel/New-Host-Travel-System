@@ -38,7 +38,7 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
         /switch company context/
       );
       await prisma.$transaction(async (tx) => {
-        const rawRows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM customers WHERE tenant_id = ${b.id}`;
+        const rawRows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM customers WHERE "tenantId" = ${b.id}`;
         assert.equal(rawRows.length, 0);
         await assert.rejects(
           tx.customer.create({ data: { tenantId: b.id, name: "Cross-company insert" } }),
