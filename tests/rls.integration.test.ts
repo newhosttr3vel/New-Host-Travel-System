@@ -51,5 +51,6 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
     await admin.user.deleteMany({ where: { id: userId } });
     await admin.$disconnect();
+    await prisma.$disconnect();
   }
 });
