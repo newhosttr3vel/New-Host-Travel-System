@@ -52,7 +52,10 @@ jobs:
           const compose = readFileSync(".devcontainer/docker-compose.yml", "utf8");
           const folder = config.workspaceFolder;
           if (!folder || !folder.startsWith("/workspaces/")) throw new Error("workspaceFolder must be under /workspaces.");
-          if (config.remoteUser !== "vscode") throw new Error("Codespaces must use the existing vscode user from the Node devcontainer image.");
+          if (config.remoteUser !== "codespace") throw new Error("Codespaces must use the codespace user provided by the standard universal image.");
+          if (config.updateRemoteUserUID !== undefined) throw new Error("Do not rewrite the UID of the standard Codespaces user.");
+          if (!compose.includes("image: mcr.microsoft.com/devcontainers/universal:2")) throw new Error("Compose must use the standard universal Codespaces image.");
+          if (config.features?.["ghcr.io/devcontainers/features/node:2"]?.version !== "22") throw new Error("Node.js 22 feature is missing.");
           if (!compose.includes("working_dir: " + folder)) throw new Error("Compose working_dir does not match workspaceFolder.");
           if (!compose.includes("..:" + folder + ":cached")) throw new Error("Compose bind mount does not match workspaceFolder.");
           if (!config.features?.["ghcr.io/devcontainers/features/git-lfs:1"]) throw new Error("Git LFS feature is missing.");
