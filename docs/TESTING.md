@@ -13,7 +13,7 @@ CI runs PostgreSQL 16, applies migrations as the migration/admin account, provis
 - Branch access rules (owners/admins, assigned employees and unassigned employees).
 - Reservation status transitions, date and hotel-price calculations.
 - PostgreSQL foreign-key tenant consistency and concurrent workspace onboarding.
-- RLS cross-tenant read/write denial with a non-owner runtime connection.
+- RLS cross-tenant read/write denial with a non-owner runtime connection; audit UPDATE/DELETE are denied to the runtime role.
 - Authenticated customer API cross-tenant list, update and archive denial.
 - Private-document MIME signature and filename validation.
 - Finance journal balancing, invoice/payment calculations, hotel reservation persistence and reservation relationship tenant isolation.
