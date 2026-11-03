@@ -6,7 +6,7 @@ import { signPrivateDocumentDownload, isPrivateDocumentStorageConfigured } from 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, context: RouteContext) {
-  const access = await requireTenantPermission(request, "reservations:read");
+  const access = await requireTenantPermission(request, "documents:read");
   if (!access.ok) return access.response;
   activateTenantRequestContext(access);
   if (!isPrivateDocumentStorageConfigured()) {
