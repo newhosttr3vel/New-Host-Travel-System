@@ -15,9 +15,9 @@ type Customer = {
   updatedAt: string;
 };
 type CustomerForm = { name: string; type: "INDIVIDUAL" | "CORPORATE"; companyName: string; email: string; phone: string; notes: string };
-const emptyForm: CustomerForm = { name: "", type: "INDIVIDUAL", companyName: "", email: "", phone: "", notes: "" };
+const emptyForm: CustomerForm = { name: "", type: "CORPORATE", companyName: "", email: "", phone: "", notes: "" };
 
-export function CustomersClient({ locale, canWrite, canArchive }: { locale: Locale; canWrite: boolean; canArchive: boolean }) {
+export function CustomersClient({ locale, canWrite, canArchive, corporateOnly = false }: { locale: Locale; canWrite: boolean; canArchive: boolean; corporateOnly?: boolean }) {
   const [items, setItems] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -39,6 +39,7 @@ export function CustomersClient({ locale, canWrite, canArchive }: { locale: Loca
       setLoading(true); setError("");
       try {
         const params = new URLSearchParams({ page: String(page), pageSize: "25" });
+        if (corporateOnly) params.set("type", "CORPORATE");
         if (appliedSearch) params.set("search", appliedSearch);
         const response = await fetch(`/api/customers?${params.toString()}`, { cache: "no-store" });
         const result = await response.json();
@@ -56,7 +57,7 @@ export function CustomersClient({ locale, canWrite, canArchive }: { locale: Loca
     }
     void load();
     return () => { active = false; };
-  }, [page, appliedSearch, refreshKey, locale]);
+  }, [page, appliedSearch, refreshKey, locale, corporateOnly]);
 
   function beginCreate() {
     setEditingId(null); setForm(emptyForm); setError(""); setSuccess(""); setShowForm(true);
@@ -115,7 +116,7 @@ export function CustomersClient({ locale, canWrite, canArchive }: { locale: Loca
     {error && <div className="alert" role="alert">{error}</div>}
     {success && <div className="alert success" role="status">{success}</div>}
     {showForm && canWrite && <section className="panel form-panel">
-      <div className="panel-header"><div><h2 className="panel-title">{t(locale, editingId ? "editCustomer" : "createCustomer")}</h2><div className="panel-subtitle">{locale === "ar" ? "تُحفظ البيانات في مساحة شركتك فقط" : "Records are saved only inside your company workspace"}</div></div><button className="icon-button" type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }} aria-label={t(locale, "cancel")}><X size={16} /></button></div>
+      <div className="panel-header"><div><h2 className="panel-title">{t(locale, editingId ? "editCustomer" : "createCustomer")}</h2><div className="panel-subtitle">{locale === "ar" ? "إدارة الشركات التي تبيع لها خدمات السفر بنظام B2B" : "Manage the B2B companies you sell travel services to"}</div></div><button className="icon-button" type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm(emptyForm); }} aria-label={t(locale, "cancel")}><X size={16} /></button></div>
       <form className="panel-body auth-form" onSubmit={submit}>
         <div className="form-grid">
           <label className="field"><span className="field-label">{t(locale, "customerName")} *</span><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required minLength={2} maxLength={160} autoFocus /></label>

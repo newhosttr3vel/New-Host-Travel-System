@@ -3,10 +3,12 @@
 ## Controls in the current slice
 
 - Better Auth manages password storage and session lifecycle.
+- Production auth rate limiting is explicitly enabled, with shared PostgreSQL storage and stricter per-endpoint limits for email sign-in (5 attempts/minute) and sign-up (3 attempts/hour).
 - Production configuration refuses a missing or too-short BETTER_AUTH_SECRET.
 - Protected workspace pages redirect unauthenticated visitors and route newly registered users to workspace onboarding.
 - Customer, supplier and reservation API endpoints check the session, tenant membership and server-side role permission.
 - Customer/supplier/reservation queries scope records to the resolved tenant; reservation customer and optional supplier relationships are constrained by composite database foreign keys plus a tenant consistency check.
+- Workspace creation is serialized per user with a PostgreSQL transaction-scoped advisory lock, preventing parallel first-time onboarding requests from creating duplicate workspaces.
 - Workspace creation and customer/supplier/reservation create, update and archive actions write audit events.
 - Reservation supplier-cost values are returned and editable only to roles with finance:read; non-finance users cannot set the cost through the API.
 - Validation uses Zod; errors do not return customer records across tenant boundaries.
@@ -15,12 +17,12 @@
 
 ## Must be completed before production use
 
-1. Enable PostgreSQL row-level security with a non-owner application database role and add tests proving tenant isolation.
-2. Add rate limiting and login abuse protection. Configure email verification and secure password-reset delivery.
-3. Add automated integration and end-to-end tests for login, onboarding and attempts to read, update, archive or export another tenant's data.
+1. Enable PostgreSQL row-level security with a non-owner application database role and add tests proving tenant isolation. The current app-level tenant filters and composite foreign keys are not a substitute for RLS.
+2. Configure email verification and secure password-reset delivery; email verification is currently disabled because no mail delivery provider is configured.
+3. Add automated integration and end-to-end tests for login, onboarding, and attempts to read, update, archive or export another tenant's data. The new onboarding integration test covers concurrent workspace creation, not the full auth journey.
 4. Add branch-level permissions, invitation lifecycle, review of exceptional support access and immutable financial audit policies.
 5. Add private object storage and short-lived authorization for passport and travel-document attachments.
-6. Add dependency and secret scanning, database backups, restore drills, observability, incident response and a retention policy.
+6. `package-lock.json` is now committed and CI uses `npm ci` on subsequent runs. The audited dependency tree pins the affected minimatch paths to 11.0.4; the latest CI `npm audit` report is clean (0 vulnerabilities). Keep Dependabot enabled and investigate all new audit findings before merging dependency updates. ESLint 9 is end-of-life; the current Next.js ESLint plugin chain declares peer support only through ESLint 9, so upgrade the lint toolchain together when compatible plugin releases are available. Add secret scanning, database backups, restore drills, observability, incident response and a retention policy.
 7. Review HTTPS, cookies, CSP, trusted origins, logging and PostgreSQL grants in the actual hosting environment.
 8. Obtain an appropriate independent security review and jurisdiction-specific legal/tax review before relying on the product commercially.
 

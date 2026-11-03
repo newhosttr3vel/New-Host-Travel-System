@@ -2,9 +2,9 @@ name: Quality checks
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, "release/**", "feature/**"]
 permissions:
-  contents: read
+  contents: write
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -30,11 +30,48 @@ jobs:
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:3000
       RUN_DB_TESTS: "true"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: 22
-      - run: npm install
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.18.0
+      - name: Check local startup helper syntax
+        run: node --check scripts/local.mjs
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      - name: Apply non-breaking dependency security updates
+        run: npm audit fix || true
+      - name: Persist generated dependency lockfile on this PR
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: lock audited dependency tree"
+            git push origin "HEAD:refs/heads/$GITHUB_HEAD_REF"
+          fi
+      - name: Capture generated dependency lockfile and audit report
+        run: npm audit --json > npm-audit.json || true
+      - name: Upload dependency audit and lockfile
+        uses: actions/upload-artifact@v7
+        with:
+          name: dependency-audit-and-lockfile
+          path: |
+            npm-audit.json
+            package-lock.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Enforce clean dependency audit
+        run: |
+          node -e "const audit = require('./npm-audit.json'); const total = audit.metadata?.vulnerabilities?.total ?? 0; if (total > 0) { console.error('Dependency audit reported ' + total + ' vulnerabilities.'); process.exit(1); }"
       - name: Validate PostgreSQL migrations
         run: npm run db:migrate
       - run: npm run lint

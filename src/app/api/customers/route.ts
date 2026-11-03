@@ -17,6 +17,8 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const search = (url.searchParams.get("search") ?? "").trim().slice(0, 120);
+  const requestedType = url.searchParams.get("type");
+  const customerType: "CORPORATE" | "INDIVIDUAL" | undefined = requestedType === "CORPORATE" || requestedType === "INDIVIDUAL" ? requestedType : undefined;
   const requestedPage = Number(url.searchParams.get("page") ?? "1");
   const requestedSize = Number(url.searchParams.get("pageSize") ?? "25");
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
@@ -24,6 +26,7 @@ export async function GET(request: Request) {
   const where = {
     tenantId: access.membership.tenantId,
     archivedAt: null,
+    ...(customerType ? { type: customerType } : {}),
     ...(search ? {
       OR: [
         { name: { contains: search, mode: "insensitive" as const } },
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
   const [items, total] = await prisma.$transaction([
     prisma.customer.findMany({
       where,
-      select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, notes: true, createdAt: true, updatedAt: true },
+      select: { id: true, type: true, name: true, companyName: true, email: true, phone: true, nationality: true, notes: true, createdAt: true, updatedAt: true },
       orderBy: [{ createdAt: "desc" }, { name: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize

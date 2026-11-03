@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: local_dev_only_change_me
+      POSTGRES_DB: new_host_travel
+    ports:
+      # Bind PostgreSQL to this computer only; do not expose it to the LAN.
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - new_host_travel_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_user -d new_host_travel"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  new_host_travel_local_data:
