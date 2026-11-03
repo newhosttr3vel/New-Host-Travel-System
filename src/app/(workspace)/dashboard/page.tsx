@@ -90,10 +90,10 @@ export default async function DashboardPage() {
     supplierPaymentGroups,
   ] = await Promise.all([
     canReadCustomers
-      ? prisma.customer.count({ where: { tenantId, ...branchScopeWhere(membership), archivedAt: null } })
+      ? prisma.customer.count({ where: { tenantId, archivedAt: null } })
       : Promise.resolve(null),
     canReadSuppliers
-      ? prisma.supplier.count({ where: { tenantId, ...branchScopeWhere(membership), archivedAt: null } })
+      ? prisma.supplier.count({ where: { tenantId, archivedAt: null } })
       : Promise.resolve(null),
     canReadReservations
       ? prisma.reservation.count({ where: { tenantId, ...branchScopeWhere(membership), archivedAt: null } })
