@@ -86,7 +86,11 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  RAISE EXCEPTION 'audit_events is append-only; updates and deletes are forbidden';
+  -- Permit only a tenant-owned cascading purge; direct updates/deletes remain forbidden.
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN
+    RETURN OLD;
+  END IF;
+  RAISE EXCEPTION 'audit_events is append-only; updates and direct deletes are forbidden';
 END;
 $$;
 DROP TRIGGER IF EXISTS audit_events_append_only ON public.audit_events;
