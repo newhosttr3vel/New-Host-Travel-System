@@ -19,7 +19,7 @@ BEGIN
   FOR tbl IN
     SELECT c.table_name
     FROM information_schema.columns c
-    WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id'
+    WHERE c.table_schema = 'public' AND c.column_name = 'tenantId'
     GROUP BY c.table_name
   LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', tbl.table_name);
@@ -29,12 +29,12 @@ BEGIN
       EXECUTE format(
         'CREATE POLICY tenant_isolation ON public.%I
          USING (
-           user_id = NULLIF(current_setting(''app.user_id'', true), '''')
-           OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')
+           "userId" = NULLIF(current_setting(''app.user_id'', true), '''')
+           OR "tenantId" = NULLIF(current_setting(''app.tenant_id'', true), '''')
          )
          WITH CHECK (
-           user_id = NULLIF(current_setting(''app.user_id'', true), '''')
-           OR tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')
+           "userId" = NULLIF(current_setting(''app.user_id'', true), '''')
+           OR "tenantId" = NULLIF(current_setting(''app.tenant_id'', true), '''')
          )',
         tbl.table_name
       );
@@ -42,19 +42,19 @@ BEGIN
       EXECUTE format(
         'CREATE POLICY tenant_isolation ON public.%I
          USING (
-           tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')
+           "tenantId" = NULLIF(current_setting(''app.tenant_id'', true), '''')
            AND EXISTS (
              SELECT 1 FROM public.tenant_memberships m
-             WHERE m.tenant_id = %I.tenant_id
-               AND m.user_id = NULLIF(current_setting(''app.user_id'', true), '''')
+             WHERE m."tenantId" = %I."tenantId"
+               AND m."userId" = NULLIF(current_setting(''app.user_id'', true), '''')
            )
          )
          WITH CHECK (
-           tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')
+           "tenantId" = NULLIF(current_setting(''app.tenant_id'', true), '''')
            AND EXISTS (
              SELECT 1 FROM public.tenant_memberships m
-             WHERE m.tenant_id = %I.tenant_id
-               AND m.user_id = NULLIF(current_setting(''app.user_id'', true), '''')
+             WHERE m."tenantId" = %I."tenantId"
+               AND m."userId" = NULLIF(current_setting(''app.user_id'', true), '''')
            )
          )',
         tbl.table_name, tbl.table_name, tbl.table_name
@@ -70,15 +70,14 @@ CREATE POLICY tenant_isolation ON public.tenants
     id = NULLIF(current_setting('app.tenant_id', true), '')
     OR EXISTS (
       SELECT 1 FROM public.tenant_memberships m
-      WHERE m.tenant_id = tenants.id
-        AND m.user_id = NULLIF(current_setting('app.user_id', true), '')
+      WHERE m."tenantId" = tenants.id
+        AND m."userId" = NULLIF(current_setting('app.user_id', true), '')
     )
   )
   WITH CHECK (
     id = NULLIF(current_setting('app.tenant_id', true), '')
     AND NULLIF(current_setting('app.user_id', true), '') IS NOT NULL
   );
-
 
 -- Financial and security audit events are append-only for the application role.
 REVOKE UPDATE, DELETE ON TABLE public.audit_events FROM new_host_app;
