@@ -28,3 +28,12 @@ test("prototype property names are treated as unknown roles", () => {
   assert.equal(hasPermission("constructor", "finance:read"), false);
   assert.equal(hasPermission("__proto__", "users:manage"), false);
 });
+
+test("travel documents require an explicit sensitive-document permission", () => {
+  assert.equal(hasPermission("OWNER", "documents:read"), true);
+  assert.equal(hasPermission("RESERVATIONS_AGENT", "documents:read"), true);
+  assert.equal(hasPermission("VISA_OFFICER", "documents:write"), true);
+  assert.equal(hasPermission("READ_ONLY", "documents:read"), false);
+  assert.equal(hasPermission("ACCOUNTANT", "documents:read"), false);
+  assert.equal(hasPermission("SALES", "documents:write"), false);
+});
