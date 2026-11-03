@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { requireTenantPermission } from "@/lib/api-auth";
+import { requireTenantPermission, activateTenantRequestContext } from "@/lib/api-auth";
 import { branchScopeWhere, canAccessBranch } from "@/lib/branch-access";
 import { deletePrivateDocument, isPrivateDocumentStorageConfigured, putPrivateDocument } from "@/lib/document-storage";
 import { detectAllowedDocumentMime, MAX_DOCUMENT_BYTES, safeOriginalDocumentName } from "@/lib/document-validation";
@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   const reservationId = new URL(request.url).searchParams.get("reservationId");
   const items = await prisma.document.findMany({
     where: {
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const access = await requireTenantPermission(request, "reservations:write");
   if (!access.ok) return access.response;
+  activateTenantRequestContext(access);
   if (!isPrivateDocumentStorageConfigured()) {
     return Response.json({ error: "DOCUMENT_STORAGE_NOT_CONFIGURED" }, { status: 503 });
   }
