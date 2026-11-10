@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
   Bus,
   Eye,
@@ -30,42 +28,6 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
   const [notice, setNotice] = useState("");
   const [forgotPassword, setForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeShowcaseSlide, setActiveShowcaseSlide] = useState(0);
-  const registering = mode === "register";
-  const isArabic = locale === "ar";
-  const showcaseSlides = [
-    {
-      icon: Hotel,
-      eyebrow: isArabic ? "إدارة الفنادق والإقامة" : "HOTELS & ACCOMMODATION",
-      title: isArabic ? "كل تفاصيل الإقامة تحت السيطرة." : "Every stay, under control.",
-      description: isArabic ? "تابع طلبات الفنادق، الغرف، تواريخ الوصول والمغادرة، الموردين وتكلفة كل حجز." : "Manage hotel requests, room details, check-in and check-out dates, suppliers and booking costs.",
-      metric: isArabic ? "حجوزات الفنادق" : "HOTEL BOOKINGS",
-    },
-    {
-      icon: Plane,
-      eyebrow: isArabic ? "الطيران والرحلات الداخلية" : "FLIGHTS & DOMESTIC TRIPS",
-      title: isArabic ? "من التذكرة إلى الرحلة… في ملف واحد." : "From ticket to trip, in one file.",
-      description: isArabic ? "نظّم بيانات المسافرين، القطاعات، التذاكر، البرامج السياحية والتنقلات الداخلية." : "Keep passenger details, flight segments, tickets, tour programs and local transfers connected.",
-      metric: isArabic ? "الطيران والبرامج السياحية" : "FLIGHTS & TOURS",
-    },
-    {
-      icon: MapPinned,
-      eyebrow: isArabic ? "العمرة والتأشيرات" : "UMRAH & VISA OPERATIONS",
-      title: isArabic ? "رحلات متكاملة ومتابعة أوضح." : "Complete journeys. Clear follow-up.",
-      description: isArabic ? "تابع برامج العمرة، بيانات المعتمرين، التأشيرات، المستندات ومراحل إصدار الطلب." : "Track Umrah packages, pilgrim details, visa applications, documents and each processing stage.",
-      metric: isArabic ? "العمرة والتأشيرات" : "UMRAH & VISAS",
-    },
-  ];
-  const activeSlide = showcaseSlides[activeShowcaseSlide];
-  const ActiveSlideIcon = activeSlide.icon;
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveShowcaseSlide((current) => (current + 1) % 3);
-    }, 6500);
-    return () => window.clearInterval(timer);
-  }, []);
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -292,75 +254,88 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
           </section>
 
           <section className="auth-visual-v2" dir={locale}>
-            <div className="auth-visual-orbit auth-visual-orbit-one" />
-            <div className="auth-visual-orbit auth-visual-orbit-two" />
+            <div className="auth-visual-orbit auth-visual-orbit-one" aria-hidden="true" />
+            <div className="auth-visual-orbit auth-visual-orbit-two" aria-hidden="true" />
 
             <div className="auth-visual-top">
               <div className="auth-brand-v2">
-                <span className="auth-brand-logo"><img src="/brand/new-host-logo.jpg" alt="New Host Travel" /></span>
-
+                <span className="auth-brand-logo">
+                  <img src="/brand/new-host-logo.jpg" alt="New Host Travel" />
+                </span>
+                <span className="auth-brand-caption" aria-label="New Host Travel">
+                  <strong>NEW HOST</strong>
+                  <small>TRAVEL MANAGEMENT</small>
+                </span>
               </div>
-              <span className="auth-live-badge"><i />{isArabic ? "مساحة عملك" : "YOUR WORKSPACE"}</span>
+              <span className="auth-live-badge">
+                <i />
+                {isArabic ? "مساحة عملك" : "YOUR WORKSPACE"}
+              </span>
             </div>
 
-            <div className="auth-visual-copy">
+            <div className="auth-hero-copy">
               <span className="auth-visual-eyebrow">
                 <span />
                 {isArabic ? "إدارة السفر • بصورة أذكى" : "TRAVEL OPERATIONS • MADE SIMPLE"}
               </span>
               <h2>
                 {isArabic
-                  ? <>كل رحلات شركتك،<br />في مكان واحد.</>
-                  : <>Every journey.<br />One clear view.</>}
+                  ? <>كل تفاصيل السفر،<br />في مساحة واحدة.</>
+                  : <>Every travel detail.<br />One clear workspace.</>}
               </h2>
               <p>
                 {isArabic
-                  ? "نظّم الحجوزات والعملاء والموردين والعمليات المالية من مساحة واحدة مصممة لفريقك."
-                  : "Bring reservations, customers, suppliers and your day-to-day operations together in one workspace."}
+                  ? "من الحجز إلى المتابعة، نظّم الفنادق والطيران والعملاء والموردين من مكان واحد."
+                  : "From booking to follow-up, manage hotels, flights, customers and suppliers in one place."}
               </p>
             </div>
 
-            <div className="auth-showcase" dir="ltr">
-              <div className="auth-showcase-heading">
-                <div className="auth-showcase-label">
-                  <span className="auth-showcase-live" />
-                  {isArabic ? "منصة تشغيل متكاملة لشركات السياحة" : "THE TRAVEL AGENCY WORKSPACE"}
+            <div className="auth-command-preview" dir="ltr" aria-label={isArabic ? "معاينة توضيحية لواجهة إدارة الرحلات" : "Illustrative travel operations preview"}>
+              <div className="auth-preview-head">
+                <div className="auth-preview-heading">
+                  <span className="auth-preview-icon"><MapPinned size={17} /></span>
+                  <span>
+                    <strong>{isArabic ? "مسار الرحلة" : "TRIP OVERVIEW"}</strong>
+                    <small>{isArabic ? "معاينة توضيحية للنظام" : "ILLUSTRATIVE WORKSPACE PREVIEW"}</small>
+                  </span>
                 </div>
-                <div className="auth-showcase-controls">
-                  <button type="button" onClick={() => setActiveShowcaseSlide((current) => (current + 2) % 3)} aria-label={isArabic ? "الشريحة السابقة" : "Previous slide"}><ArrowLeft size={15} /></button>
-                  <button type="button" onClick={() => setActiveShowcaseSlide((current) => (current + 1) % 3)} aria-label={isArabic ? "الشريحة التالية" : "Next slide"}><ArrowRight size={15} /></button>
+                <span className="auth-preview-tag">{isArabic ? "رحلة" : "TRIP"}</span>
+              </div>
+
+              <div className="auth-route-stage">
+                <div className="auth-route-stop">
+                  <strong>CAI</strong>
+                  <span>{isArabic ? "القاهرة" : "CAIRO"}</span>
+                </div>
+                <div className="auth-route-track" aria-hidden="true">
+                  <span className="auth-route-plane"><Plane size={15} /></span>
+                </div>
+                <div className="auth-route-stop auth-route-stop-end">
+                  <strong>JED</strong>
+                  <span>{isArabic ? "جدة" : "JEDDAH"}</span>
                 </div>
               </div>
-              <div key={activeShowcaseSlide} className="auth-showcase-feature" aria-live="polite">
-                <div className="auth-showcase-feature-top">
-                  <span className="auth-showcase-feature-icon"><ActiveSlideIcon size={25} strokeWidth={1.8} /></span>
-                  <span className="auth-showcase-counter">0{activeShowcaseSlide + 1}<i />03</span>
-                </div>
-                <span className="auth-showcase-eyebrow">{activeSlide.eyebrow}</span>
-                <h3>{activeSlide.title}</h3>
-                <p>{activeSlide.description}</p>
-                <div className="auth-showcase-feature-bottom">
-                  <span>{activeSlide.metric}</span>
-                  <span className="auth-showcase-progress"><i style={{ width: `${((activeShowcaseSlide + 1) / 3) * 100}%` }} /></span>
-                </div>
-              </div>
-              <div className="auth-service-grid">
-                <div className="auth-service-tile"><Hotel size={17} /><span>{isArabic ? "الفنادق" : "Hotels"}</span></div>
-                <div className="auth-service-tile"><Plane size={17} /><span>{isArabic ? "الطيران" : "Flights"}</span></div>
-                <div className="auth-service-tile"><MapPinned size={17} /><span>{isArabic ? "الرحلات الداخلية" : "Local tours"}</span></div>
-                <div className="auth-service-tile"><Users size={17} /><span>{isArabic ? "رحلات العمرة" : "Umrah"}</span></div>
-                <div className="auth-service-tile"><FileCheck size={17} /><span>{isArabic ? "التأشيرات" : "Visas"}</span></div>
-                <div className="auth-service-tile"><Bus size={17} /><span>{isArabic ? "النقل" : "Transport"}</span></div>
-              </div>
-              <div className="auth-showcase-dots" aria-label={isArabic ? "شرائح الخدمات" : "Service slides"}>
-                {showcaseSlides.map((slide, index) => (
-                  <button key={slide.metric} type="button" className={index === activeShowcaseSlide ? "active" : ""} onClick={() => setActiveShowcaseSlide(index)} aria-label={isArabic ? `الشريحة ${index + 1}` : `Slide ${index + 1}`} aria-current={index === activeShowcaseSlide ? "true" : undefined} />
-                ))}
+
+              <div className="auth-preview-trip" dir={locale}>
+                <span className="auth-preview-trip-icon"><Hotel size={17} /></span>
+                <span className="auth-preview-trip-copy">
+                  <small>{isArabic ? "مثال على تفاصيل الحجز" : "BOOKING DETAILS EXAMPLE"}</small>
+                  <strong>{isArabic ? "إقامة فندقية • مكة المكرمة" : "Hotel stay • Makkah"}</strong>
+                  <span>{isArabic ? "بيانات الرحلة والحجز في ملف واحد" : "Trip and booking details in one record"}</span>
+                </span>
+                <span className="auth-preview-status"><i />{isArabic ? "مؤكد" : "CONFIRMED"}</span>
               </div>
             </div>
 
+            <div className="auth-feature-strip">
+              <div className="auth-feature-item"><Hotel size={15} /><span>{isArabic ? "الفنادق" : "Hotels"}</span></div>
+              <div className="auth-feature-item"><Plane size={15} /><span>{isArabic ? "الطيران" : "Flights"}</span></div>
+              <div className="auth-feature-item"><Users size={15} /><span>{isArabic ? "العملاء" : "Clients"}</span></div>
+              <div className="auth-feature-item"><Bus size={15} /><span>{isArabic ? "النقل" : "Transport"}</span></div>
+            </div>
+
             <div className="auth-visual-footer">
-              <span><ShieldCheck size={15} /> {isArabic ? "خصوصية وأمان على مستوى الشركة" : "Company-level privacy and security"}</span>
+              <span><ShieldCheck size={14} /> {isArabic ? "خصوصية وصلاحيات مستقلة لكل شركة" : "Company-level privacy and access controls"}</span>
               <span>© {new Date().getFullYear()} NEW HOST TRAVEL</span>
             </div>
           </section>
