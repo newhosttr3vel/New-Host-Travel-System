@@ -322,7 +322,7 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                   <button type="button" onClick={() => setActiveShowcaseSlide((current) => (current + 1) % 3)} aria-label={isArabic ? "الشريحة التالية" : "Next slide"}><ArrowRight size={15} /></button>
                 </div>
               </div>
-              <div className="auth-showcase-feature" aria-live="polite">
+              <div key={activeShowcaseSlide} className="auth-showcase-feature" aria-live="polite">
                 <div className="auth-showcase-feature-top">
                   <span className="auth-showcase-feature-icon"><ActiveSlideIcon size={25} strokeWidth={1.8} /></span>
                   <span className="auth-showcase-counter">0{activeShowcaseSlide + 1}<i />03</span>
