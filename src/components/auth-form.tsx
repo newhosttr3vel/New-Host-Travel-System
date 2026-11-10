@@ -121,6 +121,12 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
         <span className="auth-motion-orbit auth-motion-orbit-one" />
         <span className="auth-motion-orbit auth-motion-orbit-two" />
         <span className="auth-motion-beam" />
+        <span className="auth-flight-path auth-flight-path-one" />
+        <span className="auth-flight-path auth-flight-path-two" />
+        <span className="auth-motion-plane auth-motion-plane-one"><Plane size={25} strokeWidth={1.7} /></span>
+        <span className="auth-motion-plane auth-motion-plane-two"><Plane size={19} strokeWidth={1.7} /></span>
+        <span className="auth-motion-marker auth-motion-marker-one"><MapPinned size={21} strokeWidth={1.7} /></span>
+        <span className="auth-motion-marker auth-motion-marker-two"><Hotel size={20} strokeWidth={1.7} /></span>
       </div>
       <div className="auth-layout-wrap">
         <header className="auth-page-heading">
