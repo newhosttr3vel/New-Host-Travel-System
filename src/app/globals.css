@@ -1945,3 +1945,46 @@ a:hover, .text-link:hover { color: #043d2a; }
   font-weight: 650 !important;
   line-height: 1.5 !important;
 }
+
+
+/* MEYAAR / NEW HOST — unified typography scale */
+:root {
+  --type-xs: 11px;
+  --type-sm: 12px;
+  --type-base: 14px;
+  --type-md: 15px;
+  --type-lg: 17px;
+  --type-xl: 20px;
+  --type-2xl: 26px;
+  --type-display: clamp(30px, 3vw, 38px);
+}
+html { font-size: 14px; }
+body {
+  font-size: var(--type-base) !important;
+  line-height: 1.65 !important;
+  letter-spacing: 0 !important;
+}
+button, input, select, textarea { font-size: inherit; line-height: 1.5; }
+h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
+.page-title { font-size: var(--type-2xl) !important; line-height: 1.4 !important; }
+.auth-title { font-size: 28px !important; line-height: 1.4 !important; }
+.auth-art-title { font-size: clamp(30px, 3.2vw, 42px) !important; line-height: 1.45 !important; }
+.panel-title, .billing-section-title h3, .journal-lines-heading h3 { font-size: var(--type-lg) !important; line-height: 1.5 !important; }
+.stat-value { font-size: 28px !important; line-height: 1.25 !important; }
+.auth-showcase-feature h3 { font-size: clamp(18px, 1.8vw, 23px) !important; line-height: 1.5 !important; }
+.page-description, .auth-art-copy, .auth-subtitle, .notice-card { font-size: var(--type-base) !important; line-height: 1.8 !important; }
+.nav-link, .btn, .language-button, .icon-button, .input, .select, .textarea { font-size: var(--type-base) !important; }
+.field-label, .stat-label, .panel-subtitle, .meta-name, .user-name, .action-title, .customer-primary { font-size: var(--type-md) !important; line-height: 1.55 !important; }
+.breadcrumb, .user-role, .meta-label, .meta-status, .customer-secondary, .action-copy, .type-pill, .small-btn, .data-table th, .auth-foot, .auth-secure-note { font-size: var(--type-xs) !important; line-height: 1.6 !important; }
+.data-table td, .empty-copy, .auth-switch, .billing-currency-note { font-size: var(--type-sm) !important; line-height: 1.7 !important; }
+.eyebrow, .nav-group-label, .eyebrow-chip { font-size: var(--type-xs) !important; letter-spacing: .02em !important; }
+.auth-visual-eyebrow { font-size: var(--type-lg) !important; line-height: 1.7 !important; }
+.auth-live-badge { font-size: var(--type-sm) !important; line-height: 1.6 !important; }
+.trial-summary span { font-size: var(--type-xs) !important; }
+.trial-summary strong { font-size: var(--type-lg) !important; }
+@media (max-width: 740px) {
+  .page-title { font-size: 23px !important; }
+  .auth-title { font-size: 25px !important; }
+  .stat-value { font-size: 23px !important; }
+  .nav-link, .btn, .language-button, .icon-button, .input, .select, .textarea { font-size: var(--type-sm) !important; }
+}
