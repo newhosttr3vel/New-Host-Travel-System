@@ -1253,3 +1253,55 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .auth-service-tile svg { width:14px; height:14px; }
   .auth-service-tile span { font-size:7px; }
 }
+
+
+/* Live travel-service desk on the company command center. */
+.ops-service-overview {
+  margin: 0 0 19px;
+  padding: 20px;
+  border: 1px solid #dfece5;
+  border-radius: 16px;
+  background: linear-gradient(145deg,#fbfefc 0%,#f4faf6 100%);
+  box-shadow: 0 5px 18px rgba(12,78,53,.035);
+}
+.ops-service-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:15px; }
+.ops-service-heading h2 { margin:0; color:var(--ink); font-size:17px; font-weight:900; letter-spacing:-.025em; }
+.ops-service-heading p { margin:5px 0 0; color:var(--muted); font-size:10px; line-height:1.7; }
+.ops-service-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.ops-service-card {
+  --service-accent:#087b59;
+  --service-tint:#eaf7f0;
+  display:flex; align-items:center; gap:10px; min-width:0; min-height:72px; padding:12px;
+  border:1px solid #e4eee8; border-radius:12px; background:#fff; color:inherit;
+  text-decoration:none; box-shadow:0 2px 8px rgba(19,57,40,.025);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.ops-service-card:hover { transform:translateY(-2px); border-color:#b8ddc8; box-shadow:0 8px 20px rgba(17,95,62,.08); }
+.ops-service-icon { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:11px; color:var(--service-accent); background:var(--service-tint); }
+.ops-service-copy { display:grid; gap:4px; min-width:0; flex:1; }
+.ops-service-copy strong { overflow:hidden; color:#203b30; font-size:10px; font-weight:850; text-overflow:ellipsis; white-space:nowrap; }
+.ops-service-copy small { overflow:hidden; color:#87978e; font-size:9px; text-overflow:ellipsis; white-space:nowrap; }
+.ops-service-count { display:grid; place-items:center; min-width:27px; height:27px; padding:0 6px; border-radius:8px; color:var(--service-accent); background:var(--service-tint); font-size:11px; font-weight:950; font-variant-numeric:tabular-nums; }
+.service-flight { --service-accent:#347b9b; --service-tint:#edf6fa; }
+.service-tour { --service-accent:#a16c25; --service-tint:#fbf4e9; }
+.service-umrah { --service-accent:#087b59; --service-tint:#eaf7f0; }
+.service-visa { --service-accent:#7463a5; --service-tint:#f2effa; }
+.service-transport { --service-accent:#4b7180; --service-tint:#eef5f6; }
+.service-hajj { --service-accent:#9a7650; --service-tint:#f7f1e9; }
+.ops-service-footnote { margin:12px 1px 0; color:#8b9a91; font-size:9px; line-height:1.6; }
+@media (max-width:1120px) { .ops-service-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:740px) {
+  .ops-service-overview { padding:14px; }
+  .ops-service-heading { display:grid; align-items:start; }
+  .ops-service-heading h2 { font-size:15px; }
+  .ops-service-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .ops-service-card { min-height:66px; gap:8px; padding:9px; }
+  .ops-service-icon { width:33px; height:33px; }
+  .ops-service-copy strong { font-size:9px; }
+  .ops-service-copy small { font-size:8px; }
+}
+@media (max-width:390px) {
+  .ops-service-card { flex-wrap:wrap; }
+  .ops-service-count { margin-inline-start:auto; }
+}
+@media (prefers-reduced-motion:reduce) { .ops-service-card { transition:none; } .ops-service-card:hover { transform:none; } }
