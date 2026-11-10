@@ -7,7 +7,6 @@ import {
   Bus,
   Eye,
   EyeOff,
-  FileCheck,
   Hotel,
   MapPinned,
   LockKeyhole,
