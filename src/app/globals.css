@@ -1305,3 +1305,35 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .ops-service-count { margin-inline-start:auto; }
 }
 @media (prefers-reduced-motion:reduce) { .ops-service-card { transition:none; } .ops-service-card:hover { transform:none; } }
+
+
+/* Compact sign-in card: keep the form visually balanced with the travel panel. */
+.auth-card-layout { min-height: 0; }
+.auth-panel.auth-form-panel { padding: clamp(25px, 3vw, 40px); }
+.auth-form-inner { max-width: 420px; }
+.auth-top-actions { margin-bottom: 22px; }
+.auth-form-heading { margin-bottom: 18px; }
+.auth-title { font-size: clamp(25px, 2.4vw, 30px); }
+.auth-subtitle { line-height: 1.7; }
+.auth-form { gap: 12px; }
+.auth-input { min-height: 44px; padding-block: 10px; }
+.auth-submit { min-height: 45px; }
+.auth-switch { margin-top: 16px; }
+.auth-secure-note { margin-top: 18px; }
+@media (max-height: 820px) and (min-width: 741px) {
+  .auth-screen-v2 { padding-block: 18px; }
+  .auth-page-heading { margin-bottom: 14px; }
+  .auth-card-layout { min-height: 0; }
+  .auth-panel.auth-form-panel { padding-block: 24px; }
+  .auth-top-actions { margin-bottom: 17px; }
+  .auth-form-heading { margin-bottom: 14px; }
+  .auth-form { gap: 10px; }
+  .auth-input { min-height: 42px; }
+  .auth-submit { min-height: 43px; }
+  .auth-secure-note { margin-top: 13px; }
+}
+@media (max-width: 740px) {
+  .auth-panel.auth-form-panel { padding: 22px 17px 24px; }
+  .auth-top-actions { margin-bottom: 20px; }
+  .auth-form-heading { margin-bottom: 17px; }
+}
