@@ -1824,3 +1824,57 @@ a:hover, .text-link:hover { color: #043d2a; }
   .auth-brand-logo { width:175px !important; }
   .brand-logo-frame { max-width:160px; }
 }
+
+
+/* Tight logo fit — remove oversized white holder */
+.auth-brand-logo {
+  width: 176px !important;
+  max-width: 176px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden;
+  line-height: 0;
+}
+.auth-brand-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 0;
+}
+.brand-logo-frame {
+  width: 166px !important;
+  max-width: 166px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  line-height: 0;
+}
+.brand-logo-frame img {
+  display: block;
+  width: 100%;
+  height: auto !important;
+  object-fit: contain;
+  border-radius: 0;
+}
+.brand-logo-frame-light {
+  width: 166px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.reset-brand img {
+  width: min(176px, 70%);
+  border-radius: 0;
+}
+@media (max-width: 820px) {
+  .auth-brand-logo { width: 156px !important; max-width: 156px !important; }
+  .brand-logo-frame, .brand-logo-frame-light { width: 148px !important; max-width: 148px !important; }
+}
