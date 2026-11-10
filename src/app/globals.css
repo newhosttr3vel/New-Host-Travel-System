@@ -1931,3 +1931,17 @@ a:hover, .text-link:hover { color: #043d2a; }
 .reset-brand img {
   border-radius: 7px !important;
 }
+
+
+/* Slightly stronger hierarchy for Arabic auth-brand messaging */
+.auth-visual-eyebrow {
+  font-size: clamp(15px, 1.25vw, 18px) !important;
+  font-weight: 700 !important;
+  line-height: 1.65 !important;
+  letter-spacing: 0 !important;
+}
+.auth-live-badge {
+  font-size: clamp(13px, 1.05vw, 15px) !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
