@@ -7,7 +7,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bus,
-  Compass,
   Eye,
   EyeOff,
   FileCheck,
@@ -21,7 +20,6 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
-import { AuthBackdrop } from "@/components/auth-backdrop";
 
 export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale: Locale }) {
   const [name, setName] = useState("");
@@ -117,7 +115,6 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
 
   return (
     <main className="auth-screen-v2">
-      <AuthBackdrop />
       <div className="auth-layout-wrap">
         <header className="auth-page-heading">
           <span className="auth-heading-rule" />
@@ -287,7 +284,7 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
 
             <div className="auth-visual-top">
               <div className="auth-brand-v2">
-                <span className="auth-brand-mark"><Compass size={24} strokeWidth={2.1} /></span>
+                <span className="auth-brand-logo"><img src="/brand/new-host-logo.png" alt="New Host Travel" /></span>
                 <span className="auth-brand-name">
                   <strong>NEW HOST</strong>
                   <small>TRAVEL MANAGEMENT</small>
