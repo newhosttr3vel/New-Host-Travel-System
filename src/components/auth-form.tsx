@@ -21,6 +21,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { AuthBackdrop } from "@/components/auth-backdrop";
 
 export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale: Locale }) {
   const [name, setName] = useState("");
@@ -116,6 +117,7 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
 
   return (
     <main className="auth-screen-v2">
+      <AuthBackdrop />
       <div className="auth-layout-wrap">
         <header className="auth-page-heading">
           <span className="auth-heading-rule" />
