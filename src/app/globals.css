@@ -1337,3 +1337,61 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .auth-top-actions { margin-bottom: 20px; }
   .auth-form-heading { margin-bottom: 17px; }
 }
+
+
+/* Calm, travel-inspired motion for the authentication experience. */
+.auth-card-layout {
+  animation: auth-layout-arrive .7s cubic-bezier(.2,.75,.25,1) both;
+}
+.auth-page-heading .auth-heading-copy svg {
+  transform-origin: 50% 50%;
+  animation: auth-compass-drift 5s ease-in-out infinite;
+}
+.auth-visual-orbit-one { animation: auth-orbit-drift 34s linear infinite; }
+.auth-visual-orbit-two { animation: auth-orbit-drift 46s linear infinite reverse; }
+.auth-showcase-feature {
+  transition: box-shadow .35s ease, transform .35s ease;
+}
+.auth-showcase-feature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 48px rgba(0,35,26,.25), inset 0 1px 0 #fff;
+}
+.auth-service-tile {
+  animation: auth-tile-arrive .55s cubic-bezier(.2,.75,.25,1) both;
+}
+.auth-service-tile:nth-child(2) { animation-delay: .06s; }
+.auth-service-tile:nth-child(3) { animation-delay: .12s; }
+.auth-service-tile:nth-child(4) { animation-delay: .18s; }
+.auth-service-tile:nth-child(5) { animation-delay: .24s; }
+.auth-service-tile:nth-child(6) { animation-delay: .30s; }
+.auth-showcase-live { animation: auth-live-breathe 3s ease-in-out infinite; }
+
+@keyframes auth-layout-arrive {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes auth-tile-arrive {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes auth-compass-drift {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-2px) rotate(5deg); }
+}
+@keyframes auth-orbit-drift {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes auth-live-breathe {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(157,240,201,.10); opacity: .88; }
+  50% { box-shadow: 0 0 0 7px rgba(157,240,201,.04); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-card-layout,
+  .auth-page-heading .auth-heading-copy svg,
+  .auth-visual-orbit-one,
+  .auth-visual-orbit-two,
+  .auth-service-tile,
+  .auth-showcase-live { animation: none !important; }
+  .auth-showcase-feature { transition: none; }
+}
