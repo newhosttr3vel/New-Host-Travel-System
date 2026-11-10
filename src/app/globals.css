@@ -2423,3 +2423,143 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
 @media (prefers-reduced-motion: reduce) {
   .auth-flight-path, .auth-motion-plane, .auth-motion-marker { animation: none !important; }
 }
+
+
+/* Premium travel portal: cinematic routes, moving aircraft and refined auth surface */
+.auth-screen-v2 {
+  background:
+    radial-gradient(ellipse at 16% 18%, rgba(31,190,125,.18), transparent 34%),
+    radial-gradient(ellipse at 88% 82%, rgba(193,163,103,.12), transparent 30%),
+    linear-gradient(135deg,#061d19 0%,#0a3028 48%,#071c1b 100%) !important;
+}
+.auth-motion-aurora-one {
+  background: radial-gradient(circle, rgba(44,224,151,.34) 0%, rgba(19,166,105,.13) 38%, transparent 70%) !important;
+}
+.auth-motion-aurora-two {
+  background: radial-gradient(circle, rgba(211,183,126,.22) 0%, rgba(10,145,91,.12) 42%, transparent 70%) !important;
+}
+.auth-motion-orbit {
+  border-color: rgba(222,245,225,.15) !important;
+  box-shadow: 0 0 0 34px rgba(207,255,226,.018), 0 0 0 78px rgba(207,255,226,.012) !important;
+}
+.auth-flight-path {
+  width: min(48vw, 610px) !important;
+  height: 230px !important;
+  border-width: 1.5px !important;
+  border-style: dashed !important;
+  border-color: rgba(193,220,197,.34) transparent transparent transparent !important;
+  filter: drop-shadow(0 0 5px rgba(85,224,166,.22));
+}
+.auth-flight-path-one {
+  top: 9% !important;
+  left: 5% !important;
+  animation: auth-route-draw 8s ease-in-out infinite alternate, auth-flight-path-drift 13s ease-in-out infinite alternate !important;
+}
+.auth-flight-path-two {
+  right: 1% !important;
+  bottom: 3% !important;
+  width: min(53vw, 680px) !important;
+  animation: auth-route-draw 10s ease-in-out infinite alternate-reverse, auth-flight-path-drift-two 16s ease-in-out infinite alternate !important;
+}
+.auth-motion-plane-one {
+  top: 13% !important;
+  left: 8% !important;
+  offset-path: path("M 0 0 C 120 -85, 260 110, 410 35 S 570 -25, 680 75") !important;
+  offset-rotate: auto !important;
+  animation: auth-plane-route 17s linear infinite !important;
+}
+.auth-motion-plane-two {
+  top: 56% !important;
+  right: 12% !important;
+  bottom: auto !important;
+  offset-path: path("M 0 0 C -95 -100, -230 85, -360 12 S -490 -35, -580 48") !important;
+  offset-rotate: auto !important;
+  animation: auth-plane-route 23s linear infinite reverse !important;
+}
+.auth-motion-plane {
+  color: #f1d9a6 !important;
+  filter: drop-shadow(0 0 8px rgba(255,218,151,.8)) drop-shadow(0 0 20px rgba(100,255,184,.45)) !important;
+}
+.auth-motion-marker {
+  color: #e7d2a5 !important;
+  filter: drop-shadow(0 0 7px rgba(255,218,151,.8)) !important;
+}
+.auth-motion-marker::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border: 1px solid rgba(230,205,153,.55);
+  border-radius: 50%;
+  animation: auth-destination-pulse 2.8s ease-out infinite;
+}
+.auth-motion-marker-two::after { animation-delay: 1.3s; }
+.auth-card-layout {
+  width: min(100%, 990px) !important;
+  min-height: 520px !important;
+  grid-template-columns: minmax(0,.88fr) minmax(0,1.12fr) !important;
+  border: 1px solid rgba(239,255,246,.82) !important;
+  border-radius: 26px !important;
+  overflow: hidden !important;
+  box-shadow: 0 32px 90px rgba(0,12,9,.42), 0 1px 0 rgba(255,255,255,.72) inset !important;
+}
+.auth-panel.auth-form-panel {
+  padding: clamp(23px,2.6vw,34px) !important;
+  background: linear-gradient(145deg,rgba(255,255,255,.99),rgba(246,251,248,.98)) !important;
+}
+.auth-form-inner { max-width: 340px !important; }
+.auth-title { font-size: 24px !important; letter-spacing: -.045em !important; }
+.auth-input {
+  min-height: 42px !important;
+  border-color: #dce9e2 !important;
+  background: rgba(255,255,255,.9) !important;
+}
+.auth-input:focus {
+  border-color: #159a73 !important;
+  box-shadow: 0 0 0 3px rgba(8,127,104,.1), 0 5px 18px rgba(8,127,104,.06) !important;
+}
+.auth-submit {
+  background: linear-gradient(105deg,#08765f,#0d9b72) !important;
+  box-shadow: 0 8px 18px rgba(8,127,104,.2) !important;
+}
+.auth-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(8,127,104,.25) !important; }
+.auth-visual-v2 {
+  background: linear-gradient(145deg,rgba(7,43,34,.97),rgba(9,75,55,.94)) !important;
+}
+.auth-visual-orbit { border-color: rgba(221,244,218,.16) !important; }
+.auth-showcase-feature {
+  background: linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.045)) !important;
+  border: 1px solid rgba(226,245,232,.16) !important;
+  box-shadow: 0 18px 44px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(14px) !important;
+}
+.auth-service-tile {
+  border-color: rgba(225,246,233,.13) !important;
+  background: rgba(255,255,255,.055) !important;
+}
+@keyframes auth-plane-route {
+  0% { offset-distance: 0%; opacity: 0; }
+  7% { opacity: 1; }
+  88% { opacity: .95; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+@keyframes auth-destination-pulse {
+  0% { transform: scale(.55); opacity: .85; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes auth-route-draw {
+  from { filter: drop-shadow(0 0 2px rgba(85,224,166,.1)); }
+  to { filter: drop-shadow(0 0 9px rgba(85,224,166,.65)); }
+}
+@media (max-width: 900px) {
+  .auth-card-layout { width: min(100%,760px) !important; }
+  .auth-motion-plane-one { offset-path: none !important; animation: auth-plane-hover 8s ease-in-out infinite !important; }
+  .auth-motion-plane-two { offset-path: none !important; animation: auth-plane-hover 10s ease-in-out infinite reverse !important; }
+}
+@media (max-width: 740px) {
+  .auth-card-layout { min-height: 0 !important; }
+  .auth-panel.auth-form-panel { padding: 23px 20px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-motion-plane-one, .auth-motion-plane-two, .auth-motion-marker::after,
+  .auth-flight-path-one, .auth-flight-path-two { animation: none !important; }
+}
