@@ -1395,3 +1395,48 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .auth-showcase-live { animation: none !important; }
   .auth-showcase-feature { transition: none; }
 }
+
+
+/* Shared, calm travel-route backdrop for public and account screens. */
+.auth-screen-v2,
+.auth-screen-motion,
+.onboard-wrap { position: relative; isolation: isolate; overflow: hidden; }
+.auth-backdrop {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 12% 18%, rgba(176,226,204,.42), transparent 34%),
+    radial-gradient(ellipse at 88% 82%, rgba(189,231,213,.38), transparent 32%),
+    linear-gradient(135deg,#f7fbf8 0%,#eef7f1 48%,#f8fbf9 100%);
+}
+.auth-backdrop-glow {
+  position: absolute; width: min(48vw,620px); aspect-ratio: 1; border-radius: 50%;
+  filter: blur(2px); opacity: .65; background: radial-gradient(circle,rgba(65,166,119,.13),rgba(65,166,119,0) 68%);
+  animation: auth-backdrop-float 19s ease-in-out infinite alternate;
+}
+.auth-backdrop-glow-one { top:-24%; inset-inline-start:-13%; }
+.auth-backdrop-glow-two { bottom:-32%; inset-inline-end:-12%; animation-delay:-8s; }
+.auth-backdrop-routes { position:absolute; inset:0; width:100%; height:100%; opacity:.72; }
+.auth-route-line { fill:none; stroke:#83b99b; stroke-width:1.35; stroke-dasharray:5 12; opacity:.35; }
+.auth-route-line-two { stroke:#a3cbb2; stroke-dasharray:2 15; opacity:.3; }
+.auth-route-line-three { stroke:#9ac5aa; opacity:.22; }
+.auth-route-node { fill:#4eaa7c; opacity:.55; filter:drop-shadow(0 0 7px rgba(54,155,105,.35)); }
+.auth-backdrop-orb { position:absolute; display:block; width:7px; height:7px; border-radius:50%; background:#68b88c; opacity:.55; box-shadow:0 0 0 7px rgba(104,184,140,.09),0 0 22px rgba(67,155,105,.3); }
+.auth-backdrop-orb-one { top:24%; left:18%; animation:auth-backdrop-drift-one 17s ease-in-out infinite; }
+.auth-backdrop-orb-two { top:68%; right:20%; width:5px; height:5px; animation:auth-backdrop-drift-two 21s ease-in-out infinite; }
+.auth-backdrop-orb-three { top:42%; right:8%; width:4px; height:4px; animation:auth-backdrop-drift-one 24s ease-in-out infinite reverse; }
+.auth-screen-v2 > .auth-layout-wrap,
+.auth-screen-motion > .auth-panel,
+.onboard-wrap > .onboard-card { position:relative; z-index:1; }
+.auth-screen-motion { min-height:100vh; display:grid; place-items:center; padding:30px 18px; background:transparent; }
+.onboard-wrap { background:transparent; }
+.onboard-card { box-shadow:0 24px 70px rgba(29,83,56,.10); }
+@keyframes auth-backdrop-float { from { transform:translate3d(-2%,0,0) scale(.96); } to { transform:translate3d(4%,5%,0) scale(1.06); } }
+@keyframes auth-backdrop-drift-one { 0%,100% { transform:translate(0,0); } 50% { transform:translate(34px,-22px); } }
+@keyframes auth-backdrop-drift-two { 0%,100% { transform:translate(0,0); } 50% { transform:translate(-28px,18px); } }
+@media (max-width:760px) {
+  .auth-backdrop-routes { opacity:.42; }
+  .auth-backdrop-glow { width:85vw; opacity:.5; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .auth-backdrop-glow,.auth-backdrop-orb { animation:none !important; }
+}
