@@ -284,11 +284,8 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
 
             <div className="auth-visual-top">
               <div className="auth-brand-v2">
-                <span className="auth-brand-logo"><img src="/brand/new-host-logo.png" alt="New Host Travel" /></span>
-                <span className="auth-brand-name">
-                  <strong>NEW HOST</strong>
-                  <small>TRAVEL MANAGEMENT</small>
-                </span>
+                <span className="auth-brand-logo"><img src="/brand/new-host-logo.jpg" alt="New Host Travel" /></span>
+
               </div>
               <span className="auth-live-badge"><i />{isArabic ? "مساحة عملك" : "YOUR WORKSPACE"}</span>
             </div>
