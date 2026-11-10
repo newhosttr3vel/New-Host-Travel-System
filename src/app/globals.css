@@ -1440,3 +1440,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (prefers-reduced-motion:reduce) {
   .auth-backdrop-glow,.auth-backdrop-orb { animation:none !important; }
 }
+
+
+/* Keep the shared route artwork above the page canvas and below every card. */
+.auth-screen-v2 { background: transparent; }
+.auth-backdrop { z-index: 0; }
+.auth-screen-v2 > .auth-layout-wrap,
+.auth-screen-motion > .auth-panel,
+.onboard-wrap > .onboard-card { position: relative; z-index: 1; }
