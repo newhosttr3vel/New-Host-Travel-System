@@ -1899,3 +1899,18 @@ a:hover, .text-link:hover { color: #043d2a; }
 }
 .brand-logo-frame img { border-radius: 10px !important; }
 .reset-brand img { border-radius: 10px !important; }
+
+
+/* Slim rounded logo frame */
+.auth-brand-logo,
+.brand-logo-frame,
+.brand-logo-frame-light {
+  padding: 1px !important;
+  border-width: .5px !important;
+  border-radius: 9px !important;
+}
+.auth-brand-logo img,
+.brand-logo-frame img,
+.reset-brand img {
+  border-radius: 8px !important;
+}
