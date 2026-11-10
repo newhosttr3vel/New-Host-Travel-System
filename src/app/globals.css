@@ -1724,3 +1724,103 @@ a:hover, .text-link:hover { color: #043d2a; }
 @media (prefers-reduced-motion: reduce) {
   .auth-visual-orbit-one, .auth-visual-orbit-two, .auth-service-tile { animation: none !important; transition: none !important; }
 }
+
+
+/* Brand correction pass: logo visibility, contrast and calmer composition */
+.auth-visual-v2 {
+  background: #043d2a !important;
+}
+.auth-visual-v2::before {
+  opacity: .055 !important;
+  background-image: linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px) !important;
+  background-size: 52px 52px !important;
+}
+.auth-visual-orbit { border-color: rgba(255,255,255,.09) !important; }
+.auth-brand-v2 { display:flex; align-items:center; min-width:0; }
+.auth-brand-logo {
+  width: 210px !important;
+  max-width: min(54vw, 210px);
+  padding: 5px !important;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 9px !important;
+  background: #fff !important;
+  box-shadow: 0 7px 22px rgba(0,0,0,.12);
+}
+.auth-brand-logo img {
+  display:block;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+}
+.brand-logo-frame {
+  width: 100% !important;
+  max-width: 190px;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 5px;
+  overflow: visible !important;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 9px;
+  background: #fff !important;
+}
+.brand-logo-frame img {
+  display:block;
+  width:100%;
+  height:auto !important;
+  object-fit:contain;
+  border-radius: 5px;
+}
+.brand-logo-frame-light {
+  width: 175px !important;
+  padding: 5px;
+  background:#fff !important;
+  border:1px solid #e3e9e4;
+}
+.auth-showcase-feature {
+  color:#173329 !important;
+  background:#fff !important;
+  border-color:#e4ebe5 !important;
+  box-shadow:0 16px 34px rgba(0,0,0,.16), inset 0 1px 0 #fff !important;
+}
+.auth-showcase-feature h3 {
+  color:#173329 !important;
+  font-size:clamp(20px,2.1vw,27px) !important;
+  line-height:1.35 !important;
+}
+.auth-showcase-feature p {
+  color:#52665d !important;
+  line-height:1.8 !important;
+}
+.auth-showcase-eyebrow { color:#08734f !important; }
+.auth-showcase-counter { color:#71847a !important; }
+.auth-showcase-counter i { background:#d5e1d8 !important; }
+.auth-showcase-feature-icon {
+  color:#075238 !important;
+  background:#edf4ef !important;
+  border-color:#dce8df !important;
+}
+.auth-showcase-feature-bottom { color:#52665d !important; }
+.auth-showcase-progress { background:#e6ede7 !important; }
+.auth-showcase-progress i { background:#b99a62 !important; }
+.auth-showcase-feature::after {
+  border-color:rgba(7,82,56,.09) !important;
+  box-shadow:0 0 0 18px rgba(7,82,56,.025),0 0 0 38px rgba(7,82,56,.018) !important;
+}
+.auth-service-tile {
+  color:#f2f6f2 !important;
+  background:rgba(255,255,255,.075) !important;
+  border-color:rgba(255,255,255,.15) !important;
+}
+.auth-service-tile svg { color:#d5bd8d !important; }
+.auth-showcase-label { color:#e5eee8 !important; }
+.auth-showcase-controls button { color:#fff !important; }
+.auth-showcase-dots button { background:rgba(255,255,255,.35) !important; }
+.auth-showcase-dots button.active { background:#c4a66c !important; }
+.auth-visual-copy h2 { color:#fff !important; }
+.auth-visual-copy p { color:rgba(242,247,243,.78) !important; }
+.auth-visual-footer { color:rgba(237,244,239,.72) !important; }
+@media (max-width: 820px) {
+  .auth-brand-logo { width:175px !important; }
+  .brand-logo-frame { max-width:160px; }
+}
