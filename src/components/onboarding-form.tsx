@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Building2, Compass, ShieldCheck } from "lucide-react";
 import { t, type Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
+import { AuthBackdrop } from "@/components/auth-backdrop";
 
 export function OnboardingForm({ locale, userName }: { locale: Locale; userName: string }) {
   const router = useRouter();
@@ -30,6 +31,7 @@ export function OnboardingForm({ locale, userName }: { locale: Locale; userName:
     } finally { setPending(false); }
   }
   return <main className="onboard-wrap">
+    <AuthBackdrop />
     <div className="onboard-card">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 15, marginBottom: 25 }}>
         <div className="brand"><span className="brand-mark"><Compass size={23} color="#fff" /></span><div><div className="brand-title" style={{ color: "var(--ink)" }}>{t(locale, "appName")}</div><div className="brand-subtitle">{t(locale, "appSubtitle")}</div></div></div>
