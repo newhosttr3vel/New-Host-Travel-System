@@ -40,7 +40,7 @@ export function ResetPasswordForm({ token, locale }: { token?: string; locale: L
   }
 
   return <div className="auth-card">
-    <div className="reset-brand"><img src="/brand/new-host-logo.png" alt="New Host Travel" /></div>
+    <div className="reset-brand"><img src="/brand/new-host-logo.jpg" alt="New Host Travel" /></div>
     <h1 className="auth-title">{locale === "ar" ? "تعيين كلمة مرور جديدة" : "Choose a new password"}</h1>
     <p className="auth-subtitle">{locale === "ar" ? "استخدم كلمة مرور قوية لا تقل عن 12 حرفًا." : "Choose a strong password with at least 12 characters."}</p>
     {error && <div className="alert" role="alert">{error}</div>}
