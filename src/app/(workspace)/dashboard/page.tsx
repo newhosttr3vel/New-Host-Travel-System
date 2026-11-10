@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CalendarDays,
   CheckCircle2,
+  Compass,
   FileCheck2,
   MapPinned,
   Plane,
