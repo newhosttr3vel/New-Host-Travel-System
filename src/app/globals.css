@@ -1448,3 +1448,93 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .auth-screen-v2 > .auth-layout-wrap,
 .auth-screen-motion > .auth-panel,
 .onboard-wrap > .onboard-card { position: relative; z-index: 1; }
+
+
+/* V2: make the travel animation visibly render inside each page stacking context. */
+.auth-screen-v2,
+.auth-screen-motion,
+.onboard-wrap {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.auth-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 1 !important;
+  background:
+    radial-gradient(ellipse at 14% 22%, rgba(104,190,145,.30), transparent 35%),
+    radial-gradient(ellipse at 88% 78%, rgba(79,170,121,.22), transparent 34%),
+    linear-gradient(130deg,#f5fbf7 0%,#eaf5ee 52%,#f8fbf9 100%) !important;
+}
+.auth-screen-v2 > .auth-layout-wrap,
+.auth-screen-motion > .auth-panel,
+.onboard-wrap > .onboard-card {
+  position: relative !important;
+  z-index: 2 !important;
+}
+.auth-backdrop-glow {
+  width: min(58vw,720px);
+  opacity: .95;
+  filter: blur(12px);
+  background: radial-gradient(circle,rgba(53,158,103,.23),rgba(53,158,103,0) 70%);
+}
+.auth-backdrop-glow-one { top:-28%; inset-inline-start:-18%; }
+.auth-backdrop-glow-two { bottom:-38%; inset-inline-end:-17%; }
+.auth-backdrop-routes { opacity: 1 !important; }
+.auth-route-line {
+  stroke: #438f69 !important;
+  stroke-width: 2 !important;
+  stroke-dasharray: 10 15 !important;
+  opacity: .42 !important;
+  animation: auth-route-travel 22s linear infinite;
+}
+.auth-route-line-two {
+  stroke: #6eae89 !important;
+  stroke-width: 1.7 !important;
+  stroke-dasharray: 4 13 !important;
+  opacity: .42 !important;
+  animation-duration: 28s;
+  animation-direction: reverse;
+}
+.auth-route-line-three {
+  stroke: #77b895 !important;
+  opacity: .34 !important;
+  animation-duration: 32s;
+}
+.auth-route-node {
+  fill: #258452 !important;
+  opacity: .9 !important;
+  filter: drop-shadow(0 0 9px rgba(37,132,82,.55));
+  animation: auth-node-pulse 3.8s ease-in-out infinite;
+}
+.auth-route-node-two { animation-delay: -1.2s; }
+.auth-route-node-three { animation-delay: -2.4s; }
+.auth-backdrop-orb {
+  width: 9px;
+  height: 9px;
+  opacity: .9;
+  background: #238653;
+  box-shadow: 0 0 0 9px rgba(35,134,83,.13),0 0 26px rgba(35,134,83,.48);
+}
+.auth-backdrop-orb-one { animation: auth-backdrop-drift-one 12s ease-in-out infinite; }
+.auth-backdrop-orb-two { animation: auth-backdrop-drift-two 15s ease-in-out infinite; }
+.auth-backdrop-orb-three { animation: auth-backdrop-drift-one 18s ease-in-out infinite reverse; }
+@keyframes auth-route-travel { to { stroke-dashoffset: -260; } }
+@keyframes auth-node-pulse {
+  0%,100% { opacity:.58; transform:scale(.82); }
+  50% { opacity:1; transform:scale(1.55); }
+}
+@keyframes auth-backdrop-float {
+  from { transform:translate3d(-3%,1%,0) scale(.94); }
+  to { transform:translate3d(5%,7%,0) scale(1.08); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .auth-route-line,.auth-route-node,.auth-backdrop-glow,.auth-backdrop-orb {
+    animation: none !important;
+  }
+}
