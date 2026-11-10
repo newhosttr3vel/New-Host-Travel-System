@@ -1914,3 +1914,20 @@ a:hover, .text-link:hover { color: #043d2a; }
 .reset-brand img {
   border-radius: 8px !important;
 }
+
+
+/* Near-hairline rounded logo outline */
+.auth-brand-logo,
+.brand-logo-frame,
+.brand-logo-frame-light {
+  padding: 0 !important;
+  border: .25px solid rgba(4,61,42,.24) !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+}
+.auth-brand-logo { border-color: rgba(255,255,255,.24) !important; }
+.auth-brand-logo img,
+.brand-logo-frame img,
+.reset-brand img {
+  border-radius: 7px !important;
+}
