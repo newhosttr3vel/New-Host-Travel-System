@@ -2184,3 +2184,108 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
   .auth-screen-v2::before,
   .auth-screen-v2::after { animation: none !important; }
 }
+
+
+/* Dedicated animated elements: guaranteed visible motion behind auth card */
+.auth-screen-v2 { position: relative !important; isolation: isolate !important; overflow: hidden !important; }
+.auth-screen-v2::before, .auth-screen-v2::after { content: none !important; animation: none !important; }
+.auth-motion-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+}
+.auth-motion-aurora {
+  position: absolute;
+  display: block;
+  width: min(68vw, 900px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(42px);
+  will-change: transform;
+  mix-blend-mode: screen;
+}
+.auth-motion-aurora-one {
+  top: -42%;
+  left: -18%;
+  background: radial-gradient(circle, rgba(46,238,157,.42) 0%, rgba(19,166,105,.2) 38%, transparent 70%);
+  animation: auth-aurora-sweep-one 12s ease-in-out infinite alternate;
+}
+.auth-motion-aurora-two {
+  right: -20%;
+  bottom: -48%;
+  background: radial-gradient(circle, rgba(137,255,198,.34) 0%, rgba(10,145,91,.18) 42%, transparent 70%);
+  animation: auth-aurora-sweep-two 15s ease-in-out infinite alternate;
+}
+.auth-motion-orbit {
+  position: absolute;
+  display: block;
+  border: 1px solid rgba(207,255,226,.2);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(207,255,226,.025), 0 0 0 54px rgba(207,255,226,.018);
+  will-change: transform;
+}
+.auth-motion-orbit-one {
+  width: min(70vw, 780px);
+  aspect-ratio: 1;
+  top: -32%;
+  right: -16%;
+  animation: auth-orbit-spin-one 28s linear infinite;
+}
+.auth-motion-orbit-two {
+  width: min(52vw, 590px);
+  aspect-ratio: 1;
+  left: -13%;
+  bottom: -37%;
+  border-style: dashed;
+  border-color: rgba(205,239,215,.16);
+  animation: auth-orbit-spin-two 38s linear infinite reverse;
+}
+.auth-motion-beam {
+  position: absolute;
+  top: -35%;
+  bottom: -35%;
+  left: -40%;
+  width: 22%;
+  display: block;
+  transform: skewX(-22deg);
+  background: linear-gradient(90deg, transparent, rgba(194,255,220,.09), transparent);
+  filter: blur(12px);
+  animation: auth-light-beam 9s ease-in-out infinite;
+}
+.auth-layout-wrap { position: relative !important; z-index: 2 !important; }
+.auth-page-heading { position: relative; z-index: 2; }
+@keyframes auth-aurora-sweep-one {
+  0% { transform: translate3d(0,0,0) scale(.78); }
+  50% { transform: translate3d(30%,18%,0) scale(1.08); }
+  100% { transform: translate3d(12%,42%,0) scale(.9); }
+}
+@keyframes auth-aurora-sweep-two {
+  0% { transform: translate3d(0,0,0) scale(1.08); }
+  50% { transform: translate3d(-24%,-22%,0) scale(.82); }
+  100% { transform: translate3d(-42%,-4%,0) scale(1.12); }
+}
+@keyframes auth-orbit-spin-one {
+  from { transform: rotate(0deg) translateX(0); }
+  to { transform: rotate(360deg) translateX(0); }
+}
+@keyframes auth-orbit-spin-two {
+  from { transform: rotate(0deg) scale(.96); }
+  to { transform: rotate(360deg) scale(1.04); }
+}
+@keyframes auth-light-beam {
+  0% { left: -35%; opacity: 0; }
+  15% { opacity: .85; }
+  65% { opacity: .65; }
+  100% { left: 125%; opacity: 0; }
+}
+@media (max-width: 740px) {
+  .auth-motion-aurora { width: 110vw; filter: blur(34px); }
+  .auth-motion-orbit-one { width: 112vw; right: -48%; top: -14%; }
+  .auth-motion-orbit-two { width: 88vw; left: -38%; bottom: -18%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-motion-aurora, .auth-motion-orbit, .auth-motion-beam { animation: none !important; }
+}
