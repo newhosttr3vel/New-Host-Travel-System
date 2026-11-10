@@ -15,13 +15,13 @@
   --shadow: 0 12px 32px rgba(23, 42, 69, .06);
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; font-family: inherit; }
 html { min-height: 100%; background: var(--canvas); }
 body {
   margin: 0;
   color: var(--ink);
   background: var(--canvas);
-  font-family: "IBM Plex Sans Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-family: var(--font-cairo), "Cairo", sans-serif;
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
