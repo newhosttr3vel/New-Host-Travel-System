@@ -6,9 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  Building2,
   Bus,
-  Check,
   Compass,
   Eye,
   EyeOff,
@@ -18,7 +16,6 @@ import {
   LockKeyhole,
   Plane,
   ShieldCheck,
-  Ticket,
   Users,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
