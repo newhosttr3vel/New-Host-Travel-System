@@ -1878,3 +1878,24 @@ a:hover, .text-link:hover { color: #043d2a; }
   .auth-brand-logo { width: 156px !important; max-width: 156px !important; }
   .brand-logo-frame, .brand-logo-frame-light { width: 148px !important; max-width: 148px !important; }
 }
+
+
+/* Rounded logo holder to echo the original New Host mark */
+.auth-brand-logo {
+  padding: 2px !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  overflow: hidden !important;
+}
+.auth-brand-logo img { border-radius: 10px !important; }
+.brand-logo-frame,
+.brand-logo-frame-light {
+  padding: 2px !important;
+  border: 1px solid rgba(4,61,42,.10) !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  overflow: hidden !important;
+}
+.brand-logo-frame img { border-radius: 10px !important; }
+.reset-brand img { border-radius: 10px !important; }
