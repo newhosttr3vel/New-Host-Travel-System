@@ -115,6 +115,13 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
 
   return (
     <main className="auth-screen-v2">
+      <div className="auth-motion-layer" aria-hidden="true">
+        <span className="auth-motion-aurora auth-motion-aurora-one" />
+        <span className="auth-motion-aurora auth-motion-aurora-two" />
+        <span className="auth-motion-orbit auth-motion-orbit-one" />
+        <span className="auth-motion-orbit auth-motion-orbit-two" />
+        <span className="auth-motion-beam" />
+      </div>
       <div className="auth-layout-wrap">
         <header className="auth-page-heading">
           <span className="auth-heading-rule" />
