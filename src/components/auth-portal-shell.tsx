@@ -103,6 +103,11 @@ export function AuthPortalShell({
               <p>{copy.description}</p>
             </div>
 
+            <div className="nh-auth-slogan">
+              <span className="nh-auth-slogan-mark" aria-hidden="true" />
+              <p>{isArabic ? "مساحة واحدة لإدارة أعمال السفر" : "ONE WORKSPACE FOR TRAVEL OPERATIONS"}</p>
+            </div>
+
             <div className="nh-auth-scene" aria-label={isArabic ? "تصور توضيحي لمسار سفر من القاهرة إلى جدة" : "Illustrative travel route from Cairo to Jeddah"}>
               <svg className="nh-auth-scene-map" viewBox="0 0 660 360" fill="none" aria-hidden="true">
                 <defs>
@@ -170,10 +175,6 @@ export function AuthPortalShell({
           </div>
 
           <div className="nh-auth-brand-footer">
-            <span>
-              <i />
-              {isArabic ? "مساحة واحدة لإدارة أعمال السفر" : "ONE WORKSPACE FOR TRAVEL OPERATIONS"}
-            </span>
             <span>© {new Date().getFullYear()} NEW HOST TRAVEL</span>
           </div>
         </aside>
