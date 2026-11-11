@@ -4552,3 +4552,74 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
   border-color: rgba(6, 74, 51, .24);
   background: rgba(6, 74, 51, .035);
 }
+
+
+/* SLOGAN ABOVE FULL AUTH CARD */
+.nh-auth-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 13px;
+  width: min(100%, 1080px);
+  margin-inline: auto;
+}
+.nh-auth-stage .nh-auth-frame {
+  width: 100%;
+}
+.nh-auth-slogan-outside {
+  justify-self: center;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0 12px;
+  text-align: center;
+}
+.nh-auth-slogan-outside .nh-auth-slogan-mark {
+  flex-basis: 32px;
+  width: 32px;
+  height: 2px;
+}
+.nh-auth-slogan-outside p {
+  color: rgba(245, 251, 246, .96);
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-shadow: 0 2px 12px rgba(0, 20, 13, .18);
+}
+.nh-auth-stage[dir="ltr"] .nh-auth-slogan-outside p {
+  font-size: 10px;
+  letter-spacing: .13em;
+  font-weight: 850;
+}
+@media (min-width: 601px) and (max-width: 1050px) {
+  .nh-auth-stage { width: min(100%, 700px); }
+}
+@media (max-width: 600px) {
+  .nh-auth-stage {
+    width: 100%;
+    gap: 10px;
+    padding-top: 14px;
+    background: #fff;
+  }
+  .nh-auth-slogan-outside {
+    margin: 0 auto;
+    gap: 9px;
+  }
+  .nh-auth-slogan-outside .nh-auth-slogan-mark {
+    flex-basis: 20px;
+    width: 20px;
+  }
+  .nh-auth-slogan-outside p {
+    color: #064a33;
+    font-size: 11px;
+    text-shadow: none;
+  }
+  .nh-auth-stage[dir="ltr"] .nh-auth-slogan-outside p {
+    font-size: 8px;
+    letter-spacing: .09em;
+  }
+  .nh-auth-stage .nh-auth-frame {
+    min-height: calc(100svh - 50px);
+  }
+}
