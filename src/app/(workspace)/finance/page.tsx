@@ -4,6 +4,7 @@ import { getTenantContext } from "@/lib/tenant-context";
 import { hasPermission } from "@/lib/permissions";
 import { FinanceClient } from "@/components/finance-client";
 import { BillingClient } from "@/components/billing-client";
+import { SupplierBillingClient } from "@/components/supplier-billing-client";
 
 export default async function FinancePage() {
   const locale = await currentLocale();
@@ -29,6 +30,7 @@ export default async function FinancePage() {
       ? <div className="alert" role="alert">{locale === "ar" ? "ليست لديك صلاحية لعرض البيانات المالية." : "You do not have permission to view financial data."}</div>
       : <>
           <BillingClient locale={locale} canWrite={canWrite} />
+          <SupplierBillingClient locale={locale} canWrite={canWrite} />
           <FinanceClient locale={locale} canWrite={canWrite} />
         </>}
   </>;
