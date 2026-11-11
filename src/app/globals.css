@@ -4434,3 +4434,18 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     line-height: 1.35;
   }
 }
+
+
+/* SOFTER LOGO FRAME — finer border and rounder corners */
+.nh-auth-logo-frame {
+  border: .65px solid rgba(255, 255, 255, .82);
+  border-radius: 17px;
+  padding: 2px;
+}
+.nh-auth-logo-frame img {
+  border-radius: 14px;
+}
+@media (max-width: 600px) {
+  .nh-auth-logo-frame { border-radius: 14px; }
+  .nh-auth-logo-frame img { border-radius: 11px; }
+}
