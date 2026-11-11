@@ -34,8 +34,8 @@ A service line may have its own lifecycle, but must remain attached to the maste
 | Flights & tickets | Flight segments, passenger assignment, ticket numbers, issue status and changes | Not implemented |
 | Visas | Visa applications, document checks, submission, approval/rejection, issue and expiry tracking | Role exists; workflow not implemented |
 | Transport & ground operations | Transfers, vehicles, routes, manifests, pickup times, supplier assignment and execution status | Not implemented |
-| Supplier management | Supplier profiles, contacts, contracts, rate periods, service confirmation and payables | Supplier directory and initial bill/payment APIs exist; contract/rate screens remain |
-| Finance | Customer invoices, receipts, supplier bills/payments, ledger, reconciliation and profitability | Double-entry foundation, invoices/receipts and supplier billing APIs exist; major finance controls remain |
+| Supplier management | Supplier profiles, contacts, contracts, rate periods, service confirmation and payables | Supplier directory, bill/payment APIs and initial payables screen exist; contracts/rates and supplier performance remain |
+| Finance | Customer invoices, receipts, supplier bills/payments, ledger, reconciliation and profitability | Double-entry foundation, customer invoices/receipts and initial supplier bill/payment screens exist; reversals, allocations, statements, reconciliation and management reports remain |
 | Tasks & communications | Assigned tasks, SLA/deadline, reminders, internal notes and event-linked notifications | Not implemented |
 | Team, branches & access | Branches, staff, role templates, per-module permissions and audit trail | Tenant roles and branch model exist; invitation and branch-level access UI remain |
 | Reports & settings | Sales, production, supplier exposure, inventory, visa readiness, profitability and company settings | Not implemented |

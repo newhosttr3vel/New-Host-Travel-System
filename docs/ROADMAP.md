@@ -41,7 +41,7 @@ The target product workflow is documented in [TRAVEL_ERP_BLUEPRINT.md](./TRAVEL_
 
 ## Milestone 5 — Supplier, finance and operations control
 - [ ] Add supplier contracts, service rates, confirmations and performance history.
-- [ ] Add supplier-bill and supplier-payment screens.
+- [x] Add supplier-bill and supplier-payment screens backed by tenant- and branch-scoped posting APIs.
 - [ ] Add credit notes, refunds, allocations, customer/supplier statements and bank reconciliation.
 - [ ] Add tasks, assignment, deadlines, escalation and internal notifications.
 - [ ] Add operational reports: booking production, service readiness, hotel utilization and outstanding actions.

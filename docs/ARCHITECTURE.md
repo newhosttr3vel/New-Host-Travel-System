@@ -26,6 +26,20 @@ The optional x-tenant-id header is not accepted as proof of access by itself; th
 - Use database decimal types for money. Avoid JavaScript binary floating point in accounting calculations.
 - Dashboards must be backed by real database queries, not hardcoded totals.
 
+## Implemented controls and workflows
+
+- Tenant and branch scopes are applied in the reservation, document and finance workflows; PostgreSQL row-level security protects tenant-owned rows through a separate non-owner runtime role.
+- Private travel documents use server-side permission checks, MIME validation, random object keys and short-lived signed downloads when the storage provider is configured.
+- The finance foundation includes tenant-scoped ledger accounts, immutable balanced journals, customer invoices and receipts, supplier bills and payments, and a base-currency trial balance.
+- Mutating workflows write audit events; posted journals are corrected through reversing entries rather than silent edits.
+- CI runs PostgreSQL migrations and integration tests using a non-owner runtime login.
+
 ## Not yet complete
 
-Branch-scoped authorization, PostgreSQL row-level security, a separate service layer for all business operations, secure document storage, accounting and double-entry ledger, notification jobs, subscription enforcement and live integrations remain roadmap work. The current slice must not be treated as production-ready simply because it builds.
+- Consolidate remaining business rules into shared service modules and expand authenticated integration coverage for every finance mutation and future export.
+- Complete lead management, quotations, multi-service booking files, hotel contracts and room allotments, traveller profiles, Hajj/Umrah groups, flight ticketing, visa processing and transport execution.
+- Add supplier contracts/rate periods, credit notes/refunds, payment allocations, customer/supplier statements, bank reconciliation and management reports.
+- Complete invitations and staff lifecycle, broader end-to-end role/branch testing, independent security assessment, production provider configuration, monitoring and verified backup restore drills.
+- Live airline/hotel inventory, government approval, payment processing and external messaging require authorized provider integrations.
+
+The current release is a functional foundation, not a production-certified travel ERP. Use fictional data until the production gates in SECURITY.md and DEPLOYMENT.md are completed.
