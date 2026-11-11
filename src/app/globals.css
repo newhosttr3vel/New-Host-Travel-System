@@ -4436,16 +4436,16 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
 }
 
 
-/* SOFTER LOGO FRAME — finer border and rounder corners */
+/* LOGO-MATCHED FRAME — fine outline with the logo's own rounded-rectangle proportions */
 .nh-auth-logo-frame {
-  border: .65px solid rgba(255, 255, 255, .82);
-  border-radius: 17px;
-  padding: 2px;
+  border: .45px solid rgba(255, 255, 255, .78);
+  border-radius: 8px;
+  padding: 1px;
 }
 .nh-auth-logo-frame img {
-  border-radius: 14px;
+  border-radius: 6.5px;
 }
 @media (max-width: 600px) {
-  .nh-auth-logo-frame { border-radius: 14px; }
-  .nh-auth-logo-frame img { border-radius: 11px; }
+  .nh-auth-logo-frame { border-radius: 7px; }
+  .nh-auth-logo-frame img { border-radius: 5.5px; }
 }
