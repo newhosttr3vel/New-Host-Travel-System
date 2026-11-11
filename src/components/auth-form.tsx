@@ -173,8 +173,8 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
 
               <form className="auth-form" onSubmit={submit}>
                 {registering && (
-                  <label className="field auth-field" htmlFor="auth-full-name">
-                    <span className="field-label">{t(locale, "fullName")}</span>
+                  <div className="field auth-field">
+                    <label className="field-label" htmlFor="auth-full-name">{t(locale, "fullName")}</label>
                     <input
                       id="auth-full-name"
                       className="input auth-input"
@@ -186,11 +186,11 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                       minLength={2}
                       maxLength={100}
                     />
-                  </label>
+                  </div>
                 )}
 
-                <label className="field auth-field" htmlFor="auth-email">
-                  <span className="field-label">{t(locale, "email")}</span>
+                <div className="field auth-field">
+                  <label className="field-label" htmlFor="auth-email">{t(locale, "email")}</label>
                   <input
                     id="auth-email"
                     className="input auth-input"
@@ -204,18 +204,18 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                     dir="ltr"
                     placeholder="name@company.com"
                   />
-                </label>
+                </div>
 
                 {!forgotPassword && (
-                  <label className="field auth-field" htmlFor="auth-password">
-                    <span className="auth-label-row">
-                      <span className="field-label">{t(locale, "password")}</span>
+                  <div className="field auth-field">
+                    <div className="auth-label-row">
+                      <label className="field-label" htmlFor="auth-password">{t(locale, "password")}</label>
                       {!registering && (
                         <button className="auth-inline-link" type="button" onClick={openRecovery}>
                           {isArabic ? "نسيت كلمة المرور؟" : "Forgot password?"}
                         </button>
                       )}
-                    </span>
+                    </div>
                     <span className="auth-password-wrap">
                       <input
                         id="auth-password"
@@ -247,7 +247,7 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                         {isArabic ? "استخدم 12 حرفًا على الأقل لحماية حسابك." : "Use at least 12 characters to protect your account."}
                       </span>
                     )}
-                  </label>
+                  </div>
                 )}
 
                 <button className="btn btn-primary auth-submit" type="submit" disabled={pending}>
