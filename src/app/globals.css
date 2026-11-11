@@ -1165,3 +1165,35 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .auth-secure-note { align-items: flex-start; }
   .auth-visual-footer { font-size: 7px; }
 }
+
+
+/* Supplier payables workspace: bill lines, supplier references and payment history. */
+.supplier-bill-stats { margin-bottom: 18px; }
+.supplier-billing-table { min-width: 980px; }
+.supplier-bill-lines { display: grid; gap: 10px; margin-top: 12px; }
+.supplier-bill-line {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.45fr) minmax(76px, .55fr) minmax(105px, .75fr) minmax(180px, 1.2fr) 38px;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfcfd;
+}
+.supplier-bill-line .field-label { font-size: 11px; }
+.supplier-bill-line .input,
+.supplier-bill-line .select { padding: 8px 9px; }
+.supplier-bill-line .remove-line { min-height: 38px; }
+.supplier-bill-detail { margin-top: 8px; }
+@media (max-width: 1050px) {
+  .supplier-bill-line { grid-template-columns: minmax(0, 1.5fr) minmax(80px, .6fr) minmax(110px, .8fr) 38px; }
+  .supplier-bill-line .field:nth-child(4) { grid-column: 1 / -2; }
+}
+@media (max-width: 640px) {
+  .supplier-bill-line { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 10px; }
+  .supplier-bill-line .field:first-child,
+  .supplier-bill-line .field:nth-child(4) { grid-column: 1 / -1; }
+  .supplier-bill-line .remove-line { grid-column: 2; justify-self: end; width: 38px; }
+  .supplier-billing-table { min-width: 880px; }
+}
