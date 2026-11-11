@@ -4214,3 +4214,37 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     animation: none !important;
   }
 }
+
+
+/* BRAND ALIGNMENT — logo-green canvas and a more compact auth frame */
+@media (min-width: 601px) {
+  .nh-auth-shell {
+    background:
+      radial-gradient(ellipse at 8% 10%, rgba(18, 126, 78, .19), transparent 34%),
+      radial-gradient(ellipse at 96% 92%, rgba(7, 94, 61, .24), transparent 36%),
+      linear-gradient(138deg, #064a33 0%, #003f2b 54%, #002f21 100%);
+  }
+  .nh-auth-backdrop-glow-one {
+    background: radial-gradient(circle, rgba(24, 151, 91, .30), transparent 68%);
+  }
+  .nh-auth-backdrop-glow-two {
+    background: radial-gradient(circle, rgba(10, 113, 71, .26), transparent 68%);
+  }
+  .nh-auth-backdrop-grid {
+    opacity: .15;
+    background-image:
+      linear-gradient(rgba(226, 244, 232, .045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(226, 244, 232, .045) 1px, transparent 1px);
+  }
+}
+@media (min-width: 1051px) {
+  .nh-auth-frame {
+    width: min(100%, 1240px);
+    min-height: min(790px, calc(100svh - 76px));
+  }
+}
+@media (min-width: 601px) and (max-width: 1050px) {
+  .nh-auth-frame {
+    width: min(100%, 700px);
+  }
+}
