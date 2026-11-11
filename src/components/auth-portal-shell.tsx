@@ -73,6 +73,20 @@ export function AuthPortalShell({
 
       <div className="nh-auth-frame">
         <aside className="nh-auth-brand-panel" dir={locale}>
+          <div className="nh-auth-atmosphere" aria-hidden="true">
+            <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-one" />
+            <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-two" />
+            <span className="nh-auth-atmosphere-orbit" />
+            <span className="nh-auth-atmosphere-beam" />
+            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-one" />
+            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-two" />
+            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-three" />
+            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-four" />
+            <svg className="nh-auth-atmosphere-route" viewBox="0 0 900 620" preserveAspectRatio="none">
+              <path d="M-60 480C110 390 160 130 360 165S650 500 960 120" />
+              <path d="M-80 535C95 450 190 210 380 225S680 545 980 190" />
+            </svg>
+          </div>
           <div className="nh-auth-brandbar">
             <div className="nh-auth-brand-lockup">
               <span className="nh-auth-logo-frame">
