@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ArrowUpRight, Building2, Hotel, Plane, Users } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
 type AuthStage = "login" | "register" | "recovery" | "reset";
@@ -6,46 +7,46 @@ type AuthStage = "login" | "register" | "recovery" | "reset";
 const stageCopy = {
   ar: {
     login: {
-      eyebrow: "منصة تشغيل أعمال السفر",
-      title: <>خلّي شغلك<br /><em>يمشي بسلاسة.</em></>,
-      description: "كل حجوزاتك وعملاءك ومورّدينك في مساحة واحدة، بتجربة واضحة تساعد فريقك يشتغل بثقة.",
+      eyebrow: "منصة متكاملة لإدارة السفر",
+      title: <>إدارة السفر،<br /><em>بصورة أوضح.</em></>,
+      description: "نظّم الحجوزات والعملاء والموردين في مساحة عمل واحدة، وتابع تفاصيل عملياتك بثقة ووضوح.",
     },
     register: {
-      eyebrow: "مساحة جديدة لفريقك",
-      title: <>ابدأ بتنظيم<br /><em>رحلتك القادمة.</em></>,
-      description: "أنشئ مساحة شركتك، واجمع عمليات السفر اليومية في نظام واحد قابل للنمو مع فريقك.",
+      eyebrow: "مساحة عمل جديدة",
+      title: <>ابدأ من هنا،<br /><em>ورتّب كل التفاصيل.</em></>,
+      description: "أنشئ مساحة مستقلة لشركتك، واجمع فريقك وعمليات السفر اليومية داخل نظام واحد.",
     },
     recovery: {
       eyebrow: "استعادة الوصول",
-      title: <>نرجّعك لشغلك<br /><em>بخطوات آمنة.</em></>,
-      description: "هنساعدك تستعيد الوصول لحسابك من خلال رابط آمن يُرسل إلى بريدك الإلكتروني.",
+      title: <>نوصّلك لحسابك،<br /><em>بخطوات آمنة.</em></>,
+      description: "أعد الوصول إلى مساحة عملك من خلال رابط استعادة يُرسل إلى بريدك الإلكتروني.",
     },
     reset: {
-      eyebrow: "تأمين حسابك",
-      title: <>كلمة مرور جديدة،<br /><em>وبداية آمنة.</em></>,
-      description: "اختَر كلمة مرور قوية، وارجع لمساحة عملك مع حماية أفضل لحسابك.",
+      eyebrow: "تحديث بيانات الأمان",
+      title: <>حسابك يستحق،<br /><em>حماية أقوى.</em></>,
+      description: "اختر كلمة مرور جديدة وقوية، ثم تابع إدارة أعمالك من مساحة شركتك.",
     },
   },
   en: {
     login: {
-      eyebrow: "TRAVEL BUSINESS PLATFORM",
-      title: <>Make every<br /><em>move seamless.</em></>,
-      description: "Bring reservations, clients and suppliers together in one focused workspace built for travel teams.",
+      eyebrow: "AN OPERATING SYSTEM FOR TRAVEL",
+      title: <>Travel operations,<br /><em>with a clearer view.</em></>,
+      description: "Bring reservations, clients and suppliers together in one workspace, with every operation easier to follow.",
     },
     register: {
-      eyebrow: "A NEW SPACE FOR YOUR TEAM",
-      title: <>Build your next<br /><em>chapter here.</em></>,
-      description: "Create your company workspace and bring day-to-day travel operations into one place that grows with your team.",
+      eyebrow: "A NEW WORKSPACE",
+      title: <>Start with clarity.<br /><em>Grow with confidence.</em></>,
+      description: "Create an independent company workspace and bring your team and daily travel operations together.",
     },
     recovery: {
       eyebrow: "ACCOUNT RECOVERY",
-      title: <>Back to work,<br /><em>securely.</em></>,
-      description: "We'll help you regain access through a secure reset link sent to your email address.",
+      title: <>Your workspace,<br /><em>within reach.</em></>,
+      description: "Regain access to your workspace through a secure reset link sent to your email address.",
     },
     reset: {
-      eyebrow: "SECURE YOUR ACCOUNT",
-      title: <>A fresh password.<br /><em>A safer start.</em></>,
-      description: "Choose a strong new password and return to your workspace with confidence.",
+      eyebrow: "ACCOUNT SECURITY",
+      title: <>A stronger password.<br /><em>A safer workspace.</em></>,
+      description: "Choose a new, strong password and continue managing your company workspace.",
     },
   },
 } as const;
@@ -82,7 +83,7 @@ export function AuthPortalShell({
                 <small>TRAVEL MANAGEMENT</small>
               </span>
             </div>
-            <span className="nh-auth-brand-index">NH / WORKSPACE</span>
+            <span className="nh-auth-brand-index">NH / 2026</span>
           </div>
 
           <div className="nh-auth-brand-main">
@@ -92,44 +93,76 @@ export function AuthPortalShell({
               <p>{copy.description}</p>
             </div>
 
-            <div className="nh-auth-route-card" dir="ltr">
-              <div className="nh-auth-route-card-top">
-                <span>{isArabic ? "مثال لمسار رحلة" : "SAMPLE ITINERARY"}</span>
-                <span className="nh-auth-route-ref">NH <b>—</b> 001</span>
+            <div className="nh-auth-scene" aria-label={isArabic ? "تصور توضيحي لمسار سفر من القاهرة إلى جدة" : "Illustrative travel route from Cairo to Jeddah"}>
+              <svg className="nh-auth-scene-map" viewBox="0 0 660 360" fill="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="nh-route-gradient" x1="80" y1="260" x2="590" y2="70" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#D7BC88" stopOpacity=".1" />
+                    <stop offset=".48" stopColor="#E4D0A7" />
+                    <stop offset="1" stopColor="#B9E6C9" stopOpacity=".25" />
+                  </linearGradient>
+                  <radialGradient id="nh-globe-gradient" cx="0" cy="0" r="1" gradientTransform="translate(340 170) rotate(90) scale(170 290)" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#8AD2A9" stopOpacity=".15" />
+                    <stop offset="1" stopColor="#8AD2A9" stopOpacity="0" />
+                  </radialGradient>
+                </defs>
+                <circle cx="340" cy="170" r="158" fill="url(#nh-globe-gradient)" />
+                <ellipse cx="340" cy="170" rx="158" ry="158" stroke="#DDF4E5" strokeOpacity=".17" />
+                <ellipse cx="340" cy="170" rx="112" ry="158" stroke="#DDF4E5" strokeOpacity=".12" />
+                <ellipse cx="340" cy="170" rx="52" ry="158" stroke="#DDF4E5" strokeOpacity=".09" />
+                <ellipse cx="340" cy="170" rx="158" ry="72" stroke="#DDF4E5" strokeOpacity=".13" />
+                <ellipse cx="340" cy="170" rx="158" ry="116" stroke="#DDF4E5" strokeOpacity=".09" />
+                <path d="M182 170H498M340 12V328" stroke="#DDF4E5" strokeOpacity=".08" />
+                <path className="nh-auth-map-route" d="M96 262C175 74 303 42 420 117C478 154 522 170 580 96" stroke="url(#nh-route-gradient)" strokeWidth="2" strokeDasharray="5 9" />
+                <path d="M96 262C175 74 303 42 420 117C478 154 522 170 580 96" stroke="#E8D4A9" strokeOpacity=".15" strokeWidth="18" />
+                <circle cx="96" cy="262" r="6" fill="#D9BF8C" />
+                <circle cx="96" cy="262" r="16" stroke="#D9BF8C" strokeOpacity=".32" />
+                <circle cx="580" cy="96" r="6" fill="#B7E5C8" />
+                <circle cx="580" cy="96" r="16" stroke="#B7E5C8" strokeOpacity=".28" />
+                <circle cx="420" cy="117" r="4" fill="#E7D6B4" />
+              </svg>
+
+              <div className="nh-auth-map-plane" aria-hidden="true">
+                <Plane size={21} strokeWidth={1.8} />
               </div>
 
-              <div className="nh-auth-route-main">
-                <div className="nh-auth-airport">
-                  <span className="nh-auth-airport-label">{isArabic ? "المغادرة" : "FROM"}</span>
+              <div className="nh-auth-map-label nh-auth-map-label-origin" dir="ltr">
+                <span>{isArabic ? "نقطة الانطلاق" : "ORIGIN"}</span>
+                <strong>CAI</strong>
+                <small>{isArabic ? "القاهرة" : "CAIRO"}</small>
+              </div>
+              <div className="nh-auth-map-label nh-auth-map-label-destination" dir="ltr">
+                <span>{isArabic ? "الوجهة" : "DESTINATION"}</span>
+                <strong>JED</strong>
+                <small>{isArabic ? "جدة" : "JEDDAH"}</small>
+              </div>
+
+              <div className="nh-auth-scene-caption" dir="ltr">
+                <span className="nh-auth-scene-caption-top">
+                  <i />
+                  {isArabic ? "مسار توضيحي" : "ILLUSTRATIVE ROUTE"}
+                </span>
+                <div>
                   <strong>CAI</strong>
-                  <small>{isArabic ? "القاهرة" : "CAIRO"}</small>
-                </div>
-
-                <div className="nh-auth-route-connector">
-                  <span className="nh-auth-route-origin" />
-                  <span className="nh-auth-route-line" />
-                  <span className="nh-auth-route-plane">✈</span>
-                  <span className="nh-auth-route-destination" />
-                </div>
-
-                <div className="nh-auth-airport nh-auth-airport-end">
-                  <span className="nh-auth-airport-label">{isArabic ? "الوصول" : "TO"}</span>
+                  <span>—</span>
                   <strong>JED</strong>
-                  <small>{isArabic ? "جدة" : "JEDDAH"}</small>
                 </div>
+                <small>{isArabic ? "رحلات • حجوزات • عمليات" : "FLIGHTS · BOOKINGS · OPERATIONS"}</small>
               </div>
+            </div>
 
-              <div className="nh-auth-route-card-bottom">
-                <span><i />{isArabic ? "رحلة توضيحية" : "ILLUSTRATIVE ROUTE"}</span>
-                <span>{isArabic ? "إدارة • متابعة • تنظيم" : "MANAGE · TRACK · ORGANIZE"}</span>
-              </div>
+            <div className="nh-auth-capabilities">
+              <span><Plane size={14} />{isArabic ? "الطيران" : "FLIGHTS"}</span>
+              <span><Hotel size={14} />{isArabic ? "الفنادق" : "HOTELS"}</span>
+              <span><Users size={14} />{isArabic ? "العملاء" : "CLIENTS"}</span>
+              <span><Building2 size={14} />{isArabic ? "الموردون" : "SUPPLIERS"}</span>
             </div>
           </div>
 
           <div className="nh-auth-brand-footer">
             <span>
               <i />
-              {isArabic ? "كل عمليات السفر في مكان واحد" : "ONE WORKSPACE FOR TRAVEL OPERATIONS"}
+              {isArabic ? "مساحة واحدة لإدارة أعمال السفر" : "ONE WORKSPACE FOR TRAVEL OPERATIONS"}
             </span>
             <span>© {new Date().getFullYear()} NEW HOST TRAVEL</span>
           </div>
@@ -142,7 +175,7 @@ export function AuthPortalShell({
               {isArabic ? "بوابة فريق العمل" : "TEAM PORTAL"}
             </span>
             <span className="nh-auth-form-side-note">
-              {isArabic ? "وصول آمن" : "SECURE ACCESS"}
+              {isArabic ? "إدارة أعمالك تبدأ هنا" : "YOUR WORK STARTS HERE"}
             </span>
           </div>
 
