@@ -27,6 +27,8 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
   const [notice, setNotice] = useState("");
   const [forgotPassword, setForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const registering = mode === "register";
+  const isArabic = locale === "ar";
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
