@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import type { Locale } from "@/lib/messages";
 import { LocaleToggle } from "@/components/locale-toggle";
@@ -77,6 +77,7 @@ export function ResetPasswordForm({ token, locale }: { token?: string; locale: L
             <div className="nh-auth-field">
               <label htmlFor="nh-reset-password">{isArabic ? "كلمة المرور الجديدة" : "New password"}</label>
               <div className="nh-auth-password">
+                <LockKeyhole className="nh-auth-password-icon" size={17} aria-hidden="true" />
                 <input
                   id="nh-reset-password"
                   type={showPassword ? "text" : "password"}
@@ -103,6 +104,7 @@ export function ResetPasswordForm({ token, locale }: { token?: string; locale: L
             <div className="nh-auth-field">
               <label htmlFor="nh-reset-confirm">{isArabic ? "تأكيد كلمة المرور" : "Confirm password"}</label>
               <div className="nh-auth-password">
+                <LockKeyhole className="nh-auth-password-icon" size={17} aria-hidden="true" />
                 <input
                   id="nh-reset-confirm"
                   type={showConfirm ? "text" : "password"}
