@@ -3671,10 +3671,11 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
 }
 .nh-auth-brand-panel {
   padding: clamp(36px, 4.4vw, 64px);
+  /* Match the deep forest-green used in the official New Host Travel logo. */
   background:
-    radial-gradient(ellipse at 76% 15%, rgba(128, 215, 165, .24), transparent 34%),
-    radial-gradient(ellipse at 8% 92%, rgba(9, 121, 81, .38), transparent 48%),
-    linear-gradient(148deg, #086f4e 0%, #064d39 54%, #032b22 100%);
+    radial-gradient(ellipse at 76% 15%, rgba(12, 112, 72, .22), transparent 38%),
+    radial-gradient(ellipse at 8% 92%, rgba(0, 91, 59, .30), transparent 52%),
+    linear-gradient(148deg, #064b33 0%, #003e2b 52%, #002f21 100%);
 }
 .nh-auth-brand-panel::before {
   opacity: .055;
@@ -4069,13 +4070,13 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
 .nh-auth-atmosphere-aurora-one {
   top: -7%;
   left: -18%;
-  background: radial-gradient(ellipse at center, rgba(113, 224, 164, .30) 0%, rgba(43, 166, 109, .15) 43%, transparent 73%);
+  background: radial-gradient(ellipse at center, rgba(18, 143, 87, .34) 0%, rgba(0, 103, 64, .20) 43%, transparent 73%);
   animation: nh-auth-aurora-one 19s ease-in-out infinite alternate;
 }
 .nh-auth-atmosphere-aurora-two {
   right: -19%;
   bottom: -8%;
-  background: radial-gradient(ellipse at center, rgba(211, 190, 143, .19) 0%, rgba(35, 150, 99, .16) 42%, transparent 74%);
+  background: radial-gradient(ellipse at center, rgba(18, 119, 76, .26) 0%, rgba(0, 87, 57, .18) 42%, transparent 74%);
   animation: nh-auth-aurora-two 23s ease-in-out infinite alternate;
 }
 .nh-auth-atmosphere-orbit {
