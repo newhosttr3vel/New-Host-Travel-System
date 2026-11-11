@@ -4248,3 +4248,49 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     width: min(100%, 700px);
   }
 }
+
+
+/* COMPACT AUTH CARD — reduced footprint at normal browser zoom */
+@media (min-width: 1051px) {
+  .nh-auth-frame {
+    width: min(100%, 1080px);
+    min-height: min(680px, calc(100svh - 90px));
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+    border-radius: 27px;
+  }
+  .nh-auth-brand-panel {
+    padding: 32px;
+    gap: 22px;
+  }
+  .nh-auth-brand-main {
+    gap: 22px;
+    padding-block: 18px;
+  }
+  .nh-auth-brand-copy h1 {
+    margin: 12px 0 9px;
+    font-size: clamp(40px, 3.5vw, 54px);
+  }
+  .nh-auth-brand-copy p { font-size: 12px; line-height: 1.85; }
+  .nh-auth-route-card { padding: 15px 18px 13px; }
+  .nh-auth-route-main { padding-block: 17px 15px; }
+  .nh-auth-form-side {
+    padding: 27px 38px 18px;
+  }
+  .nh-auth-content {
+    width: min(100%, 390px);
+    padding-block: 24px;
+  }
+  .nh-auth-form-tools { margin-bottom: 29px; }
+  .nh-auth-form-heading { margin-bottom: 23px; }
+  .nh-auth-form-heading h2 {
+    margin-top: 11px;
+    font-size: clamp(27px, 2.45vw, 33px);
+  }
+  .nh-auth-form-heading p { font-size: 11px; line-height: 1.8; }
+  .nh-auth-fields { gap: 15px; }
+  .nh-auth-field { gap: 7px; }
+  .nh-auth-field input { height: 49px; }
+  .nh-auth-primary { min-height: 50px; margin-top: 5px; }
+  .nh-auth-form-bottom { margin-top: 19px; }
+  .nh-auth-form-assurance { margin-top: 19px; }
+}
