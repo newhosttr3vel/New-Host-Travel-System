@@ -16,6 +16,7 @@
 }
 
 * { box-sizing: border-box; font-family: inherit; }
+*::before, *::after { font-family: inherit; }
 html { min-height: 100%; background: var(--canvas); }
 body {
   margin: 0;
@@ -4332,7 +4333,7 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
   border-radius: 7px;
   color: rgba(235, 249, 240, .76);
   background: rgba(0, 39, 27, .16);
-  font-family: Arial, "Segoe UI", sans-serif;
+  font-family: inherit;
   font-size: 8px;
   font-weight: 700;
   letter-spacing: .15em;
@@ -4400,7 +4401,7 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
 .nh-auth-brand-panel[dir="ltr"] .nh-auth-brand-copy,
 .nh-auth-brand-panel[dir="ltr"] .nh-auth-brand-copy h1,
 .nh-auth-brand-panel[dir="ltr"] .nh-auth-brand-copy p {
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family: inherit;
 }
 .nh-auth-brand-panel[dir="ltr"] .nh-auth-eyebrow {
   letter-spacing: .12em;
