@@ -9,7 +9,6 @@ import {
   EyeOff,
   Hotel,
   LockKeyhole,
-  Mail,
   MapPinned,
   Plane,
   ShieldCheck,
