@@ -71,7 +71,13 @@ export function AuthPortalShell({
         <span className="nh-auth-backdrop-grid" />
       </div>
 
-      <div className="nh-auth-frame">
+      <div className="nh-auth-stage" dir={isArabic ? "rtl" : "ltr"}>
+        <div className="nh-auth-slogan nh-auth-slogan-outside">
+          <span className="nh-auth-slogan-mark" aria-hidden="true" />
+          <p>{isArabic ? "مساحة واحدة لإدارة أعمال السفر" : "ONE WORKSPACE FOR TRAVEL OPERATIONS"}</p>
+        </div>
+
+        <div className="nh-auth-frame">
         <aside className="nh-auth-brand-panel" dir={isArabic ? "rtl" : "ltr"}>
           <div className="nh-auth-atmosphere" aria-hidden="true">
             <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-one" />
@@ -101,11 +107,6 @@ export function AuthPortalShell({
               <span className="nh-auth-eyebrow"><i />{copy.eyebrow}</span>
               <h1>{copy.title}</h1>
               <p>{copy.description}</p>
-            </div>
-
-            <div className="nh-auth-slogan">
-              <span className="nh-auth-slogan-mark" aria-hidden="true" />
-              <p>{isArabic ? "مساحة واحدة لإدارة أعمال السفر" : "ONE WORKSPACE FOR TRAVEL OPERATIONS"}</p>
             </div>
 
             <div className="nh-auth-scene" aria-label={isArabic ? "تصور توضيحي لمسار سفر من القاهرة إلى جدة" : "Illustrative travel route from Cairo to Jeddah"}>
@@ -199,6 +200,7 @@ export function AuthPortalShell({
             <span>{isArabic ? "نيو هوست ترافل" : "NEW HOST TRAVEL"}</span>
           </div>
         </section>
+        </div>
       </div>
     </main>
   );
