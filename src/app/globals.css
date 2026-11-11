@@ -4623,3 +4623,37 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     min-height: calc(100svh - 50px);
   }
 }
+
+
+/* SYMMETRICAL SLOGAN RULES — gold lines on both sides */
+.nh-auth-slogan-outside {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.nh-auth-slogan-outside::before,
+.nh-auth-slogan-outside::after {
+  content: "";
+  display: block;
+  flex: 0 1 42px;
+  width: 42px;
+  height: 2px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(211, 183, 125, .22), #dfc38c);
+  box-shadow: 0 0 12px rgba(211, 183, 125, .18);
+}
+.nh-auth-slogan-outside::after {
+  transform: scaleX(-1);
+}
+.nh-auth-slogan-outside .nh-auth-slogan-mark {
+  display: none;
+}
+@media (max-width: 600px) {
+  .nh-auth-slogan-outside { gap: 9px; }
+  .nh-auth-slogan-outside::before,
+  .nh-auth-slogan-outside::after {
+    flex-basis: 20px;
+    width: 20px;
+  }
+}
