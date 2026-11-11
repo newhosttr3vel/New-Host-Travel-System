@@ -4537,3 +4537,18 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     letter-spacing: .09em;
   }
 }
+
+
+/* AUTH FOOTER — New Host logo green */
+.nh-auth-form-side-footer {
+  color: #064a33;
+  border-top-color: rgba(6, 74, 51, .16);
+}
+.nh-auth-form-side-footer > span {
+  color: #064a33;
+}
+.nh-auth-footer-lock {
+  color: #064a33;
+  border-color: rgba(6, 74, 51, .24);
+  background: rgba(6, 74, 51, .035);
+}
