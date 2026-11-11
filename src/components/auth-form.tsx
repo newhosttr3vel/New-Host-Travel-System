@@ -7,7 +7,10 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  LockKeyhole,
+  Mail,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { t, type Locale } from "@/lib/messages";
@@ -156,34 +159,40 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
           {registering && (
             <div className="nh-auth-field">
               <label htmlFor="nh-auth-name">{t(locale, "fullName")}</label>
-              <input
-                id="nh-auth-name"
-                type="text"
-                autoComplete="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-                minLength={2}
-                maxLength={100}
-                placeholder={isArabic ? "اكتب اسمك بالكامل" : "Enter your full name"}
-              />
+              <div className="nh-auth-input-wrap">
+                <UserRound size={17} aria-hidden="true" />
+                <input
+                  id="nh-auth-name"
+                  type="text"
+                  autoComplete="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  placeholder={isArabic ? "اكتب اسمك بالكامل" : "Enter your full name"}
+                />
+              </div>
             </div>
           )}
 
           <div className="nh-auth-field">
             <label htmlFor="nh-auth-email">{t(locale, "email")}</label>
-            <input
-              id="nh-auth-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              maxLength={254}
-              dir="ltr"
-              placeholder="name@company.com"
-            />
+            <div className="nh-auth-input-wrap" dir={locale}>
+              <Mail size={17} aria-hidden="true" />
+              <input
+                id="nh-auth-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                maxLength={254}
+                dir="ltr"
+                placeholder="name@company.com"
+              />
+            </div>
           </div>
 
           {!forgotPassword && (
@@ -198,6 +207,7 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
               </div>
 
               <div className="nh-auth-password">
+                <LockKeyhole className="nh-auth-password-icon" size={17} aria-hidden="true" />
                 <input
                   id="nh-auth-password"
                   type={showPassword ? "text" : "password"}
