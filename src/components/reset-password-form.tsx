@@ -13,7 +13,7 @@ export function ResetPasswordForm({ token, locale }: { token?: string; locale: L
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(!token ? (locale === "ar" ? "رابط الاستعادة غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا." : "This reset link is invalid or expired. Request a new one.") : "");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
   const isArabic = locale === "ar";
