@@ -8,8 +8,9 @@ import {
   Eye,
   EyeOff,
   Hotel,
-  MapPinned,
   LockKeyhole,
+  Mail,
+  MapPinned,
   Plane,
   ShieldCheck,
   Users,
@@ -27,12 +28,30 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
   const [notice, setNotice] = useState("");
   const [forgotPassword, setForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const registering = mode === "register";
   const isArabic = locale === "ar";
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+
+  function clearFeedback() {
     setError("");
     setNotice("");
+  }
+
+  function openRecovery() {
+    setForgotPassword(true);
+    setPassword("");
+    setShowPassword(false);
+    clearFeedback();
+  }
+
+  function returnToLogin() {
+    setForgotPassword(false);
+    clearFeedback();
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    clearFeedback();
     setPending(true);
 
     try {
@@ -45,26 +64,41 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
         if (result.error) {
           setError(result.error.message || t(locale, "genericError"));
         } else {
-          setNotice(isArabic
-            ? "لو البريد مسجل عندنا، هيوصلك رابط آمن لاستعادة كلمة المرور."
-            : "If that address belongs to an account, a secure password-reset link will arrive by email.");
+          setNotice(
+            isArabic
+              ? "لو البريد الإلكتروني مرتبط بحساب، هيوصلك رابط آمن لإعادة تعيين كلمة المرور."
+              : "If this email belongs to an account, a secure password reset link will be sent to it.",
+          );
         }
         return;
       }
 
       const result = registering
-        ? await authClient.signUp.email({ name: name.trim(), email: email.trim(), password })
-        : await authClient.signIn.email({ email: email.trim(), password });
+        ? await authClient.signUp.email({
+            name: name.trim(),
+            email: email.trim(),
+            password,
+          })
+        : await authClient.signIn.email({
+            email: email.trim(),
+            password,
+          });
 
       if (result.error) {
-        setError(registering ? result.error.message || t(locale, "genericError") : t(locale, "invalidCredentials"));
+        setError(
+          registering
+            ? result.error.message || t(locale, "genericError")
+            : t(locale, "invalidCredentials"),
+        );
         return;
       }
 
       if (registering && process.env.NODE_ENV === "production") {
-        setNotice(isArabic
-          ? "تم إنشاء الحساب. راجع بريدك الإلكتروني واضغط رابط التحقق قبل تسجيل الدخول."
-          : "Your account was created. Verify your email using the link we sent before signing in.");
+        setNotice(
+          isArabic
+            ? "تم إنشاء الحساب. راجع بريدك الإلكتروني واضغط رابط التحقق قبل تسجيل الدخول."
+            : "Your account was created. Verify your email using the link we sent before signing in.",
+        );
         return;
       }
 
@@ -79,35 +113,34 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
   return (
     <main className="auth-screen-v2">
       <div className="auth-motion-layer" aria-hidden="true">
-        <span className="auth-motion-aurora auth-motion-aurora-one" />
-        <span className="auth-motion-aurora auth-motion-aurora-two" />
-        <span className="auth-motion-orbit auth-motion-orbit-one" />
-        <span className="auth-motion-orbit auth-motion-orbit-two" />
-        <span className="auth-motion-beam" />
-        <span className="auth-flight-path auth-flight-path-one" />
-        <span className="auth-flight-path auth-flight-path-two" />
-        <span className="auth-motion-plane auth-motion-plane-one"><Plane size={25} strokeWidth={1.7} /></span>
-        <span className="auth-motion-plane auth-motion-plane-two"><Plane size={19} strokeWidth={1.7} /></span>
-        <span className="auth-motion-marker auth-motion-marker-one"><MapPinned size={21} strokeWidth={1.7} /></span>
-        <span className="auth-motion-marker auth-motion-marker-two"><Hotel size={20} strokeWidth={1.7} /></span>
+        <span className="auth-glow auth-glow-one" />
+        <span className="auth-glow auth-glow-two" />
+        <span className="auth-grid-wash" />
       </div>
-      <div className="auth-layout-wrap">
-        <header className="auth-page-heading">
-          <span className="auth-heading-rule" />
-          <div className="auth-heading-copy">
-            <Plane size={17} strokeWidth={2.4} aria-hidden="true" />
-            <span>{isArabic ? "بوابتك لإدارة أعمال السفر بسلاسة" : "Your gateway to seamless travel operations"}</span>
-          </div>
-          <span className="auth-heading-rule" />
-        </header>
 
-        <div className="auth-card-layout">
+      <div className="auth-layout-wrap">
+        <div className="auth-page-heading">
+          <span className="auth-heading-rule" />
+          <span className="auth-heading-copy">
+            <ShieldCheck size={15} aria-hidden="true" />
+            {isArabic ? "بوابة العمل الآمنة لشركة نيو هوست" : "NEW HOST SECURE WORKSPACE"}
+          </span>
+          <span className="auth-heading-rule" />
+        </div>
+
+        <div
+          className={[
+            "auth-card-layout",
+            registering ? "auth-card-register" : "",
+            forgotPassword ? "auth-card-recovery" : "",
+          ].filter(Boolean).join(" ")}
+        >
           <section className="auth-panel auth-form-panel" dir={locale}>
             <div className="auth-form-inner">
               <div className="auth-top-actions">
                 <span className="auth-security-chip">
-                  <ShieldCheck size={14} aria-hidden="true" />
-                  {isArabic ? "دخول آمن ومشفّر" : "Secure workspace access"}
+                  <LockKeyhole size={13} aria-hidden="true" />
+                  {isArabic ? "اتصال آمن" : "SECURE ACCESS"}
                 </span>
                 <LocaleToggle locale={locale} />
               </div>
@@ -117,32 +150,36 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                   {forgotPassword
                     ? (isArabic ? "استعادة الوصول" : "ACCOUNT RECOVERY")
                     : registering
-                      ? (isArabic ? "ابدأ مع نيو هوست" : "GET STARTED WITH NEW HOST")
-                      : (isArabic ? "مرحبًا بعودتك" : "WELCOME BACK")}
+                      ? (isArabic ? "انضم إلى مساحة عملك" : "CREATE YOUR WORKSPACE")
+                      : (isArabic ? "مساحة عملك في انتظارك" : "WELCOME BACK")}
                 </span>
                 <h1 className="auth-title">
                   {forgotPassword
-                    ? (isArabic ? "استعادة كلمة المرور" : "Reset your password")
+                    ? (isArabic ? "نسيت كلمة المرور؟" : "Forgot your password?")
                     : registering
                       ? t(locale, "signUp")
                       : t(locale, "remember")}
                 </h1>
                 <p className="auth-subtitle">
                   {forgotPassword
-                    ? (isArabic ? "اكتب بريدك الإلكتروني لإرسال رابط استعادة آمن." : "Enter your email address to receive a secure reset link.")
+                    ? (isArabic
+                      ? "اكتب البريد الإلكتروني المسجل عندك، وهنبعتلك رابط آمن لإعادة تعيين كلمة المرور."
+                      : "Enter the email address linked to your account and we’ll send you a secure reset link.")
                     : t(locale, registering ? "signUpSubtitle" : "signInSubtitle")}
                 </p>
               </div>
 
-              {error && <div className="alert" role="alert">{error}</div>}
-              {notice && <div className="alert success" role="status">{notice}</div>}
+              {error && <div className="alert auth-feedback" role="alert">{error}</div>}
+              {notice && <div className="alert success auth-feedback" role="status" aria-live="polite">{notice}</div>}
 
               <form className="auth-form" onSubmit={submit}>
                 {registering && (
-                  <label className="field auth-field">
+                  <label className="field auth-field" htmlFor="auth-full-name">
                     <span className="field-label">{t(locale, "fullName")}</span>
                     <input
+                      id="auth-full-name"
                       className="input auth-input"
+                      type="text"
                       autoComplete="name"
                       value={name}
                       onChange={(event) => setName(event.target.value)}
@@ -153,37 +190,36 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                   </label>
                 )}
 
-                <label className="field auth-field">
+                <label className="field auth-field" htmlFor="auth-email">
                   <span className="field-label">{t(locale, "email")}</span>
                   <input
+                    id="auth-email"
                     className="input auth-input"
                     type="email"
+                    inputMode="email"
                     autoComplete="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     required
                     maxLength={254}
                     dir="ltr"
-                    placeholder={isArabic ? "name@company.com" : "name@company.com"}
+                    placeholder="name@company.com"
                   />
                 </label>
 
                 {!forgotPassword && (
-                  <label className="field auth-field">
+                  <label className="field auth-field" htmlFor="auth-password">
                     <span className="auth-label-row">
                       <span className="field-label">{t(locale, "password")}</span>
                       {!registering && (
-                        <button
-                          className="auth-inline-link"
-                          type="button"
-                          onClick={() => { setForgotPassword(true); setNotice(""); setError(""); }}
-                        >
+                        <button className="auth-inline-link" type="button" onClick={openRecovery}>
                           {isArabic ? "نسيت كلمة المرور؟" : "Forgot password?"}
                         </button>
                       )}
                     </span>
                     <span className="auth-password-wrap">
                       <input
+                        id="auth-password"
                         className="input auth-input auth-password-input"
                         type={showPassword ? "text" : "password"}
                         autoComplete={registering ? "new-password" : "current-password"}
@@ -193,6 +229,7 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                         minLength={registering ? 12 : 1}
                         maxLength={128}
                         dir="ltr"
+                        aria-describedby={registering ? "auth-password-hint" : undefined}
                       />
                       <button
                         className="auth-password-toggle"
@@ -203,10 +240,14 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
                           : (isArabic ? "إظهار كلمة المرور" : "Show password")}
                         aria-pressed={showPassword}
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                       </button>
                     </span>
-                    {registering && <span className="customer-secondary auth-password-hint">{t(locale, "passwordHint")}</span>}
+                    {registering && (
+                      <span id="auth-password-hint" className="auth-password-hint">
+                        {isArabic ? "استخدم 12 حرفًا على الأقل لحماية حسابك." : "Use at least 12 characters to protect your account."}
+                      </span>
+                    )}
                   </label>
                 )}
 
@@ -225,119 +266,120 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
               <div className="auth-switch">
                 {forgotPassword ? (
                   <>
-                    {isArabic ? "تذكرت كلمة المرور؟" : "Remembered your password?"}
-                    <button
-                      className="text-link"
-                      type="button"
-                      onClick={() => { setForgotPassword(false); setNotice(""); setError(""); }}
-                    >
+                    <span>{isArabic ? "تذكرت كلمة المرور؟" : "Remembered your password?"}</span>
+                    <button className="text-link" type="button" onClick={returnToLogin}>
                       {isArabic ? "العودة لتسجيل الدخول" : "Back to sign in"}
                     </button>
                   </>
                 ) : registering ? (
                   <>
-                    {t(locale, "haveAccount")}
+                    <span>{t(locale, "haveAccount")}</span>
                     <Link className="text-link" href="/login">{t(locale, "signIn")}</Link>
                   </>
                 ) : (
                   <>
-                    {t(locale, "noAccount")}
+                    <span>{t(locale, "noAccount")}</span>
                     <Link className="text-link" href="/register">{t(locale, "signUp")}</Link>
                   </>
                 )}
               </div>
 
               <div className="auth-secure-note">
-                <LockKeyhole size={13} aria-hidden="true" />
-                <span>{isArabic ? "بيانات شركتك محمية بصلاحيات مستقلة" : "Your company data is protected by isolated access controls"}</span>
+                <ShieldCheck size={14} aria-hidden="true" />
+                <span>
+                  {isArabic
+                    ? "بيانات كل شركة محمية داخل مساحة مستقلة."
+                    : "Every company’s data stays in its own protected workspace."}
+                </span>
               </div>
             </div>
           </section>
 
           <section className="auth-visual-v2" dir={locale}>
-            <div className="auth-visual-orbit auth-visual-orbit-one" aria-hidden="true" />
-            <div className="auth-visual-orbit auth-visual-orbit-two" aria-hidden="true" />
+            <div className="auth-visual-decoration auth-visual-decoration-one" aria-hidden="true" />
+            <div className="auth-visual-decoration auth-visual-decoration-two" aria-hidden="true" />
 
             <div className="auth-visual-top">
               <div className="auth-brand-v2">
                 <span className="auth-brand-logo">
                   <img src="/brand/new-host-logo.jpg" alt="New Host Travel" />
                 </span>
-                <span className="auth-brand-caption" aria-label="New Host Travel">
+                <span className="auth-brand-caption">
                   <strong>NEW HOST</strong>
                   <small>TRAVEL MANAGEMENT</small>
                 </span>
               </div>
               <span className="auth-live-badge">
                 <i />
-                {isArabic ? "مساحة عملك" : "YOUR WORKSPACE"}
+                {isArabic ? "مساحة موحّدة" : "ONE WORKSPACE"}
               </span>
             </div>
 
             <div className="auth-hero-copy">
               <span className="auth-visual-eyebrow">
-                <span />
-                {isArabic ? "إدارة السفر • بصورة أذكى" : "TRAVEL OPERATIONS • MADE SIMPLE"}
+                <i />
+                {isArabic ? "إدارة السفر • بصورة أذكى" : "TRAVEL OPERATIONS, SIMPLIFIED"}
               </span>
               <h2>
                 {isArabic
-                  ? <>كل تفاصيل السفر،<br />في مساحة واحدة.</>
-                  : <>Every travel detail.<br />One clear workspace.</>}
+                  ? <>كل رحلة تبدأ من هنا،<br />وكل التفاصيل في مكانها.</>
+                  : <>Every journey starts here.<br />Every detail in place.</>}
               </h2>
               <p>
                 {isArabic
-                  ? "من الحجز إلى المتابعة، نظّم الفنادق والطيران والعملاء والموردين من مكان واحد."
-                  : "From booking to follow-up, manage hotels, flights, customers and suppliers in one place."}
+                  ? "نظّم الحجوزات والعملاء والموردين، وتابع شغلك اليومي من مساحة واحدة مصممة لفريق السفر."
+                  : "Organize reservations, clients and suppliers, then keep your travel operation moving from one focused workspace."}
               </p>
             </div>
 
-            <div className="auth-command-preview" dir="ltr" aria-label={isArabic ? "معاينة توضيحية لواجهة إدارة الرحلات" : "Illustrative travel operations preview"}>
-              <div className="auth-preview-head">
-                <div className="auth-preview-heading">
-                  <span className="auth-preview-icon"><MapPinned size={17} /></span>
-                  <span>
-                    <strong>{isArabic ? "مسار الرحلة" : "TRIP OVERVIEW"}</strong>
-                    <small>{isArabic ? "معاينة توضيحية للنظام" : "ILLUSTRATIVE WORKSPACE PREVIEW"}</small>
-                  </span>
-                </div>
-                <span className="auth-preview-tag">{isArabic ? "رحلة" : "TRIP"}</span>
+            <div className="auth-journey-board" dir="ltr" aria-label={isArabic ? "مثال توضيحي لمسار رحلة" : "Illustrative journey preview"}>
+              <div className="auth-journey-board-head">
+                <span className="auth-journey-board-title">
+                  <MapPinned size={16} />
+                  {isArabic ? "معاينة لمسار رحلة" : "JOURNEY PREVIEW"}
+                </span>
+                <span className="auth-journey-board-tag">NH / 01</span>
               </div>
 
-              <div className="auth-route-stage">
-                <div className="auth-route-stop">
+              <div className="auth-journey-route">
+                <div className="auth-journey-stop">
                   <strong>CAI</strong>
                   <span>{isArabic ? "القاهرة" : "CAIRO"}</span>
                 </div>
-                <div className="auth-route-track" aria-hidden="true">
-                  <span className="auth-route-plane"><Plane size={15} /></span>
+                <div className="auth-journey-track">
+                  <span className="auth-journey-track-line" />
+                  <span className="auth-journey-plane"><Plane size={17} /></span>
+                  <span className="auth-journey-track-dot auth-journey-track-dot-start" />
+                  <span className="auth-journey-track-dot auth-journey-track-dot-end" />
                 </div>
-                <div className="auth-route-stop auth-route-stop-end">
+                <div className="auth-journey-stop auth-journey-stop-end">
                   <strong>JED</strong>
                   <span>{isArabic ? "جدة" : "JEDDAH"}</span>
                 </div>
               </div>
 
-              <div className="auth-preview-trip" dir={locale}>
-                <span className="auth-preview-trip-icon"><Hotel size={17} /></span>
-                <span className="auth-preview-trip-copy">
-                  <small>{isArabic ? "مثال على تفاصيل الحجز" : "BOOKING DETAILS EXAMPLE"}</small>
-                  <strong>{isArabic ? "إقامة فندقية • مكة المكرمة" : "Hotel stay • Makkah"}</strong>
-                  <span>{isArabic ? "بيانات الرحلة والحجز في ملف واحد" : "Trip and booking details in one record"}</span>
+              <div className="auth-journey-divider" />
+              <div className="auth-journey-detail">
+                <span className="auth-journey-detail-icon"><Hotel size={17} /></span>
+                <span className="auth-journey-detail-copy">
+                  <small>{isArabic ? "تفاصيل الخدمات" : "SERVICE DETAILS"}</small>
+                  <strong>{isArabic ? "فنادق • طيران • نقل" : "Hotels • Flights • Transport"}</strong>
                 </span>
-                <span className="auth-preview-status"><i />{isArabic ? "مؤكد" : "CONFIRMED"}</span>
+                <span className="auth-journey-detail-check"><ShieldCheck size={16} /></span>
               </div>
             </div>
 
-            <div className="auth-feature-strip">
-              <div className="auth-feature-item"><Hotel size={15} /><span>{isArabic ? "الفنادق" : "Hotels"}</span></div>
-              <div className="auth-feature-item"><Plane size={15} /><span>{isArabic ? "الطيران" : "Flights"}</span></div>
-              <div className="auth-feature-item"><Users size={15} /><span>{isArabic ? "العملاء" : "Clients"}</span></div>
-              <div className="auth-feature-item"><Bus size={15} /><span>{isArabic ? "النقل" : "Transport"}</span></div>
-            </div>
-
-            <div className="auth-visual-footer">
-              <span><ShieldCheck size={14} /> {isArabic ? "خصوصية وصلاحيات مستقلة لكل شركة" : "Company-level privacy and access controls"}</span>
-              <span>© {new Date().getFullYear()} NEW HOST TRAVEL</span>
+            <div className="auth-visual-bottom">
+              <div className="auth-feature-list">
+                <span><Hotel size={14} />{isArabic ? "الفنادق" : "Hotels"}</span>
+                <span><Plane size={14} />{isArabic ? "الطيران" : "Flights"}</span>
+                <span><Users size={14} />{isArabic ? "العملاء" : "Clients"}</span>
+                <span><Bus size={14} />{isArabic ? "النقل" : "Transport"}</span>
+              </div>
+              <div className="auth-visual-footer">
+                <span><LockKeyhole size={13} />{isArabic ? "مصممة لفرق السفر" : "BUILT FOR TRAVEL TEAMS"}</span>
+                <span>© {new Date().getFullYear()} NEW HOST TRAVEL</span>
+              </div>
             </div>
           </section>
         </div>
