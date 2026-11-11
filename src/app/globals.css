@@ -4038,3 +4038,178 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     animation: none !important;
   }
 }
+
+
+/* CINEMATIC AUTH BACKGROUND — slow aurora, orbital light and drifting route */
+.nh-auth-brand-panel {
+  isolation: isolate;
+}
+.nh-auth-brand-main {
+  position: relative;
+  z-index: 2;
+}
+.nh-auth-atmosphere {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+}
+.nh-auth-atmosphere-aurora {
+  position: absolute;
+  display: block;
+  width: 68%;
+  height: 46%;
+  border-radius: 50%;
+  filter: blur(52px);
+  opacity: .52;
+  will-change: transform;
+}
+.nh-auth-atmosphere-aurora-one {
+  top: -7%;
+  left: -18%;
+  background: radial-gradient(ellipse at center, rgba(113, 224, 164, .30) 0%, rgba(43, 166, 109, .15) 43%, transparent 73%);
+  animation: nh-auth-aurora-one 19s ease-in-out infinite alternate;
+}
+.nh-auth-atmosphere-aurora-two {
+  right: -19%;
+  bottom: -8%;
+  background: radial-gradient(ellipse at center, rgba(211, 190, 143, .19) 0%, rgba(35, 150, 99, .16) 42%, transparent 74%);
+  animation: nh-auth-aurora-two 23s ease-in-out infinite alternate;
+}
+.nh-auth-atmosphere-orbit {
+  position: absolute;
+  top: 9%;
+  left: 17%;
+  display: block;
+  width: min(70%, 660px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(224, 249, 232, .085);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 29px rgba(224, 249, 232, .018),
+    0 0 0 75px rgba(224, 249, 232, .012),
+    inset 0 0 55px rgba(134, 218, 168, .025);
+  transform-origin: center;
+  animation: nh-auth-orbit-turn 68s linear infinite;
+}
+.nh-auth-atmosphere-orbit::before,
+.nh-auth-atmosphere-orbit::after {
+  content: "";
+  position: absolute;
+  inset: 13%;
+  border: 1px solid rgba(228, 246, 233, .055);
+  border-radius: 50%;
+}
+.nh-auth-atmosphere-orbit::after {
+  inset: 27%;
+  border-color: rgba(228, 246, 233, .045);
+}
+.nh-auth-atmosphere-beam {
+  position: absolute;
+  top: 28%;
+  left: -65%;
+  display: block;
+  width: 190%;
+  height: 2px;
+  border-radius: 50%;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(191, 239, 207, .025) 26%,
+    rgba(226, 246, 231, .46) 48%,
+    rgba(212, 190, 143, .22) 53%,
+    rgba(191, 239, 207, .025) 71%,
+    transparent 100%);
+  box-shadow: 0 0 17px rgba(167, 228, 188, .22), 0 0 42px rgba(167, 228, 188, .10);
+  transform: rotate(-19deg);
+  transform-origin: center;
+  animation: nh-auth-light-sweep 13s cubic-bezier(.45, 0, .35, 1) infinite;
+}
+.nh-auth-atmosphere-route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: .27;
+}
+.nh-auth-atmosphere-route path {
+  fill: none;
+  stroke: #d4eeda;
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-dasharray: 3 13;
+  animation: nh-auth-route-flow 28s linear infinite;
+}
+.nh-auth-atmosphere-route path + path {
+  stroke: #d8bf8d;
+  stroke-width: .85;
+  stroke-dasharray: 2 19;
+  opacity: .65;
+  animation-duration: 36s;
+  animation-direction: reverse;
+}
+.nh-auth-atmosphere-glint {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #dff5e5;
+  box-shadow:
+    0 0 7px 2px rgba(206, 244, 216, .48),
+    0 0 19px 5px rgba(129, 213, 160, .16);
+  opacity: .72;
+  animation: nh-auth-glint-drift 6.5s ease-in-out infinite;
+}
+.nh-auth-atmosphere-glint-one { top: 17%; left: 73%; animation-delay: -1s; }
+.nh-auth-atmosphere-glint-two { top: 48%; left: 13%; width: 3px; height: 3px; animation-delay: -3.3s; }
+.nh-auth-atmosphere-glint-three { top: 72%; right: 16%; width: 5px; height: 5px; background: #e5d2a8; box-shadow: 0 0 8px 2px rgba(229, 210, 168, .42), 0 0 20px 5px rgba(229, 210, 168, .13); animation-delay: -2.2s; }
+.nh-auth-atmosphere-glint-four { top: 36%; right: 8%; width: 3px; height: 3px; animation-delay: -4.7s; }
+.nh-auth-brandbar,
+.nh-auth-brand-footer {
+  position: relative;
+  z-index: 2;
+}
+@keyframes nh-auth-aurora-one {
+  0% { transform: translate3d(-3%, -2%, 0) scale(.94) rotate(-8deg); }
+  45% { transform: translate3d(18%, 12%, 0) scale(1.12) rotate(7deg); }
+  100% { transform: translate3d(9%, 23%, 0) scale(1.03) rotate(14deg); }
+}
+@keyframes nh-auth-aurora-two {
+  0% { transform: translate3d(4%, 3%, 0) scale(1.02) rotate(5deg); }
+  50% { transform: translate3d(-17%, -12%, 0) scale(1.16) rotate(-8deg); }
+  100% { transform: translate3d(-7%, -21%, 0) scale(.96) rotate(-15deg); }
+}
+@keyframes nh-auth-orbit-turn { to { transform: rotate(360deg); } }
+@keyframes nh-auth-light-sweep {
+  0%, 12% { opacity: 0; transform: translate3d(-15%, -16%, 0) rotate(-19deg); }
+  25% { opacity: .55; }
+  53% { opacity: .22; transform: translate3d(35%, 22%, 0) rotate(-19deg); }
+  76%, 100% { opacity: 0; transform: translate3d(68%, 49%, 0) rotate(-19deg); }
+}
+@keyframes nh-auth-route-flow { to { stroke-dashoffset: -520; } }
+@keyframes nh-auth-glint-drift {
+  0%, 100% { opacity: .28; transform: translate3d(0, 0, 0) scale(.75); }
+  48% { opacity: .95; transform: translate3d(10px, -13px, 0) scale(1.22); }
+}
+@media (max-width: 1050px) {
+  .nh-auth-atmosphere-orbit { width: min(82%, 610px); top: 4%; left: 9%; }
+}
+@media (max-width: 600px) {
+  .nh-auth-atmosphere-aurora { width: 85%; height: 42%; filter: blur(42px); }
+  .nh-auth-atmosphere-orbit { width: 100%; top: 8%; left: 1%; }
+  .nh-auth-atmosphere-beam { top: 23%; }
+  .nh-auth-atmosphere-route { opacity: .19; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nh-auth-atmosphere-aurora,
+  .nh-auth-atmosphere-orbit,
+  .nh-auth-atmosphere-beam,
+  .nh-auth-atmosphere-route path,
+  .nh-auth-atmosphere-glint {
+    animation: none !important;
+  }
+}
