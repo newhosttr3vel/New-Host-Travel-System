@@ -72,7 +72,7 @@ export function AuthPortalShell({
       </div>
 
       <div className="nh-auth-frame">
-        <aside className="nh-auth-brand-panel" dir={locale}>
+        <aside className="nh-auth-brand-panel" dir={isArabic ? "rtl" : "ltr"}>
           <div className="nh-auth-atmosphere" aria-hidden="true">
             <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-one" />
             <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-two" />
@@ -92,12 +92,8 @@ export function AuthPortalShell({
               <span className="nh-auth-logo-frame">
                 <img src="/brand/new-host-logo.jpg" alt="New Host Travel" />
               </span>
-              <span className="nh-auth-wordmark">
-                <strong>NEW HOST</strong>
-                <small>TRAVEL MANAGEMENT</small>
-              </span>
             </div>
-            <span className="nh-auth-brand-index">NH / 2026</span>
+            <span className="nh-auth-brand-index">TRAVEL OPERATIONS</span>
           </div>
 
           <div className="nh-auth-brand-main">
