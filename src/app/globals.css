@@ -4436,9 +4436,9 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
 }
 
 
-/* LOGO-MATCHED FRAME — fine outline with the logo's own rounded-rectangle proportions */
+/* LOGO-MATCHED FRAME — ultra-fine outline with the logo's own proportions */
 .nh-auth-logo-frame {
-  border: .45px solid rgba(255, 255, 255, .78);
+  border: .3px solid rgba(255, 255, 255, .62);
   border-radius: 8px;
   padding: 1px;
 }
