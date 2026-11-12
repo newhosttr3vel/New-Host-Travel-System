@@ -32,7 +32,7 @@ export function OnboardingForm({ locale, userName }: { locale: Locale; userName:
   return <main className="onboard-wrap">
     <div className="onboard-card">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 15, marginBottom: 25 }}>
-        <div className="brand"><span className="brand-logo-frame brand-logo-frame-light"><img src="/brand/new-host-logo.jpg" alt="New Host Travel" /></span><div><div className="brand-title" style={{ color: "var(--ink)" }}>{t(locale, "appName")}</div><div className="brand-subtitle">{t(locale, "appSubtitle")}</div></div></div>
+        <div className="brand brand-logo-only onboard-brand-logo"><span className="brand-logo-frame brand-logo-frame-light"><img src="/brand/new-host-logo.jpg" alt="New Host Travel" /></span></div>
         <LocaleToggle locale={locale} />
       </div>
       <span className="eyebrow-chip">{locale === "ar" ? "الخطوة 01 / إعداد المساحة" : "STEP 01 / WORKSPACE SETUP"}</span>
