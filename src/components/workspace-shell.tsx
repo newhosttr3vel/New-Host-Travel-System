@@ -105,12 +105,8 @@ export function WorkspaceShell({
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <Link className="brand" href="/dashboard">
+        <Link className="brand brand-logo-only" href="/dashboard" aria-label={t(locale, "appName")}>
           <span className="brand-logo-frame"><img src="/brand/new-host-logo.jpg" alt="New Host Travel" /></span>
-          <span>
-            <span className="brand-title" style={{ display: "block" }}>{t(locale, "appName")}</span>
-            <span className="brand-subtitle">{ar ? "نظام إدارة وتشغيل شركات السفر" : "TRAVEL OPERATIONS ERP"}</span>
-          </span>
         </Link>
 
         <div className="sidebar-workspace-caption">
