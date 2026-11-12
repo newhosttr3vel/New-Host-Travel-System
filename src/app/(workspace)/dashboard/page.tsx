@@ -5,6 +5,11 @@ import {
   CalendarClock,
   CalendarDays,
   CheckCircle2,
+  Compass,
+  FileCheck2,
+  MapPinned,
+  Plane,
+  BusFront,
   ClipboardList,
   Hotel,
   Plus,
@@ -80,6 +85,7 @@ export default async function DashboardPage() {
     followUpCount,
     confirmedCount,
     statusGroups,
+    serviceGroups,
     recentReservations,
     followUpReservations,
     invoiceSalesGroups,
@@ -111,6 +117,13 @@ export default async function DashboardPage() {
     canReadReservations
       ? prisma.reservation.groupBy({
           by: ["status"],
+          where: { tenantId, ...branchScopeWhere(membership), archivedAt: null },
+          _count: { _all: true },
+        })
+      : Promise.resolve([]),
+    canReadReservations
+      ? prisma.reservation.groupBy({
+          by: ["serviceType"],
           where: { tenantId, ...branchScopeWhere(membership), archivedAt: null },
           _count: { _all: true },
         })
@@ -186,6 +199,9 @@ export default async function DashboardPage() {
   const groupedCounts = Object.fromEntries(
     statusGroups.map((group) => [group.status, group._count._all]),
   ) as Record<string, number>;
+  const serviceCounts = Object.fromEntries(
+    serviceGroups.map((group) => [group.serviceType, group._count._all]),
+  ) as Record<string, number>;
   const pipeline = [
     { code: "INQUIRY", label: ar ? "استفسارات" : "Inquiries" },
     { code: "QUOTATION", label: ar ? "عروض أسعار" : "Quotations" },
@@ -242,6 +258,16 @@ export default async function DashboardPage() {
   const monthLabel = new Intl.DateTimeFormat(dateLocale, {
     month: "long", year: "numeric", timeZone: membership.tenant.timeZone || "Africa/Cairo",
   }).format(now);
+
+  const serviceCards = [
+    { code: "HOTEL", label: ar ? "حجوزات الفنادق" : "Hotel reservations", note: ar ? "إقامة وغرف" : "Stays & rooms", icon: Hotel, tone: "hotel" },
+    { code: "FLIGHT", label: ar ? "حجوزات الطيران" : "Flight bookings", note: ar ? "تذاكر ومسافرون" : "Tickets & travellers", icon: Plane, tone: "flight" },
+    { code: "TOUR", label: ar ? "الرحلات الداخلية" : "Domestic trips", note: ar ? "برامج وجولات" : "Tours & itineraries", icon: MapPinned, tone: "tour" },
+    { code: "UMRAH_PACKAGE", label: ar ? "برامج العمرة" : "Umrah programs", note: ar ? "مجموعات ومعتمرون" : "Groups & pilgrims", icon: Users, tone: "umrah" },
+    { code: "VISA", label: ar ? "التأشيرات" : "Visa services", note: ar ? "طلبات وإصدار" : "Applications & issuance", icon: FileCheck2, tone: "visa" },
+    { code: "TRANSPORT", label: ar ? "النقل والتنقلات" : "Transport", note: ar ? "انتقالات وخدمات أرضية" : "Transfers & ground ops", icon: BusFront, tone: "transport" },
+    { code: "HAJJ_PACKAGE", label: ar ? "برامج الحج" : "Hajj programs", note: ar ? "مجموعات وباقات" : "Groups & packages", icon: Compass, tone: "hajj" },
+  ];
 
   const stats = [
     {
@@ -322,6 +348,37 @@ export default async function DashboardPage() {
           );
         })}
       </section>
+
+      {canReadReservations && (
+        <section className="ops-service-overview" aria-label={ar ? "الخدمات السياحية" : "Travel services"}>
+          <div className="ops-service-heading">
+            <div>
+              <div className="ops-section-kicker">{ar ? "TRAVEL SERVICES" : "TRAVEL SERVICES"}</div>
+              <h2>{ar ? "إدارات الخدمات السياحية" : "Travel service desks"}</h2>
+              <p>{ar ? "متابعة حجم الملفات المسجلة لكل نشاط من أنشطة الشركة." : "A live view of booking files across your agency's service lines."}</p>
+            </div>
+            <Link className="btn btn-secondary" href="/reservations">
+              {ar ? "كل ملفات الحجز" : "All booking files"} <Arrow size={14} />
+            </Link>
+          </div>
+          <div className="ops-service-grid">
+            {serviceCards.map((service) => {
+              const Icon = service.icon;
+              return (
+                <Link className={`ops-service-card service-${service.tone}`} href="/reservations" key={service.code}>
+                  <span className="ops-service-icon"><Icon size={19} strokeWidth={1.9} /></span>
+                  <span className="ops-service-copy">
+                    <strong>{service.label}</strong>
+                    <small>{service.note}</small>
+                  </span>
+                  <span className="ops-service-count">{number.format(serviceCounts[service.code] ?? 0)}</span>
+                </Link>
+              );
+            })}
+          </div>
+          <p className="ops-service-footnote">{ar ? "الأرقام من ملفات الحجز النشطة غير المؤرشفة داخل مساحة شركتك، مع احترام صلاحيات الفرع." : "Counts reflect non-archived booking files in this company workspace and respect your branch access."}</p>
+        </section>
+      )}
 
       {canReadFinance && (
         <section className="finance-overview" aria-label={ar ? "المؤشرات المالية" : "Financial overview"}>
