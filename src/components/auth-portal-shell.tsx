@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowUpRight, Building2, Hotel, Plane, Users } from "lucide-react";
+import { Building2, FileCheck2, Hotel, Plane, Route, Users } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
 type AuthStage = "login" | "register" | "recovery" | "reset";
@@ -7,14 +7,14 @@ type AuthStage = "login" | "register" | "recovery" | "reset";
 const stageCopy = {
   ar: {
     login: {
-      eyebrow: "منصة متكاملة لإدارة السفر",
-      title: <>إدارة السفر،<br /><em>بصورة أوضح.</em></>,
-      description: "نظّم الحجوزات والعملاء والموردين في مساحة عمل واحدة، وتابع تفاصيل عملياتك بثقة ووضوح.",
+      eyebrow: "نيو هوست ترافل لإدارة شركات السياحة",
+      title: <>كل أعمال السفر،<br /><em>في مساحة واحدة.</em></>,
+      description: "من حجوزات الفنادق والطيران إلى الرحلات الداخلية وبرامج العمرة والتأشيرات، تابع العملاء والموردين والتكاليف والتحصيل من مكان واحد.",
     },
     register: {
       eyebrow: "مساحة عمل جديدة",
-      title: <>ابدأ من هنا،<br /><em>ورتّب كل التفاصيل.</em></>,
-      description: "أنشئ مساحة مستقلة لشركتك، واجمع فريقك وعمليات السفر اليومية داخل نظام واحد.",
+      title: <>ابدأ تنظيم أعمال شركتك،<br /><em>من مساحة واحدة.</em></>,
+      description: "أنشئ مساحة مستقلة لشركتك، واجمع فريقك وحجوزاتك ومتابعة الموردين والحسابات داخل نظام واحد.",
     },
     recovery: {
       eyebrow: "استعادة الوصول",
@@ -29,14 +29,14 @@ const stageCopy = {
   },
   en: {
     login: {
-      eyebrow: "AN OPERATING SYSTEM FOR TRAVEL",
-      title: <>Travel operations,<br /><em>with a clearer view.</em></>,
-      description: "Bring reservations, clients and suppliers together in one workspace, with every operation easier to follow.",
+      eyebrow: "NEW HOST TRAVEL · TRAVEL ERP",
+      title: <>Every travel operation,<br /><em>in one workspace.</em></>,
+      description: "Manage hotels, flights, domestic trips, Umrah programs and visas alongside B2B clients, suppliers and finance.",
     },
     register: {
       eyebrow: "A NEW WORKSPACE",
-      title: <>Start with clarity.<br /><em>Grow with confidence.</em></>,
-      description: "Create an independent company workspace and bring your team and daily travel operations together.",
+      title: <>Build your company workspace.<br /><em>Keep every detail connected.</em></>,
+      description: "Create an independent workspace for your company, team, bookings, suppliers and financial follow-up.",
     },
     recovery: {
       eyebrow: "ACCOUNT RECOVERY",
@@ -65,11 +65,6 @@ export function AuthPortalShell({
 
   return (
     <main className="nh-auth-shell" data-stage={stage}>
-      <div className="nh-auth-backdrop" aria-hidden="true">
-        <span className="nh-auth-backdrop-glow nh-auth-backdrop-glow-one" />
-        <span className="nh-auth-backdrop-glow nh-auth-backdrop-glow-two" />
-        <span className="nh-auth-backdrop-grid" />
-      </div>
 
       <div className="nh-auth-stage" dir={isArabic ? "rtl" : "ltr"}>
         <div className="nh-auth-slogan nh-auth-slogan-outside">
@@ -79,20 +74,7 @@ export function AuthPortalShell({
 
         <div className="nh-auth-frame">
         <aside className="nh-auth-brand-panel" dir={isArabic ? "rtl" : "ltr"}>
-          <div className="nh-auth-atmosphere" aria-hidden="true">
-            <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-one" />
-            <span className="nh-auth-atmosphere-aurora nh-auth-atmosphere-aurora-two" />
-            <span className="nh-auth-atmosphere-orbit" />
-            <span className="nh-auth-atmosphere-beam" />
-            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-one" />
-            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-two" />
-            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-three" />
-            <span className="nh-auth-atmosphere-glint nh-auth-atmosphere-glint-four" />
-            <svg className="nh-auth-atmosphere-route" viewBox="0 0 900 620" preserveAspectRatio="none">
-              <path d="M-60 480C110 390 160 130 360 165S650 500 960 120" />
-              <path d="M-80 535C95 450 190 210 380 225S680 545 980 190" />
-            </svg>
-          </div>
+
           <div className="nh-auth-brandbar">
             <div className="nh-auth-brand-lockup">
               <span className="nh-auth-logo-frame">
@@ -109,70 +91,17 @@ export function AuthPortalShell({
               <p>{copy.description}</p>
             </div>
 
-            <div className="nh-auth-scene" aria-label={isArabic ? "تصور توضيحي لمسار سفر من القاهرة إلى جدة" : "Illustrative travel route from Cairo to Jeddah"}>
-              <svg className="nh-auth-scene-map" viewBox="0 0 660 360" fill="none" aria-hidden="true">
-                <defs>
-                  <linearGradient id="nh-route-gradient" x1="80" y1="260" x2="590" y2="70" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#D7BC88" stopOpacity=".1" />
-                    <stop offset=".48" stopColor="#E4D0A7" />
-                    <stop offset="1" stopColor="#B9E6C9" stopOpacity=".25" />
-                  </linearGradient>
-                  <radialGradient id="nh-globe-gradient" cx="0" cy="0" r="1" gradientTransform="translate(340 170) rotate(90) scale(170 290)" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#8AD2A9" stopOpacity=".15" />
-                    <stop offset="1" stopColor="#8AD2A9" stopOpacity="0" />
-                  </radialGradient>
-                </defs>
-                <circle cx="340" cy="170" r="158" fill="url(#nh-globe-gradient)" />
-                <ellipse cx="340" cy="170" rx="158" ry="158" stroke="#DDF4E5" strokeOpacity=".17" />
-                <ellipse cx="340" cy="170" rx="112" ry="158" stroke="#DDF4E5" strokeOpacity=".12" />
-                <ellipse cx="340" cy="170" rx="52" ry="158" stroke="#DDF4E5" strokeOpacity=".09" />
-                <ellipse cx="340" cy="170" rx="158" ry="72" stroke="#DDF4E5" strokeOpacity=".13" />
-                <ellipse cx="340" cy="170" rx="158" ry="116" stroke="#DDF4E5" strokeOpacity=".09" />
-                <path d="M182 170H498M340 12V328" stroke="#DDF4E5" strokeOpacity=".08" />
-                <path className="nh-auth-map-route" d="M96 262C175 74 303 42 420 117C478 154 522 170 580 96" stroke="url(#nh-route-gradient)" strokeWidth="2" strokeDasharray="5 9" />
-                <path d="M96 262C175 74 303 42 420 117C478 154 522 170 580 96" stroke="#E8D4A9" strokeOpacity=".15" strokeWidth="18" />
-                <circle cx="96" cy="262" r="6" fill="#D9BF8C" />
-                <circle cx="96" cy="262" r="16" stroke="#D9BF8C" strokeOpacity=".32" />
-                <circle cx="580" cy="96" r="6" fill="#B7E5C8" />
-                <circle cx="580" cy="96" r="16" stroke="#B7E5C8" strokeOpacity=".28" />
-                <circle cx="420" cy="117" r="4" fill="#E7D6B4" />
-              </svg>
-
-              <div className="nh-auth-map-plane" aria-hidden="true">
-                <Plane size={21} strokeWidth={1.8} />
-              </div>
-
-              <div className="nh-auth-map-label nh-auth-map-label-origin" dir="ltr">
-                <span>{isArabic ? "نقطة الانطلاق" : "ORIGIN"}</span>
-                <strong>CAI</strong>
-                <small>{isArabic ? "القاهرة" : "CAIRO"}</small>
-              </div>
-              <div className="nh-auth-map-label nh-auth-map-label-destination" dir="ltr">
-                <span>{isArabic ? "الوجهة" : "DESTINATION"}</span>
-                <strong>JED</strong>
-                <small>{isArabic ? "جدة" : "JEDDAH"}</small>
-              </div>
-
-              <div className="nh-auth-scene-caption" dir="ltr">
-                <span className="nh-auth-scene-caption-top">
-                  <i />
-                  {isArabic ? "مسار توضيحي" : "ILLUSTRATIVE ROUTE"}
-                </span>
-                <div>
-                  <strong>CAI</strong>
-                  <span>—</span>
-                  <strong>JED</strong>
-                </div>
-                <small>{isArabic ? "رحلات • حجوزات • عمليات" : "FLIGHTS · BOOKINGS · OPERATIONS"}</small>
-              </div>
+            <div className="nh-auth-brand-services" aria-label={isArabic ? "خدمات النظام" : "System services"}>
+              <div className="nh-auth-service-item"><Hotel size={18} /><span>{isArabic ? "حجوزات الفنادق" : "Hotel reservations"}</span></div>
+              <div className="nh-auth-service-item"><Plane size={18} /><span>{isArabic ? "حجوزات الطيران" : "Flight bookings"}</span></div>
+              <div className="nh-auth-service-item"><Route size={18} /><span>{isArabic ? "الرحلات الداخلية" : "Domestic trips"}</span></div>
+              <div className="nh-auth-service-item"><Building2 size={18} /><span>{isArabic ? "برامج العمرة" : "Umrah programs"}</span></div>
+              <div className="nh-auth-service-item"><FileCheck2 size={18} /><span>{isArabic ? "إصدار التأشيرات" : "Visa processing"}</span></div>
+              <div className="nh-auth-service-item"><Users size={18} /><span>{isArabic ? "العملاء والموردون" : "B2B clients & suppliers"}</span></div>
             </div>
 
-            <div className="nh-auth-capabilities">
-              <span><Plane size={14} />{isArabic ? "الطيران" : "FLIGHTS"}</span>
-              <span><Hotel size={14} />{isArabic ? "الفنادق" : "HOTELS"}</span>
-              <span><Users size={14} />{isArabic ? "العملاء" : "CLIENTS"}</span>
-              <span><Building2 size={14} />{isArabic ? "الموردون" : "SUPPLIERS"}</span>
-            </div>
+
+            
           </div>
 
           <div className="nh-auth-brand-footer">
