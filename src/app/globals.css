@@ -4657,3 +4657,338 @@ h1, h2, h3, h4, h5, h6 { letter-spacing: 0 !important; line-height: 1.4; }
     width: 20px;
   }
 }
+
+ 
+/* NEW HOST TRAVEL — unified logo-led brand system */
+:root {
+  --ink: #16372a;
+  --ink-soft: #52675b;
+  --muted: #7b8a80;
+  --line: #e2e9e3;
+  --surface: #ffffff;
+  --canvas: #f5f8f5;
+  --green: #064a33;
+  --green-dark: #003f2b;
+  --green-pale: #edf4ef;
+  --gold: #b99a62;
+  --shadow: 0 14px 36px rgba(0, 63, 43, .07);
+}
+body,
+.app-shell { color: var(--ink); background: var(--canvas); }
+.sidebar {
+  background: #003f2b;
+  color: #e8f0eb;
+  border-inline-end-color: rgba(255,255,255,.08);
+}
+.nav-link.active {
+  color: #fff;
+  background: rgba(255,255,255,.12);
+  box-shadow: inset 3px 0 0 #c5a66d;
+}
+.brand-logo-only {
+  width: 100%;
+  justify-content: center;
+  padding: 0 7px;
+}
+.brand-logo-only .brand-logo-frame {
+  display: block;
+  width: 100%;
+  max-width: 190px;
+  min-height: 0;
+  height: auto;
+  padding: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(0,0,0,.12);
+}
+.brand-logo-only .brand-logo-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+  object-fit: contain;
+}
+.onboard-card .onboard-brand-logo { width: min(190px, 100%); padding: 0; }
+.onboard-card .onboard-brand-logo .brand-logo-frame { max-width: 190px; }
+
+/* Account portal: calm, static composition built around the original logo */
+.nh-auth-shell {
+  --nh-auth-green: #064a33;
+  --nh-auth-deep: #003f2b;
+  --nh-auth-ink: #16372a;
+  --nh-auth-muted: #718177;
+  --nh-auth-gold: #c3a66d;
+  padding: clamp(14px, 2.8vw, 38px);
+  background:
+    radial-gradient(ellipse at 8% 10%, rgba(52, 139, 91, .15), transparent 34%),
+    radial-gradient(ellipse at 94% 90%, rgba(192, 166, 111, .12), transparent 30%),
+    linear-gradient(145deg, #003f2b 0%, #064a33 58%, #002f21 100%);
+}
+.nh-auth-backdrop,
+.nh-auth-atmosphere { display: none !important; }
+.nh-auth-stage {
+  width: min(100%, 1080px);
+  gap: 13px;
+}
+.nh-auth-frame {
+  width: 100%;
+  min-height: min(690px, calc(100svh - 88px));
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  border: 1px solid rgba(255,255,255,.78);
+  border-radius: 24px;
+  box-shadow: 0 28px 76px rgba(0, 25, 16, .20), 0 5px 18px rgba(0, 25, 16, .08);
+}
+.nh-auth-brand-panel {
+  padding: clamp(28px, 3.8vw, 48px);
+  gap: 22px;
+  background: linear-gradient(145deg, #003f2b 0%, #064a33 60%, #07513a 100%);
+}
+.nh-auth-brand-panel::before {
+  opacity: .065;
+  background-image:
+    linear-gradient(rgba(238,250,241,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238,250,241,.10) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(145deg, #000, transparent 82%);
+}
+.nh-auth-brand-panel::after {
+  width: 540px;
+  height: 540px;
+  inset-inline-end: -385px;
+  top: 22%;
+  border-color: rgba(239,255,245,.10);
+  box-shadow:
+    0 0 0 42px rgba(239,255,245,.018),
+    0 0 0 92px rgba(239,255,245,.012),
+    0 0 0 145px rgba(239,255,245,.008);
+}
+.nh-auth-brandbar {
+  position: relative;
+  z-index: 2;
+  min-height: 72px;
+  gap: 14px;
+}
+.nh-auth-logo-frame {
+  display: block;
+  width: clamp(160px, 16vw, 190px);
+  height: auto;
+  aspect-ratio: 1.89;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.48);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(0, 20, 13, .14);
+}
+.nh-auth-logo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  object-fit: contain;
+}
+.nh-auth-brand-index {
+  padding: 7px 9px;
+  border: 1px solid rgba(238,253,243,.15);
+  border-radius: 7px;
+  color: rgba(238,249,241,.72);
+  background: rgba(0,30,20,.13);
+  font-size: 8px;
+  letter-spacing: .11em;
+}
+.nh-auth-brand-main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 25px;
+  width: 100%;
+  max-width: 610px;
+  padding-block: 16px;
+}
+.nh-auth-brand-copy { max-width: 570px; }
+.nh-auth-eyebrow {
+  color: rgba(235,247,239,.88);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+.nh-auth-eyebrow i {
+  width: 21px;
+  height: 2px;
+  border-radius: 2px;
+  background: #c5a66d;
+}
+.nh-auth-brand-copy h1 {
+  margin: 14px 0 10px;
+  color: #fff;
+  font-size: clamp(38px, 4.2vw, 54px);
+  font-weight: 800;
+  line-height: 1.32;
+  letter-spacing: 0;
+}
+.nh-auth-brand-copy h1 em {
+  color: #c9e7d1;
+  font-style: normal;
+  font-weight: 800;
+  text-shadow: none;
+}
+.nh-auth-brand-copy p {
+  max-width: 500px;
+  color: rgba(239,249,242,.82);
+  font-size: 13px;
+  line-height: 1.95;
+}
+.nh-auth-brand-services {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(235,249,241,.15);
+}
+.nh-auth-service-item {
+  display: flex;
+  min-width: 0;
+  min-height: 49px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(239,255,245,.14);
+  border-radius: 10px;
+  color: rgba(243,250,245,.91);
+  background: rgba(255,255,255,.055);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.nh-auth-service-item svg {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: #d7bd87;
+  stroke-width: 1.8;
+}
+.nh-auth-service-item span { min-width: 0; }
+.nh-auth-brand-footer {
+  position: relative;
+  z-index: 2;
+  padding-top: 13px;
+  border-top: 1px solid rgba(235,249,241,.14);
+  color: rgba(232,246,237,.62);
+}
+.nh-auth-form-side {
+  padding: clamp(27px, 3.8vw, 46px);
+  background: #fff;
+}
+.nh-auth-content { width: min(100%, 390px); padding-block: 26px; }
+.nh-auth-form-tools { margin-bottom: 30px; }
+.nh-auth-form-heading h2 { color: #16372a; }
+.nh-auth-field > label,
+.nh-auth-field-heading > label { color: #294b3a; }
+.nh-auth-field input { border-color: #dfe8e1; }
+.nh-auth-field input:focus {
+  border-color: #0b7650;
+  box-shadow: 0 0 0 4px rgba(6,74,51,.09);
+}
+.nh-auth-primary {
+  background: #003f2b;
+  box-shadow: 0 8px 18px rgba(0,63,43,.16);
+}
+.nh-auth-primary:hover:not(:disabled) { background: #064a33; }
+.nh-auth-slogan-outside p {
+  color: rgba(248,252,248,.97);
+  font-size: 13px;
+  font-weight: 750;
+  text-shadow: none;
+}
+.nh-auth-slogan-outside::before,
+.nh-auth-slogan-outside::after {
+  height: 1.5px;
+  background: linear-gradient(90deg, rgba(211,183,125,.22), #c5a66d);
+  box-shadow: none;
+}
+
+@media (max-width: 1050px) {
+  .nh-auth-frame {
+    width: min(100%, 720px);
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nh-auth-form-side {
+    order: 1;
+    min-height: 620px;
+    padding: 30px 48px 22px;
+  }
+  .nh-auth-brand-panel {
+    order: 2;
+    min-height: 0;
+    padding: 34px 48px 25px;
+  }
+  .nh-auth-brand-main { gap: 22px; padding-block: 12px; }
+  .nh-auth-brand-copy h1 { font-size: clamp(37px, 5.5vw, 48px); }
+  .nh-auth-brand-services { max-width: 570px; }
+}
+@media (max-width: 600px) {
+  .brand-logo-only { padding: 0; }
+  .onboard-card .onboard-brand-logo { width: min(160px, 58vw); }
+  .nh-auth-shell {
+    display: block;
+    min-height: 100svh;
+    padding: 0;
+  }
+  .nh-auth-stage {
+    width: 100%;
+    gap: 10px;
+    padding-top: 13px;
+    background: #003f2b;
+  }
+  .nh-auth-stage .nh-auth-frame {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    width: 100%;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .nh-auth-form-side {
+    order: 1;
+    min-height: 0;
+    padding: 25px 22px 20px;
+  }
+  .nh-auth-content {
+    width: 100%;
+    max-width: 430px;
+    padding-block: 29px 30px;
+  }
+  .nh-auth-form-tools { margin-bottom: 25px; }
+  .nh-auth-form-heading { margin-bottom: 23px; }
+  .nh-auth-form-heading h2 { font-size: 28px; }
+  .nh-auth-fields { gap: 15px; }
+  .nh-auth-field input { height: 50px; }
+  .nh-auth-primary { min-height: 51px; }
+  .nh-auth-brand-panel {
+    order: 2;
+    min-height: 0;
+    padding: 26px 22px 22px;
+    gap: 19px;
+  }
+  .nh-auth-brandbar { min-height: 58px; gap: 9px; }
+  .nh-auth-logo-frame { width: clamp(138px, 44vw, 166px); }
+  .nh-auth-brand-index { padding: 6px 8px; font-size: 7px; letter-spacing: .08em; }
+  .nh-auth-brand-main { gap: 17px; padding-block: 7px; }
+  .nh-auth-brand-copy h1 { margin: 10px 0 8px; font-size: clamp(30px, 8vw, 37px); }
+  .nh-auth-brand-copy p { font-size: 12px; line-height: 1.85; }
+  .nh-auth-brand-services { gap: 8px; padding-top: 15px; }
+  .nh-auth-service-item { min-height: 44px; gap: 8px; padding: 8px 9px; font-size: 10px; }
+  .nh-auth-service-item svg { flex-basis: 16px; width: 16px; height: 16px; }
+  .nh-auth-brand-footer { padding-top: 10px; }
+  .nh-auth-slogan-outside { gap: 8px; padding-inline: 12px; }
+  .nh-auth-slogan-outside p { font-size: 11px; }
+  .nh-auth-slogan-outside::before,
+  .nh-auth-slogan-outside::after { flex-basis: 20px; width: 20px; }
+}
