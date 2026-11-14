@@ -39,10 +39,10 @@ export async function createWorkspaceForUser(
   return withTenantRlsContext(
     { userId: input.userId, tenantId },
     () => database.$transaction(async (tx) => {
-      await tx.$queryRaw<{ acquired: boolean }[]>        `WITH lock_result AS MATERIALIZED (
-          SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
-        )
-        SELECT TRUE AS acquired FROM lock_result
+      await tx.$queryRaw<{ acquired: boolean }[]>      `WITH lock_result AS MATERIALIZED (
+        SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
+      )
+      SELECT TRUE AS acquired FROM lock_result
       `;
 
       const existing = await tx.tenantMembership.findFirst({
