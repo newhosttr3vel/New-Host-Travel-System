@@ -17,3 +17,9 @@ test("refunded is a terminal state", () => {
 test("unknown status fails closed", () => {
   assert.equal(canTransitionReservationStatus("PLANNED", "CONFIRMED"), false);
 });
+test("prototype-inherited property names are rejected as invalid statuses", () => {
+  for (const invalid of ["constructor", "toString", "valueOf", "__proto__"]) {
+    assert.equal(canTransitionReservationStatus(invalid, "CONFIRMED"), false);
+    assert.equal(canTransitionReservationStatus("INQUIRY", invalid), false);
+  }
+});
