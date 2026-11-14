@@ -23,10 +23,14 @@ const transitions: Record<ReservationStatusKey, ReadonlySet<ReservationStatusKey
   REFUNDED: new Set()
 };
 
+function isReservationStatus(value: string): value is ReservationStatusKey {
+  return Object.prototype.hasOwnProperty.call(transitions, value);
+}
+
 export function canTransitionReservationStatus(current: string, next: string): boolean {
-  if (!(current in transitions) || !(next in transitions)) return false;
+  if (!isReservationStatus(current) || !isReservationStatus(next)) return false;
   if (current === next) return true;
-  return transitions[current as ReservationStatusKey].has(next as ReservationStatusKey);
+  return transitions[current].has(next);
 }
 
 export const reservationStatuses = Object.keys(transitions) as ReservationStatusKey[];
