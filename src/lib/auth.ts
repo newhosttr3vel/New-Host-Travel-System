@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@/lib/prisma";
 import { sendAuthEmail } from "@/lib/email";
@@ -34,6 +35,16 @@ export const auth = betterAuth({
     ...(isDevelopment ? ["https://*.app.github.dev"] : []),
   ],
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email") return;
+      const ownerEmail = process.env.SYSTEM_OWNER_EMAIL?.trim().toLowerCase();
+      const submittedEmail = typeof ctx.body?.email === "string" ? ctx.body.email.trim().toLowerCase() : "";
+      if (!ownerEmail || submittedEmail !== ownerEmail) {
+        throw new APIError("FORBIDDEN", { message: "Public registration is disabled. Contact your system administrator for an account." });
+      }
+    }),
+  },
   emailVerification: {
     sendOnSignUp: !isDevelopment,
     sendOnSignIn: !isDevelopment,
@@ -48,11 +59,6 @@ export const auth = betterAuth({
     requireEmailVerification: !isDevelopment,
     minPasswordLength: 12,
     maxPasswordLength: 128,
-    resetPasswordTokenExpiresIn: 60 * 60,
-    revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendAuthEmail(user.email, "reset", url);
-    }
   },
   // Apply stricter limits to password authentication and registration.
   // Production rate limiting is explicitly enabled; local development remains convenient.

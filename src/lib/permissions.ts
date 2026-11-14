@@ -2,8 +2,8 @@ export type TenantRole = "OWNER" | "ADMINISTRATOR" | "BRANCH_MANAGER" | "RESERVA
 export type Permission = "customers:read" | "customers:write" | "customers:archive" | "suppliers:read" | "suppliers:write" | "reservations:read" | "reservations:write" | "documents:read" | "documents:write" | "finance:read" | "finance:write" | "finance:approve" | "users:manage" | "settings:manage" | "reports:export";
 
 const grants: Record<TenantRole, ReadonlySet<Permission>> = {
-  OWNER: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","users:manage","settings:manage","reports:export"]),
-  ADMINISTRATOR: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","users:manage","settings:manage","reports:export"]),
+  OWNER: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","settings:manage","reports:export"]),
+  ADMINISTRATOR: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","settings:manage","reports:export"]),
   BRANCH_MANAGER: new Set(["customers:read","customers:write","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","reports:export"]),
   RESERVATIONS_MANAGER: new Set(["customers:read","customers:write","suppliers:read","reservations:read","reservations:write","documents:read","documents:write","finance:read","reports:export"]),
   RESERVATIONS_AGENT: new Set(["customers:read","customers:write","suppliers:read","reservations:read","reservations:write","documents:read","documents:write"]),
@@ -11,7 +11,7 @@ const grants: Record<TenantRole, ReadonlySet<Permission>> = {
   SALES: new Set(["customers:read","customers:write","suppliers:read","reservations:read","reservations:write"]),
   VISA_OFFICER: new Set(["customers:read","customers:write","reservations:read","documents:read","documents:write"]),
   OPERATIONS: new Set(["customers:read","suppliers:read","reservations:read","reservations:write","documents:read","documents:write"]),
-  HR_MANAGER: new Set(["users:manage"]),
+  HR_MANAGER: new Set([]),
   AUDITOR: new Set(["customers:read","suppliers:read","reservations:read","finance:read","reports:export"]),
   READ_ONLY: new Set(["customers:read","suppliers:read","reservations:read"])
 };

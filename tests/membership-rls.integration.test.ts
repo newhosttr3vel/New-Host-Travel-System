@@ -20,7 +20,7 @@ function isPostgresPermissionDenied(error: unknown): boolean {
     combined.includes("permission denied for table");
 }
 
-test("RLS prevents self-joining another tenant and creating memberships for other users", {
+test("RLS permits owner-managed employee memberships and blocks unauthorized membership changes", {
   skip: process.env.RUN_DB_TESTS !== "true" || !process.env.APP_DATABASE_URL
 }, async () => {
   const adminUrl = process.env.DATABASE_URL;
@@ -31,13 +31,17 @@ test("RLS prevents self-joining another tenant and creating memberships for othe
   const suffix = randomUUID().replaceAll("-", "").slice(0, 12).toLowerCase();
   const userId = "membership-rls-" + suffix;
   const otherUserId = "membership-other-" + suffix;
+  const unauthorizedUserId = "membership-unauthorized-" + suffix;
+  const unauthorizedTargetId = "membership-target-" + suffix;
   let tenantA: string | undefined;
   let tenantB: string | undefined;
 
   try {
     await admin.user.createMany({ data: [
       { id: userId, name: "Tenant Owner", email: "membership-a-" + suffix + "@example.test" },
-      { id: otherUserId, name: "Other User", email: "membership-b-" + suffix + "@example.test" }
+      { id: otherUserId, name: "Employee", email: "membership-b-" + suffix + "@example.test" },
+      { id: unauthorizedUserId, name: "Non Owner", email: "membership-c-" + suffix + "@example.test" },
+      { id: unauthorizedTargetId, name: "Unauthorized Target", email: "membership-d-" + suffix + "@example.test" }
     ] });
     const [a, b] = await Promise.all([
       admin.tenant.create({ data: { name: "Membership RLS A", slug: "member-a-" + suffix } }),
@@ -47,25 +51,34 @@ test("RLS prevents self-joining another tenant and creating memberships for othe
     tenantB = b.id;
     await admin.tenantMembership.create({ data: { tenantId: a.id, userId, role: "OWNER" } });
 
-    const attemptInsert = async (targetTenantId: string, targetUserId: string) => runtime.$transaction(async (tx) => {
+    const attemptInsert = async (
+      actorUserId: string,
+      contextTenantId: string,
+      targetTenantId: string,
+      targetUserId: string
+    ) => runtime.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT
-        set_config('app.user_id', ${userId}, true),
-        set_config('app.tenant_id', ${a.id}, true)
+        set_config('app.user_id', ${actorUserId}, true),
+        set_config('app.tenant_id', ${contextTenantId}, true)
       `;
       await tx.$executeRaw`
         INSERT INTO "tenant_memberships"
           ("id", "tenantId", "userId", "role", "createdAt", "updatedAt")
         VALUES
-          (${"forged-" + randomUUID()}, ${targetTenantId}, ${targetUserId}, 'OWNER'::"TenantRole", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          (${"forged-" + randomUUID()}, ${targetTenantId}, ${targetUserId}, 'READ_ONLY'::"TenantRole", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `;
     });
 
     await assert.rejects(
-      attemptInsert(b.id, userId),
+      attemptInsert(userId, a.id, b.id, userId),
       isPostgresPermissionDenied
     );
+    // A tenant OWNER is allowed to add another user to their own tenant.
+    await attemptInsert(userId, a.id, a.id, otherUserId);
+
+    // A regular non-member cannot add users, even when targeting that tenant.
     await assert.rejects(
-      attemptInsert(a.id, otherUserId),
+      attemptInsert(unauthorizedUserId, a.id, a.id, unauthorizedTargetId),
       isPostgresPermissionDenied
     );
 
@@ -81,14 +94,16 @@ test("RLS prevents self-joining another tenant and creating memberships for othe
     );
 
     const memberships = await admin.tenantMembership.findMany({
-      where: { userId },
-      select: { tenantId: true, role: true }
+      where: { tenantId: a.id, userId: { in: [userId, otherUserId] } },
+      select: { tenantId: true, userId: true, role: true }
     });
-    assert.deepEqual(memberships, [{ tenantId: a.id, role: "OWNER" }]);
+    assert.equal(memberships.length, 2);
+    assert.ok(memberships.some((membership) => membership.tenantId === a.id && membership.role === "OWNER"));
+    assert.ok(memberships.some((membership) => membership.tenantId === a.id && membership.role === "READ_ONLY"));
   } finally {
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
-    await admin.user.deleteMany({ where: { id: { in: [userId, otherUserId] } } });
+    await admin.user.deleteMany({ where: { id: { in: [userId, otherUserId, unauthorizedUserId, unauthorizedTargetId] } } });
     await runtime.$disconnect();
     await admin.$disconnect();
   }

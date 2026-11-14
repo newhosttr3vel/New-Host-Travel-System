@@ -12,7 +12,7 @@ const modelDelegates = new Set([
   "branch", "branchMembership", "customer", "hotel", "supplier", "reservation",
   "hotelReservationDetail", "hotelReservationRoom", "hotelReservationNightRate", "auditEvent",
   "document", "ledgerAccount", "journalEntry", "journalLine", "invoice", "invoiceLine",
-  "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment"
+  "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment", "platformCompanyApplication"
 ]);
 const tenantModels = new Set([
   "Tenant", "TenantMembership", "Branch", "BranchMembership", "Customer", "Hotel", "Supplier",
@@ -45,12 +45,14 @@ async function writeRlsSettings(tx: AnyRecord, state: RlsState) {
     set_config('app.tenant_id', ${state.tenantId ?? ""}, true)
   `;
 }
-async function applyQueryScope(tx: AnyRecord, state: RlsState, model: string, args: unknown) {
+async function applyQueryScope(tx: AnyRecord, state: RlsState, model: string, args: unknown, operation: string) {
   const tenantIds = collectStrings(args, "tenantId");
   const userIds = collectStrings(args, "userId");
   const tenantId = onlyValue(tenantIds, "tenant");
   const userId = onlyValue(userIds, "user");
-  if (userId && state.userId && userId !== state.userId) {
+  if (userId && state.userId && userId !== state.userId &&
+      !((model === "TenantMembership" && operation === "create" && tenantId === state.tenantId) ||
+        (model === "Account" && operation === "create"))) {
     throw new Error("RLS blocked an operation for a different user.");
   }
   if (tenantId && state.tenantId && tenantId !== state.tenantId) {
@@ -87,7 +89,7 @@ function wrapTransactionClient(tx: AnyRecord, state: RlsState): AnyRecord {
           if (typeof operation !== "string" || typeof method !== "function") return method;
           return async (...args: unknown[]) => {
             const model = property[0]!.toUpperCase() + property.slice(1);
-            await applyQueryScope(target, state, model, args[0]);
+            await applyQueryScope(target, state, model, args[0], operation);
             return Reflect.apply(method, delegate, args);
           };
         }

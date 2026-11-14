@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Building2, FileCheck2, Hotel, Plane, Route, Users } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
-type AuthStage = "login" | "register" | "recovery" | "reset";
+type AuthStage = "login" | "register";
 
 const stageCopy = {
   ar: {
@@ -16,16 +16,6 @@ const stageCopy = {
       title: <>ابدأ تنظيم أعمال شركتك،<br /><em>من مساحة واحدة.</em></>,
       description: "أنشئ مساحة مستقلة لشركتك، واجمع فريقك وحجوزاتك ومتابعة الموردين والحسابات داخل نظام واحد.",
     },
-    recovery: {
-      eyebrow: "استعادة الوصول",
-      title: <>نوصّلك لحسابك،<br /><em>بخطوات آمنة.</em></>,
-      description: "أعد الوصول إلى مساحة عملك من خلال رابط استعادة يُرسل إلى بريدك الإلكتروني.",
-    },
-    reset: {
-      eyebrow: "تحديث بيانات الأمان",
-      title: <>حسابك يستحق،<br /><em>حماية أقوى.</em></>,
-      description: "اختر كلمة مرور جديدة وقوية، ثم تابع إدارة أعمالك من مساحة شركتك.",
-    },
   },
   en: {
     login: {
@@ -37,16 +27,6 @@ const stageCopy = {
       eyebrow: "A NEW WORKSPACE",
       title: <>Build your company workspace.<br /><em>Keep every detail connected.</em></>,
       description: "Create an independent workspace for your company, team, bookings, suppliers and financial follow-up.",
-    },
-    recovery: {
-      eyebrow: "ACCOUNT RECOVERY",
-      title: <>Your workspace,<br /><em>within reach.</em></>,
-      description: "Regain access to your workspace through a secure reset link sent to your email address.",
-    },
-    reset: {
-      eyebrow: "ACCOUNT SECURITY",
-      title: <>A stronger password.<br /><em>A safer workspace.</em></>,
-      description: "Choose a new, strong password and continue managing your company workspace.",
     },
   },
 } as const;

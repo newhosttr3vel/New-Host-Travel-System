@@ -21,6 +21,16 @@ test("parallel onboarding requests create at most one workspace for a user", {
     await prisma.user.create({
       data: { id: userId, name: "Onboarding Test", email, emailVerified: true },
     });
+    const reviewerId = `reviewer-${suffix}`;
+    const application = await prisma.platformCompanyApplication.create({
+      data: {
+        userId,
+        companyName: "Concurrent Onboarding Test",
+        country: "Egypt",
+        city: "Cairo",
+        phone: "+201000000000",
+      },
+    });
 
     const input = {
       userId,
@@ -28,6 +38,8 @@ test("parallel onboarding requests create at most one workspace for a user", {
       defaultCurrency: "EGP" as const,
       defaultLanguage: "ar" as const,
       timeZone: "Africa/Cairo",
+      applicationId: application.id,
+      reviewedById: reviewerId,
     };
     const results = await Promise.all([
       createWorkspaceForUser(prisma, input),
@@ -49,6 +61,12 @@ test("parallel onboarding requests create at most one workspace for a user", {
 
     const accounts = await prisma.ledgerAccount.count({ where: { tenantId } });
     assert.ok(accounts > 0);
+    const approvedApplication = await prisma.platformCompanyApplication.findUnique({
+      where: { id: application.id },
+      select: { status: true, reviewedById: true },
+    });
+    assert.equal(approvedApplication?.status, "APPROVED");
+    assert.equal(approvedApplication?.reviewedById, reviewerId);
   } finally {
     const userMemberships = await prisma.tenantMembership.findMany({
       where: { userId },

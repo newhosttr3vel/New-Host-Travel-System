@@ -37,7 +37,7 @@ const roleLabels: Record<string, { ar: string; en: string }> = {
 
 type NavItem = {
   href: string;
-  key: "dashboard" | "customers" | "suppliers" | "reservations" | "finance" | "settings";
+  key: "dashboard" | "customers" | "suppliers" | "reservations" | "finance" | "settings" | "team";
   icon: typeof LayoutDashboard;
 };
 
@@ -95,9 +95,11 @@ export function WorkspaceShell({
         ? [{ href: "/finance", key: "finance" as const, icon: WalletCards }]
         : [],
     },
-  ].filter((section) => section.items.length > 0);
+  ];
+  if (role === "OWNER") sections.push({ label: ar ? "إدارة الفريق" : "TEAM MANAGEMENT", items: [{ href: "/team", key: "team", icon: Users }] });
+  const visibleSections = sections.filter((section) => section.items.length > 0);
 
-  const currentItem = sections
+  const currentItem = visibleSections
     .flatMap((section) => section.items)
     .find((item) => pathname === item.href || pathname.startsWith(item.href + "/"));
   const displayRole = roleLabels[role]?.[locale] ?? role;
@@ -115,7 +117,7 @@ export function WorkspaceShell({
         </div>
 
         <div className="sidebar-navigation">
-          {sections.map((section) => (
+          {visibleSections.map((section) => (
             <div className="sidebar-section" key={section.label}>
               <div className="nav-group-label">{section.label}</div>
               <nav className="main-nav" aria-label={section.label}>

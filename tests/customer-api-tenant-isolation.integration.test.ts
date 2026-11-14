@@ -28,9 +28,14 @@ test("customer API denies cross-company read, update and archive attempts", {
   const password = "ValidPassword123!";
   let userId: string | undefined;
   let tenantA: string | undefined;
+  let applicationId: string | undefined;
   let tenantB: string | undefined;
+  const previousSystemOwnerEmail = process.env.SYSTEM_OWNER_EMAIL;
 
   try {
+    // The integration fixture is the platform owner for this isolated test user.
+    // This exercises the real registration guard without weakening production policy.
+    process.env.SYSTEM_OWNER_EMAIL = email;
     const signUp = await auth.handler(new Request("http://localhost:3000/api/auth/sign-up/email", {
       method: "POST",
       headers: { "Content-Type": "application/json", Origin: "http://localhost:3000" },
@@ -41,6 +46,17 @@ test("customer API denies cross-company read, update and archive attempts", {
     userId = signupBody.user?.id;
     assert.ok(userId, "Better Auth should create the test user");
 
+    const application = await admin.platformCompanyApplication.create({
+      data: {
+        userId,
+        companyName: "API Isolation Tenant A",
+        country: "Egypt",
+        city: "Cairo",
+        phone: "+201000000000",
+      },
+    });
+    applicationId = application.id;
+
     const cookies = signUp.headers.getSetCookie();
     const cookieHeader = cookies.map((value) => value.split(";")[0]).join("; ");
     assert.match(cookieHeader, /better-auth\.session_token=/);
@@ -50,7 +66,9 @@ test("customer API denies cross-company read, update and archive attempts", {
       companyName: "API Isolation Tenant A",
       defaultCurrency: "EGP",
       defaultLanguage: "ar",
-      timeZone: "Africa/Cairo"
+      timeZone: "Africa/Cairo",
+      applicationId,
+      reviewedById: userId
     });
     assert.ok(workspace);
     tenantA = workspace.tenantId;
@@ -185,6 +203,8 @@ test("customer API denies cross-company read, update and archive attempts", {
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
     if (userId) await admin.user.deleteMany({ where: { id: userId } });
+    if (previousSystemOwnerEmail === undefined) delete process.env.SYSTEM_OWNER_EMAIL;
+    else process.env.SYSTEM_OWNER_EMAIL = previousSystemOwnerEmail;
     await admin.$disconnect();
     await prisma.$disconnect();
   }
