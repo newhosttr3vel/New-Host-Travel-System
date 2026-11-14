@@ -4,7 +4,19 @@ import {CheckCircle2,Clock3,RefreshCw,ShieldCheck,XCircle} from "lucide-react";
 type App={id:string;companyName:string;legalName:string|null;country:string;city:string;phone:string;defaultCurrency:string;status:"PENDING"|"APPROVED"|"REJECTED";rejectionReason:string|null;createdAt:string;user:{name:string;email:string;emailVerified:boolean}};
 export function CompanyApplicationsAdmin(){const [items,setItems]=useState<App[]>([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(""),[error,setError]=useState(""),[reasons,setReasons]=useState<Record<string,string>>({});
 async function load(){setLoading(true);setError("");try{const r=await fetch("/api/platform-admin/company-applications",{cache:"no-store"}),d=await r.json();if(!r.ok)throw Error(d.error||"تعذر تحميل الطلبات");setItems(d.applications)}catch(e){setError(e instanceof Error?e.message:"حدث خطأ")}finally{setLoading(false)}}
-useEffect(()=>{void load()},[]);
+useEffect(()=>{
+let active=true;
+(async()=>{
+try{
+const r=await fetch("/api/platform-admin/company-applications",{cache:"no-store"});
+const d=await r.json();
+if(!r.ok)throw Error(d.error||"تعذر تحميل الطلبات");
+if(active)setItems(d.applications);
+}catch(e){if(active)setError(e instanceof Error?e.message:"حدث خطأ")}
+finally{if(active)setLoading(false)}
+})();
+return()=>{active=false};
+},[]);
 async function decide(id:string,decision:"approve"|"reject"){if(decision==="reject"&&!reasons[id]?.trim()){setError("اكتب سبب الرفض أولًا.");return}setBusy(id);setError("");try{const r=await fetch("/api/platform-admin/company-applications",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({applicationId:id,decision,rejectionReason:reasons[id]||""})}),d=await r.json();if(!r.ok)throw Error(d.error||"تعذر تنفيذ القرار");await load()}catch(e){setError(e instanceof Error?e.message:"حدث خطأ")}finally{setBusy("")}}
 const pending=items.filter(x=>x.status==="PENDING").length,approved=items.filter(x=>x.status==="APPROVED").length,rejected=items.filter(x=>x.status==="REJECTED").length;
 return <main dir="rtl" className="min-h-screen bg-[#f3f7f4] px-4 py-8 text-slate-900 sm:px-8"><div className="mx-auto max-w-7xl"><header className="flex flex-wrap items-center justify-between gap-4"><div><span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800"><ShieldCheck size={14}/>إدارة المنصة</span><h1 className="mt-3 text-3xl font-bold">طلبات تسجيل الشركات</h1><p className="mt-2 text-slate-500">مراجعة الشركات وتفعيل مساحات العمل بعد الموافقة.</p></div><button onClick={()=>void load()} className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm font-semibold"><RefreshCw size={16}/>تحديث</button></header>
