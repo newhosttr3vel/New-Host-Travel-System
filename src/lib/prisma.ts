@@ -45,7 +45,7 @@ async function writeRlsSettings(tx: AnyRecord, state: RlsState) {
     set_config('app.tenant_id', ${state.tenantId ?? ""}, true)
   `;
 }
-async function applyQueryScope(tx: AnyRecord, state: RlsState, model: string, args: unknown) {
+async function applyQueryScope(tx: AnyRecord, state: RlsState, model: string, args: unknown, operation: string) {
   const tenantIds = collectStrings(args, "tenantId");
   const userIds = collectStrings(args, "userId");
   const tenantId = onlyValue(tenantIds, "tenant");
@@ -87,7 +87,7 @@ function wrapTransactionClient(tx: AnyRecord, state: RlsState): AnyRecord {
           if (typeof operation !== "string" || typeof method !== "function") return method;
           return async (...args: unknown[]) => {
             const model = property[0]!.toUpperCase() + property.slice(1);
-            await applyQueryScope(target, state, model, args[0]);
+            await applyQueryScope(target, state, model, args[0], operation);
             return Reflect.apply(method, delegate, args);
           };
         }
