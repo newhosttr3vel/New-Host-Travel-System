@@ -3,7 +3,7 @@ export type Permission = "customers:read" | "customers:write" | "customers:archi
 
 const grants: Record<TenantRole, ReadonlySet<Permission>> = {
   OWNER: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","settings:manage","reports:export"]),
-  ADMINISTRATOR: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","users:manage","settings:manage","reports:export"]),
+  ADMINISTRATOR: new Set(["customers:read","customers:write","customers:archive","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","finance:write","finance:approve","settings:manage","reports:export"]),
   BRANCH_MANAGER: new Set(["customers:read","customers:write","suppliers:read","suppliers:write","reservations:read","reservations:write","documents:read","documents:write","finance:read","reports:export"]),
   RESERVATIONS_MANAGER: new Set(["customers:read","customers:write","suppliers:read","reservations:read","reservations:write","documents:read","documents:write","finance:read","reports:export"]),
   RESERVATIONS_AGENT: new Set(["customers:read","customers:write","suppliers:read","reservations:read","reservations:write","documents:read","documents:write"]),
