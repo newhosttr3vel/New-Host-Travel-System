@@ -37,7 +37,7 @@ const roleLabels: Record<string, { ar: string; en: string }> = {
 
 type NavItem = {
   href: string;
-  key: "dashboard" | "customers" | "suppliers" | "reservations" | "finance" | "settings";
+  key: "dashboard" | "customers" | "suppliers" | "reservations" | "finance" | "settings" | "team";
   icon: typeof LayoutDashboard;
 };
 
