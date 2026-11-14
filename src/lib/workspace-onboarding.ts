@@ -42,7 +42,7 @@ export async function createWorkspaceForUser(database: PrismaClient, input: Crea
         id: tenantId,
         name: input.companyName,
         slug: createSlug(input.companyName),
-        status: "TRIAL",
+        status: "ACTIVE",
         defaultLanguage: input.defaultLanguage,
         defaultCurrency: input.defaultCurrency,
         timeZone: input.timeZone,
