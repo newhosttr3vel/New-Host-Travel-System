@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Building2, FileCheck2, Hotel, Plane, Route, Users } from "lucide-react";
 import type { Locale } from "@/lib/messages";
 
-type AuthStage = "login" | "register" | "recovery" | "reset";
+type AuthStage = "login" | "register";
 
 const stageCopy = {
   ar: {
