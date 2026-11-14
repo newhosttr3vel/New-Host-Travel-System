@@ -9,69 +9,109 @@ export type CreateWorkspaceInput = {
   defaultCurrency: "EGP" | "SAR" | "USD";
   defaultLanguage: "ar" | "en";
   timeZone: string;
+  applicationId: string;
+  reviewedById: string;
 };
+
+export class CompanyApplicationReviewConflict extends Error {
+  constructor() {
+    super("APPLICATION_ALREADY_REVIEWED");
+    this.name = "CompanyApplicationReviewConflict";
+  }
+}
 
 function createSlug(name: string) {
   const base = name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 42) || "travel-agency";
-  return `${base}-${randomUUID().slice(0, 8)}`;
+  return \`\${base}-\${randomUUID().slice(0, 8)}\`;
 }
 
 /**
- * Serializes onboarding attempts for one user so parallel requests cannot
- * create multiple owner workspaces before either membership is committed.
+ * Creates the initial company workspace and approves its application atomically.
+ * The advisory lock serializes onboarding attempts for the same user.
  */
-export async function createWorkspaceForUser(database: PrismaClient, input: CreateWorkspaceInput) {
+export async function createWorkspaceForUser(
+  database: PrismaClient,
+  input: CreateWorkspaceInput
+) {
   const tenantId = "t" + randomUUID().replaceAll("-", "").slice(0, 24);
-  return withTenantRlsContext({ userId: input.userId, tenantId }, () => database.$transaction(async (tx) => {
-    await tx.$queryRaw<{ acquired: boolean }[]>`
-      WITH lock_result AS MATERIALIZED (
-        SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
-      )
-      SELECT TRUE AS acquired FROM lock_result
-    `;
 
-    const existing = await tx.tenantMembership.findFirst({
-      where: { userId: input.userId },
-      select: { id: true },
-    });
-    if (existing) return null;
+  return withTenantRlsContext(
+    { userId: input.userId, tenantId },
+    () => database.$transaction(async (tx) => {
+      await tx.$queryRaw<{ acquired: boolean }[]>\
+        \`WITH lock_result AS MATERIALIZED (
+          SELECT pg_advisory_xact_lock(hashtextextended(\${input.userId}, 0))
+        )
+        SELECT TRUE AS acquired FROM lock_result
+      \`;
 
-    const tenant = await tx.tenant.create({
-      data: {
-        id: tenantId,
-        name: input.companyName,
-        slug: createSlug(input.companyName),
-        status: "ACTIVE",
-        defaultLanguage: input.defaultLanguage,
-        defaultCurrency: input.defaultCurrency,
-        timeZone: input.timeZone,
-      },
-    });
-    const membership = await tx.tenantMembership.create({
-      data: { tenantId: tenant.id, userId: input.userId, role: "OWNER" },
-    });
-    const branch = await tx.branch.create({ data: { tenantId: tenant.id, name: "Main Branch", slug: "main" } });
-    await tx.ledgerAccount.createMany({
-      data: defaultLedgerAccounts.map((account) => ({
-        tenantId: tenant.id,
-        ...account,
-        isSystem: true,
-      })),
-    });
-    await tx.branchMembership.create({
-      data: { tenantId: tenant.id, branchId: branch.id, membershipId: membership.id },
-    });
-    await tx.auditEvent.create({
-      data: {
-        tenantId: tenant.id,
-        userId: input.userId,
-        action: "TENANT_CREATED",
-        entityType: "Tenant",
-        entityId: tenant.id,
-      },
-    });
+      const existing = await tx.tenantMembership.findFirst({
+        where: { userId: input.userId },
+        select: { id: true },
+      });
+      if (existing) return null;
 
-    return { tenantId: tenant.id };
-  }));
+      const tenant = await tx.tenant.create({
+        data: {
+          id: tenantId,
+          name: input.companyName,
+          slug: createSlug(input.companyName),
+          status: "ACTIVE",
+          defaultLanguage: input.defaultLanguage,
+          defaultCurrency: input.defaultCurrency,
+          timeZone: input.timeZone,
+        },
+      });
+
+      const membership = await tx.tenantMembership.create({
+        data: { tenantId: tenant.id, userId: input.userId, role: "OWNER" },
+      });
+
+      const branch = await tx.branch.create({
+        data: { tenantId: tenant.id, name: "Main Branch", slug: "main" },
+      });
+
+      await tx.ledgerAccount.createMany({
+        data: defaultLedgerAccounts.map((account) => ({
+          tenantId: tenant.id,
+          ...account,
+          isSystem: true,
+        })),
+      });
+
+      await tx.branchMembership.create({
+        data: { tenantId: tenant.id, branchId: branch.id, membershipId: membership.id },
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          tenantId: tenant.id,
+          userId: input.userId,
+          action: "TENANT_CREATED",
+          entityType: "Tenant",
+          entityId: tenant.id,
+        },
+      });
+
+      // The conditional update prevents an approval/rejection race. If another
+      // reviewer already changed the application, throwing rolls back every
+      // workspace record created above.
+      const review = await tx.platformCompanyApplication.updateMany({
+        where: { id: input.applicationId, status: "PENDING" },
+        data: {
+          status: "APPROVED",
+          rejectionReason: null,
+          reviewedById: input.reviewedById,
+          reviewedAt: new Date(),
+        },
+      });
+
+      if (review.count !== 1) {
+        throw new CompanyApplicationReviewConflict();
+      }
+
+      return { tenantId: tenant.id };
+    })
+  );
 }
