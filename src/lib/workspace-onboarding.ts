@@ -23,7 +23,7 @@ export class CompanyApplicationReviewConflict extends Error {
 function createSlug(name: string) {
   const base = name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 42) || "travel-agency";
-  return \`\${base}-\${randomUUID().slice(0, 8)}\`;
+  return `${base}-${randomUUID().slice(0, 8)}`;
 }
 
 /**
@@ -39,9 +39,9 @@ export async function createWorkspaceForUser(
   return withTenantRlsContext(
     { userId: input.userId, tenantId },
     () => database.$transaction(async (tx) => {
-      await tx.$queryRaw<{ acquired: boolean }[]>\
-        \`WITH lock_result AS MATERIALIZED (
-          SELECT pg_advisory_xact_lock(hashtextextended(\${input.userId}, 0))
+      await tx.$queryRaw<{ acquired: boolean }[]>\`
+        WITH lock_result AS MATERIALIZED (
+          SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
         )
         SELECT TRUE AS acquired FROM lock_result
       \`;
@@ -94,9 +94,7 @@ export async function createWorkspaceForUser(
         },
       });
 
-      // The conditional update prevents an approval/rejection race. If another
-      // reviewer already changed the application, throwing rolls back every
-      // workspace record created above.
+      // If the application was reviewed concurrently, roll back the workspace.
       const review = await tx.platformCompanyApplication.updateMany({
         where: { id: input.applicationId, status: "PENDING" },
         data: {
