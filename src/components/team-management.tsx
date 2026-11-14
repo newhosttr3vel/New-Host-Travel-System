@@ -44,7 +44,7 @@ export function TeamManagement({ locale, initialMembers }: { locale: Locale; ini
           <button className="btn btn-primary" disabled={busy} type="submit"><UserPlus size={16}/>{busy?(ar?"جارٍ إنشاء الحساب...":"Creating account..."):(ar?"إنشاء حساب الموظف":"Create employee account")}</button>
         </form></div>
       </section>
-      <section className="panel"><div className="panel-header"><span className="card-icon"><Users size={20}/></span><div><h2>{ar?"أعضاء الشركة":"Company members"}</h2><p>{members.length} {ar?"حساب":"accounts"}</p></div><button className="btn btn-secondary" type="button" onClick={refreshMembers} aria-label={ar?"تحديث":"Refresh"}><RefreshCw size={15}/></button></div>
+      <section className="panel"><div className="panel-header"><span className="empty-icon"><Users size={20}/></span><div><h2>{ar?"أعضاء الشركة":"Company members"}</h2><p>{members.length} {ar?"حساب":"accounts"}</p></div><button className="btn btn-secondary" type="button" onClick={refreshMembers} aria-label={ar?"تحديث":"Refresh"}><RefreshCw size={15}/></button></div>
         <div className="panel-body"><table><thead><tr><th>{ar?"الموظف":"Employee"}</th><th>{ar?"الدور":"Role"}</th></tr></thead><tbody>
           {members.map(m=><tr key={m.id}><td><strong>{m.user.name}</strong><div dir="ltr">{m.user.email}</div></td><td>{(labels[m.role]??[m.role,m.role])[ar?0:1]}</td></tr>)}
           {!members.length&&<tr><td colSpan={2}>{ar?"لا يوجد أعضاء بعد.":"No team members yet."}</td></tr>}
