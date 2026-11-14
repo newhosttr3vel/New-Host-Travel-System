@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import {
   ArrowLeft,
@@ -258,6 +259,11 @@ export function AuthForm({ mode, locale }: { mode: "login" | "register"; locale:
               <button type="button" onClick={returnToLogin}>
                 {isArabic ? "العودة لتسجيل الدخول" : "Back to sign in"}
               </button>
+            </>
+          ) : registering ? (
+            <>
+              <span>{t(locale, "haveAccount")}</span>
+              <Link href="/login">{t(locale, "signIn")}</Link>
             </>
           ) : (
             <span>
