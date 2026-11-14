@@ -12,7 +12,7 @@ const modelDelegates = new Set([
   "branch", "branchMembership", "customer", "hotel", "supplier", "reservation",
   "hotelReservationDetail", "hotelReservationRoom", "hotelReservationNightRate", "auditEvent",
   "document", "ledgerAccount", "journalEntry", "journalLine", "invoice", "invoiceLine",
-  "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment"
+  "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment", "platformCompanyApplication"
 ]);
 const tenantModels = new Set([
   "Tenant", "TenantMembership", "Branch", "BranchMembership", "Customer", "Hotel", "Supplier",
