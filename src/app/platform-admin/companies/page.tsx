@@ -1,0 +1,4 @@
+import {redirect} from "next/navigation";
+import {getSession} from "@/lib/tenant-context";
+import {CompanyApplicationsAdmin} from "@/components/company-applications-admin";
+export default async function PlatformCompaniesPage(){const session=await getSession();if(!session)redirect("/login");const allow=new Set((process.env.PLATFORM_ADMIN_EMAILS??"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean));if(!session.user.emailVerified||!allow.has(session.user.email.toLowerCase()))return <main dir="rtl" className="min-h-screen bg-slate-50 p-8"><section className="mx-auto max-w-xl rounded-3xl bg-white p-8 shadow"><h1 className="text-2xl font-bold">غير مصرح بالدخول</h1><p className="mt-3 text-slate-600">هذه الصفحة مخصصة لبريد مدير المنصة الموثّق والمضاف إلى PLATFORM_ADMIN_EMAILS.</p></section></main>;return <CompanyApplicationsAdmin/>;}
