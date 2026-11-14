@@ -6,7 +6,11 @@ datasource db {
   provider = "postgresql"
 }
 
-enum CompanyApplicationStatus { PENDING APPROVED REJECTED }
+enum CompanyApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 
 enum TenantStatus {
   TRIAL
