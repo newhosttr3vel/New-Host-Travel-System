@@ -94,8 +94,8 @@ test("RLS permits owner-managed employee memberships and blocks unauthorized mem
     );
 
     const memberships = await admin.tenantMembership.findMany({
-      where: { userId },
-      select: { tenantId: true, role: true }
+      where: { tenantId: a.id, userId: { in: [userId, otherUserId] } },
+      select: { tenantId: true, userId: true, role: true }
     });
     assert.equal(memberships.length, 2);
     assert.ok(memberships.some((membership) => membership.tenantId === a.id && membership.role === "OWNER"));
