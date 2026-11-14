@@ -34,18 +34,18 @@ export function TeamManagement({ locale, initialMembers }: { locale: Locale; ini
   return <div dir={locale}>
     <div className="page-heading"><div><div className="eyebrow">{ar?"إدارة الوصول والصلاحيات":"ACCESS & PERMISSIONS"}</div><h1 className="page-title">{ar?"إدارة الموظفين":"Team management"}</h1><p className="page-description">{ar?"أضف أعضاء فريقك وحدد دور كل موظف. إنشاء الحسابات متاح لمالك النظام فقط.":"Add team members and assign their roles. Only the system owner can create accounts."}</p></div><div className="page-actions"><span className="btn btn-secondary"><ShieldCheck size={16}/>{ar?"إدارة المالك فقط":"Owner controlled"}</span></div></div>
     <div className="grid gap-5 lg:grid-cols-2">
-      <section className="card"><div className="card-header"><span className="card-icon"><UserPlus size={20}/></span><div><h2>{ar?"إضافة موظف جديد":"Add an employee"}</h2><p>{ar?"بيانات الدخول والدور الوظيفي":"Login details and job role"}</p></div></div>
-        <form onSubmit={submit} className="form-stack">
-          <label>{ar?"اسم الموظف":"Employee name"}<input className="form-input" value={name} onChange={e=>setName(e.target.value)} required minLength={2} maxLength={100} autoComplete="name"/></label>
-          <label>{ar?"البريد الإلكتروني (اسم الدخول)":"Email (login)"}<input className="form-input" type="email" dir="ltr" value={email} onChange={e=>setEmail(e.target.value)} required maxLength={254} autoComplete="off"/></label>
-          <label>{ar?"كلمة المرور المؤقتة":"Temporary password"}<input className="form-input" type="password" dir="ltr" value={password} onChange={e=>setPassword(e.target.value)} required minLength={12} maxLength={128} autoComplete="new-password"/><small>{ar?"12 حرفًا على الأقل. سلّمها للموظف بطريقة آمنة.":"At least 12 characters. Share it with the employee securely."}</small></label>
-          <label>{ar?"الدور الوظيفي":"Role"}<select className="form-input" value={role} onChange={e=>setRole(e.target.value)}>{roles.map(([v,a,e])=><option key={v} value={v}>{ar?a:e}</option>)}</select></label>
-          {error&&<p role="alert" className="form-error">{error}</p>}{success&&<p role="status" className="form-success">{success}</p>}
+      <section className="panel"><div className="panel-header"><span className="empty-icon"><UserPlus size={20}/></span><div><h2>{ar?"إضافة موظف جديد":"Add an employee"}</h2><p>{ar?"بيانات الدخول والدور الوظيفي":"Login details and job role"}</p></div></div>
+        <div className="panel-body"><form onSubmit={submit} className="form-grid" style={{ display: "grid", gap: 14 }}>
+          <label className="field"><span className="field-label">{ar?"اسم الموظف":"Employee name"}</span><input className="input" value={name} onChange={e=>setName(e.target.value)} required minLength={2} maxLength={100} autoComplete="name"/></label>
+          <label className="field"><span className="field-label">{ar?"البريد الإلكتروني (اسم الدخول)":"Email (login)"}</span><input className="input" type="email" dir="ltr" value={email} onChange={e=>setEmail(e.target.value)} required maxLength={254} autoComplete="off"/></label>
+          <label className="field"><span className="field-label">{ar?"كلمة المرور المؤقتة":"Temporary password"}</span><input className="input" type="password" dir="ltr" value={password} onChange={e=>setPassword(e.target.value)} required minLength={12} maxLength={128} autoComplete="new-password"/><small className="customer-secondary">{ar?"12 حرفًا على الأقل. سلّمها للموظف بطريقة آمنة.":"At least 12 characters. Share it with the employee securely."}</small></label>
+          <label className="field"><span className="field-label">{ar?"الدور الوظيفي":"Role"}</span><select className="input" value={role} onChange={e=>setRole(e.target.value)}>{roles.map(([v,a,e])=><option key={v} value={v}>{ar?a:e}</option>)}</select></label>
+          {error&&<div role="alert" className="alert">{error}</div>}{success&&<div role="status" className="alert">{success}</div>}
           <button className="btn btn-primary" disabled={busy} type="submit"><UserPlus size={16}/>{busy?(ar?"جارٍ إنشاء الحساب...":"Creating account..."):(ar?"إنشاء حساب الموظف":"Create employee account")}</button>
-        </form>
+        </form></div>
       </section>
-      <section className="card"><div className="card-header"><span className="card-icon"><Users size={20}/></span><div><h2>{ar?"أعضاء الشركة":"Company members"}</h2><p>{members.length} {ar?"حساب":"accounts"}</p></div><button className="btn btn-secondary" type="button" onClick={refreshMembers} aria-label={ar?"تحديث":"Refresh"}><RefreshCw size={15}/></button></div>
-        <div className="table-wrap"><table><thead><tr><th>{ar?"الموظف":"Employee"}</th><th>{ar?"الدور":"Role"}</th></tr></thead><tbody>
+      <section className="panel"><div className="panel-header"><span className="card-icon"><Users size={20}/></span><div><h2>{ar?"أعضاء الشركة":"Company members"}</h2><p>{members.length} {ar?"حساب":"accounts"}</p></div><button className="btn btn-secondary" type="button" onClick={refreshMembers} aria-label={ar?"تحديث":"Refresh"}><RefreshCw size={15}/></button></div>
+        <div className="panel-body"><table><thead><tr><th>{ar?"الموظف":"Employee"}</th><th>{ar?"الدور":"Role"}</th></tr></thead><tbody>
           {members.map(m=><tr key={m.id}><td><strong>{m.user.name}</strong><div dir="ltr">{m.user.email}</div></td><td>{(labels[m.role]??[m.role,m.role])[ar?0:1]}</td></tr>)}
           {!members.length&&<tr><td colSpan={2}>{ar?"لا يوجد أعضاء بعد.":"No team members yet."}</td></tr>}
         </tbody></table></div>
