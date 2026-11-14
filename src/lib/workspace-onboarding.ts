@@ -39,12 +39,11 @@ export async function createWorkspaceForUser(
   return withTenantRlsContext(
     { userId: input.userId, tenantId },
     () => database.$transaction(async (tx) => {
-      await tx.$queryRaw<{ acquired: boolean }[]>\`
-        WITH lock_result AS MATERIALIZED (
+      await tx.$queryRaw<{ acquired: boolean }[]>        `WITH lock_result AS MATERIALIZED (
           SELECT pg_advisory_xact_lock(hashtextextended(${input.userId}, 0))
         )
         SELECT TRUE AS acquired FROM lock_result
-      \`;
+      `;
 
       const existing = await tx.tenantMembership.findFirst({
         where: { userId: input.userId },
@@ -94,7 +93,6 @@ export async function createWorkspaceForUser(
         },
       });
 
-      // If the application was reviewed concurrently, roll back the workspace.
       const review = await tx.platformCompanyApplication.updateMany({
         where: { id: input.applicationId, status: "PENDING" },
         data: {
