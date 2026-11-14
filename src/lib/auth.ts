@@ -59,11 +59,6 @@ export const auth = betterAuth({
     requireEmailVerification: !isDevelopment,
     minPasswordLength: 12,
     maxPasswordLength: 128,
-    resetPasswordTokenExpiresIn: 60 * 60,
-    revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendAuthEmail(user.email, "reset", url);
-    }
   },
   // Apply stricter limits to password authentication and registration.
   // Production rate limiting is explicitly enabled; local development remains convenient.
