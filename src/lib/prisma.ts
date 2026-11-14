@@ -51,7 +51,8 @@ async function applyQueryScope(tx: AnyRecord, state: RlsState, model: string, ar
   const tenantId = onlyValue(tenantIds, "tenant");
   const userId = onlyValue(userIds, "user");
   if (userId && state.userId && userId !== state.userId &&
-      !((model === "TenantMembership" && operation === "create" && tenantId === state.tenantId) ||\n        (model === "Account" && operation === "create"))) {
+      !((model === "TenantMembership" && operation === "create" && tenantId === state.tenantId) ||
+        (model === "Account" && operation === "create"))) {
     throw new Error("RLS blocked an operation for a different user.");
   }
   if (tenantId && state.tenantId && tenantId !== state.tenantId) {
