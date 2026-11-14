@@ -6,6 +6,8 @@ datasource db {
   provider = "postgresql"
 }
 
+enum CompanyApplicationStatus { PENDING APPROVED REJECTED }
+
 enum TenantStatus {
   TRIAL
   ACTIVE
@@ -117,6 +119,7 @@ model User {
   accounts      Account[]
   memberships   TenantMembership[]
   uploadedDocuments Document[] @relation("DocumentUploader")
+  companyApplication PlatformCompanyApplication?
   @@map("user")
 }
 model Session {
@@ -729,4 +732,25 @@ model SupplierPayment {
   @@index([tenantId, supplierBillId, paymentDate])
   @@index([tenantId, branchId, paymentDate])
   @@map("supplier_payments")
+}
+
+model PlatformCompanyApplication {
+  id              String                   @id @default(cuid())
+  userId          String                   @unique
+  companyName     String
+  legalName       String?
+  country         String
+  city            String
+  phone           String
+  defaultCurrency String                   @default("EGP")
+  defaultLanguage String                   @default("ar")
+  status          CompanyApplicationStatus @default(PENDING)
+  rejectionReason String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([status, createdAt])
+  @@map("platform_company_applications")
 }
