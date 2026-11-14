@@ -28,6 +28,7 @@ test("customer API denies cross-company read, update and archive attempts", {
   const password = "ValidPassword123!";
   let userId: string | undefined;
   let tenantA: string | undefined;
+  let applicationId: string | undefined;
   let tenantB: string | undefined;
 
   try {
@@ -41,6 +42,17 @@ test("customer API denies cross-company read, update and archive attempts", {
     userId = signupBody.user?.id;
     assert.ok(userId, "Better Auth should create the test user");
 
+    const application = await admin.platformCompanyApplication.create({
+      data: {
+        userId,
+        companyName: "API Isolation Tenant A",
+        country: "Egypt",
+        city: "Cairo",
+        phone: "+201000000000",
+      },
+    });
+    applicationId = application.id;
+
     const cookies = signUp.headers.getSetCookie();
     const cookieHeader = cookies.map((value) => value.split(";")[0]).join("; ");
     assert.match(cookieHeader, /better-auth\.session_token=/);
@@ -50,7 +62,9 @@ test("customer API denies cross-company read, update and archive attempts", {
       companyName: "API Isolation Tenant A",
       defaultCurrency: "EGP",
       defaultLanguage: "ar",
-      timeZone: "Africa/Cairo"
+      timeZone: "Africa/Cairo",
+      applicationId,
+      reviewedById: userId
     });
     assert.ok(workspace);
     tenantA = workspace.tenantId;
