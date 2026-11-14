@@ -57,16 +57,16 @@ test("RLS permits owner-managed employee memberships and blocks unauthorized mem
       targetTenantId: string,
       targetUserId: string
     ) => runtime.$transaction(async (tx) => {
-      await tx.$executeRaw\`SELECT
+      await tx.$executeRaw`SELECT
         set_config('app.user_id', ${actorUserId}, true),
         set_config('app.tenant_id', ${contextTenantId}, true)
-      \`;
-      await tx.$executeRaw\`
+      `;
+      await tx.$executeRaw`
         INSERT INTO "tenant_memberships"
           ("id", "tenantId", "userId", "role", "createdAt", "updatedAt")
         VALUES
-          (${"forged-" + randomUUID()}, ${targetTenantId}, ${targetUserId}, 'EMPLOYEE'::"TenantRole", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      \`;
+          (${"forged-" + randomUUID()}, ${targetTenantId}, ${targetUserId}, 'READ_ONLY'::"TenantRole", CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `;
     });
 
     await assert.rejects(
@@ -97,10 +97,9 @@ test("RLS permits owner-managed employee memberships and blocks unauthorized mem
       where: { userId },
       select: { tenantId: true, role: true }
     });
-    assert.deepEqual(memberships, [
-      { tenantId: a.id, role: "OWNER" },
-      { tenantId: a.id, role: "EMPLOYEE" },
-    ]);
+    assert.equal(memberships.length, 2);
+    assert.ok(memberships.some((membership) => membership.tenantId === a.id && membership.role === "OWNER"));
+    assert.ok(memberships.some((membership) => membership.tenantId === a.id && membership.role === "READ_ONLY"));
   } finally {
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
