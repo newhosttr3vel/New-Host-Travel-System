@@ -9,14 +9,14 @@ type AnyRecord = Record<string, unknown>;
 const contextStorage = new AsyncLocalStorage<TenantRlsContext>();
 const modelDelegates = new Set([
   "user", "session", "account", "verification", "rateLimit", "tenant", "tenantMembership",
-  "branch", "branchMembership", "customer", "hotel", "supplier", "reservation",
+  "branch", "branchMembership", "customer", "bookingFile", "hotel", "supplier", "reservation",
   "hotelReservationDetail", "hotelReservationRoom", "hotelReservationNightRate", "auditEvent",
   "document", "ledgerAccount", "journalEntry", "journalLine", "invoice", "invoiceLine",
   "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment"
 ]);
 const tenantModels = new Set([
   "Tenant", "TenantMembership", "Branch", "BranchMembership", "Customer", "Hotel", "Supplier",
-  "Reservation", "HotelReservationDetail", "HotelReservationRoom", "HotelReservationNightRate",
+  "Reservation", "BookingFile", "HotelReservationDetail", "HotelReservationRoom", "HotelReservationNightRate",
   "AuditEvent", "Document", "LedgerAccount", "JournalEntry", "JournalLine", "Invoice",
   "InvoiceLine", "CustomerPayment", "SupplierBill", "SupplierBillLine", "SupplierPayment"
 ]);
