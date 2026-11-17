@@ -186,6 +186,7 @@ model Tenant {
   suppliers       Supplier[]
   hotels          Hotel[]
   reservations    Reservation[]
+  bookingFiles    BookingFile[]
   auditEvents     AuditEvent[]
   ledgerAccounts  LedgerAccount[]
   journalEntries  JournalEntry[]
@@ -223,6 +224,7 @@ model Branch {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   memberships BranchMembership[]
   reservations Reservation[]
+  bookingFiles BookingFile[]
   documents Document[]
   journalEntries JournalEntry[]
   invoices Invoice[]
@@ -263,6 +265,7 @@ model Customer {
   archivedAt   DateTime?
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  bookingFiles  BookingFile[]
   invoices     Invoice[]
   @@unique([id, tenantId])
   @@index([tenantId, archivedAt, name])
@@ -315,6 +318,7 @@ model Reservation {
   customerId  String
   supplierId  String?
   supplierTenantId String?
+  bookingFileId String?
   reference   String
   serviceType ReservationServiceType
   status      ReservationStatus     @default(INQUIRY)
@@ -331,6 +335,7 @@ model Reservation {
   branch      Branch?               @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  bookingFile BookingFile?           @relation(fields: [bookingFileId, tenantId], references: [id, tenantId], onDelete: Restrict)
   invoices      Invoice[]
   supplierBills SupplierBill[]
   hotelDetail HotelReservationDetail?
@@ -339,8 +344,29 @@ model Reservation {
   @@unique([tenantId, reference])
   @@index([tenantId, status, startDate])
   @@index([tenantId, customerId])
+  @@index([tenantId, bookingFileId])
   @@index([tenantId, branchId, status, startDate])
   @@map("reservations")
+}
+
+model BookingFile {
+  id          String   @id @default(cuid())
+  tenantId    String
+  branchId    String?
+  customerId  String
+  reference   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch      Branch?  @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  customer    Customer @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  reservations Reservation[]
+  @@unique([id, tenantId])
+  @@unique([tenantId, reference])
+  @@index([tenantId, customerId, createdAt])
+  @@index([tenantId, branchId, createdAt])
+  @@map("booking_files")
 }
 
 model HotelReservationDetail {
