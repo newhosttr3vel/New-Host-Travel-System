@@ -81,6 +81,8 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
       assert.equal(unchangedEvent?.action, "RLS_TEST_EVENT");
     });
   } finally {
+    if (tenantA) await admin.bookingFile.deleteMany({ where: { tenantId: tenantA } });
+    if (tenantB) await admin.bookingFile.deleteMany({ where: { tenantId: tenantB } });
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });
     if (tenantB) await admin.tenant.delete({ where: { id: tenantB } });
     await admin.user.deleteMany({ where: { id: userId } });
