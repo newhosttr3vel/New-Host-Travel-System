@@ -25,14 +25,25 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
     tenantA = a.id;
     tenantB = b.id;
     await admin.tenantMembership.create({ data: { tenantId: a.id, userId, role: "OWNER" } });
-    await admin.customer.createMany({ data: [
-      { tenantId: a.id, name: "Visible Customer" },
-      { tenantId: b.id, name: "Hidden Customer" }
-    ] });
+    const [customerA, customerB] = await Promise.all([
+      admin.customer.create({ data: { tenantId: a.id, name: "Visible Customer" } }),
+      admin.customer.create({ data: { tenantId: b.id, name: "Hidden Customer" } })
+    ]);
+    await admin.bookingFile.create({
+      data: { tenantId: b.id, customerId: customerB.id, reference: "RLS-HIDDEN-" + suffix }
+    });
 
     await withTenantRlsContext({ userId, tenantId: a.id }, async () => {
       const visible = await prisma.customer.findMany({ where: { tenantId: a.id }, select: { name: true } });
       assert.deepEqual(visible.map((item) => item.name), ["Visible Customer"]);
+      const bookingFile = await prisma.bookingFile.create({
+        data: { tenantId: a.id, customerId: customerA.id, reference: "RLS-VISIBLE-" + suffix }
+      });
+      const visibleFiles = await prisma.bookingFile.findMany({
+        where: { tenantId: a.id },
+        select: { id: true, reference: true }
+      });
+      assert.deepEqual(visibleFiles, [{ id: bookingFile.id, reference: bookingFile.reference }]);
       await assert.rejects(
         prisma.customer.findMany({ where: { tenantId: b.id } }),
         /switch company context/
@@ -40,6 +51,8 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
       await prisma.$transaction(async (tx) => {
         const rawRows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM customers WHERE "tenantId" = ${b.id}`;
         assert.equal(rawRows.length, 0);
+        const hiddenBookingFiles = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM booking_files WHERE "tenantId" = ${b.id}`;
+        assert.equal(hiddenBookingFiles.length, 0);
         await assert.rejects(
           tx.customer.create({ data: { tenantId: b.id, name: "Cross-company insert" } }),
           /switch company context/
