@@ -27,9 +27,15 @@ test("booking files group service reservations without breaking standalone reser
       prisma.customer.create({ data: { tenantId: a.id, type: "CORPORATE", name: "B2B Client A" } }),
       prisma.customer.create({ data: { tenantId: b.id, type: "CORPORATE", name: "B2B Client B" } })
     ]);
-    const [fileA, fileB] = await Promise.all([
+    const customerAOther = await prisma.customer.create({
+      data: { tenantId: a.id, type: "CORPORATE", name: "Different B2B Client A" }
+    });
+    const [fileA, fileAOther, fileB] = await Promise.all([
       prisma.bookingFile.create({
         data: { tenantId: a.id, customerId: customerA.id, reference: "NHT-BF-A-" + suffix }
+      }),
+      prisma.bookingFile.create({
+        data: { tenantId: a.id, customerId: customerAOther.id, reference: "NHT-BF-A2-" + suffix }
       }),
       prisma.bookingFile.create({
         data: { tenantId: b.id, customerId: customerB.id, reference: "NHT-BF-B-" + suffix }
@@ -65,6 +71,16 @@ test("booking files group service reservations without breaking standalone reser
         customerId: customerA.id,
         bookingFileId: fileB.id,
         reference: "NHT-CROSS-TENANT-" + suffix,
+        serviceType: "VISA"
+      }
+    }));
+
+    await assert.rejects(prisma.reservation.create({
+      data: {
+        tenantId: a.id,
+        customerId: customerA.id,
+        bookingFileId: fileAOther.id,
+        reference: "NHT-CROSS-CUSTOMER-" + suffix,
         serviceType: "VISA"
       }
     }));
