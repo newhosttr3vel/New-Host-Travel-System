@@ -11,6 +11,7 @@ CREATE TABLE "booking_files" (
 );
 
 CREATE UNIQUE INDEX "booking_files_id_tenantId_key" ON "booking_files"("id", "tenantId");
+CREATE UNIQUE INDEX "booking_files_id_customerId_tenantId_key" ON "booking_files"("id", "customerId", "tenantId");
 CREATE UNIQUE INDEX "booking_files_tenantId_reference_key" ON "booking_files"("tenantId", "reference");
 CREATE INDEX "booking_files_tenantId_customerId_createdAt_idx" ON "booking_files"("tenantId", "customerId", "createdAt");
 CREATE INDEX "booking_files_tenantId_branchId_createdAt_idx" ON "booking_files"("tenantId", "branchId", "createdAt");
@@ -46,8 +47,8 @@ UPDATE "reservations"
 SET "bookingFileId" = 'bf_' || "id";
 
 ALTER TABLE "reservations"
-  ADD CONSTRAINT "reservations_bookingFileId_tenantId_fkey"
-  FOREIGN KEY ("bookingFileId", "tenantId") REFERENCES "booking_files"("id", "tenantId")
+  ADD CONSTRAINT "reservations_bookingFileId_customerId_tenantId_fkey"
+  FOREIGN KEY ("bookingFileId", "customerId", "tenantId") REFERENCES "booking_files"("id", "customerId", "tenantId")
   ON DELETE RESTRICT ON UPDATE CASCADE;
 
 CREATE INDEX "reservations_tenantId_bookingFileId_idx"
