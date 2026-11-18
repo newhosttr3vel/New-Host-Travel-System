@@ -335,7 +335,7 @@ model Reservation {
   branch      Branch?               @relation(fields: [branchId, tenantId], references: [id, tenantId], onDelete: Restrict)
   customer    Customer              @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   supplier    Supplier?             @relation(fields: [supplierId, tenantId], references: [id, tenantId], onDelete: Restrict)
-  bookingFile BookingFile?           @relation(fields: [bookingFileId, tenantId], references: [id, tenantId], onDelete: Restrict)
+  bookingFile BookingFile?           @relation(fields: [bookingFileId, customerId, tenantId], references: [id, customerId, tenantId], onDelete: Restrict)
   invoices      Invoice[]
   supplierBills SupplierBill[]
   hotelDetail HotelReservationDetail?
@@ -363,6 +363,7 @@ model BookingFile {
   customer    Customer @relation(fields: [customerId, tenantId], references: [id, tenantId], onDelete: Restrict)
   reservations Reservation[]
   @@unique([id, tenantId])
+  @@unique([id, customerId, tenantId])
   @@unique([tenantId, reference])
   @@index([tenantId, customerId, createdAt])
   @@index([tenantId, branchId, createdAt])
