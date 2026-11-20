@@ -32,6 +32,7 @@ jobs:
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:3000
       RUN_DB_TESTS: "true"
+      RUN_MIGRATION_BACKFILL_TESTS: "true"
     steps:
       - uses: actions/checkout@v7
         with:
