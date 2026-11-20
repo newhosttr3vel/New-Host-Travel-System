@@ -127,23 +127,74 @@ test("booking-file migration backfills populated legacy reservations without cha
       ]
     );
 
-    const invoiceJournalId = "legacy-invoice-je-" + suffix;
-    const supplierJournalId = "legacy-supplier-je-" + suffix;
+    const arAccountId = "legacy-ar-" + suffix;
+    const revenueAccountId = "legacy-revenue-" + suffix;
+    const expenseAccountId = "legacy-expense-" + suffix;
+    const apAccountId = "legacy-ap-" + suffix;
     await legacy.query(
-      `INSERT INTO "journal_entries" ("id", "tenantId", "branchId", "reference", "entryDate", "description")
-       VALUES ($1, $2, $3, $4, $5, $6), ($7, $2, $3, $8, $5, $9)`,
+      `INSERT INTO "ledger_accounts" (
+        "id", "tenantId", "code", "name", "nameEn", "type", "updatedAt"
+      ) VALUES
+        ($1, $2, $3, $4, $5, 'ASSET', $6),
+        ($7, $2, $8, $9, $10, 'REVENUE', $6),
+        ($11, $2, $12, $13, $14, 'EXPENSE', $6),
+        ($15, $2, $16, $17, $18, 'LIABILITY', $6)`,
       [
-        invoiceJournalId,
-        tenantId,
-        branchId,
-        "LEGACY-JE-AR-" + suffix,
-        now,
-        "Legacy customer invoice journal",
-        supplierJournalId,
-        "LEGACY-JE-AP-" + suffix,
-        "Legacy supplier bill journal"
+        arAccountId, tenantId, "L1100-" + suffix, "العملاء - مدينون", "Accounts receivable", now,
+        revenueAccountId, "L4000-" + suffix, "إيرادات خدمات السفر", "Travel service revenue",
+        expenseAccountId, "L5000-" + suffix, "تكلفة خدمات السفر", "Travel service expense",
+        apAccountId, "L2000-" + suffix, "الموردون - دائنون", "Accounts payable"
       ]
     );
+
+    const invoiceJournalId = "legacy-invoice-je-" + suffix;
+    const supplierJournalId = "legacy-supplier-je-" + suffix;
+    await legacy.query("BEGIN");
+    try {
+      await legacy.query(
+        `INSERT INTO "journal_entries" ("id", "tenantId", "branchId", "reference", "entryDate", "description")
+         VALUES ($1, $2, $3, $4, $5, $6), ($7, $2, $3, $8, $5, $9)`,
+        [
+          invoiceJournalId,
+          tenantId,
+          branchId,
+          "LEGACY-JE-AR-" + suffix,
+          now,
+          "Legacy customer invoice journal",
+          supplierJournalId,
+          "LEGACY-JE-AP-" + suffix,
+          "Legacy supplier bill journal"
+        ]
+      );
+      await legacy.query(
+        `INSERT INTO "journal_lines" (
+          "id", "tenantId", "journalEntryId", "accountId", "memo",
+          "debit", "credit", "baseDebit", "baseCredit"
+        ) VALUES
+          ($1, $2, $3, $4, 'Accounts receivable', 5200, 0, 5200, 0),
+          ($5, $2, $3, $6, 'Travel service revenue', 0, 5200, 0, 5200),
+          ($7, $2, $8, $9, 'Travel service expense', 4100, 0, 4100, 0),
+          ($10, $2, $8, $11, 'Accounts payable', 0, 4100, 0, 4100)`,
+        [
+          "legacy-ar-line-" + suffix,
+          tenantId,
+          invoiceJournalId,
+          arAccountId,
+          "legacy-revenue-line-" + suffix,
+          revenueAccountId,
+          "legacy-expense-line-" + suffix,
+          supplierJournalId,
+          expenseAccountId,
+          "legacy-ap-line-" + suffix,
+          apAccountId
+        ]
+      );
+      await legacy.query("COMMIT");
+    } catch (error) {
+      await legacy.query("ROLLBACK");
+      throw error;
+    }
+
     const invoiceId = "legacy-invoice-" + suffix;
     const supplierBillId = "legacy-supplier-bill-" + suffix;
     await legacy.query(
