@@ -238,7 +238,7 @@ export async function POST(request: Request) {
     }
 
     const dateStamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-    const bookingFileReference = \`NHT-BF-\${dateStamp}-\${randomUUID().slice(0, 8).toUpperCase()}\`;
+    const bookingFileReference = "NHT-BF-" + dateStamp + "-" + randomUUID().slice(0, 8).toUpperCase();
     const bookingFile = await tx.bookingFile.create({
       data: {
         tenantId: access.membership.tenantId,
@@ -252,7 +252,7 @@ export async function POST(request: Request) {
     for (const { service, hotelPricing } of preparedServices) {
       const supplierId = service.supplierId || null;
       const hotel = service.hotelDetails ? hotelsById.get(service.hotelDetails.hotelId) : null;
-      const reference = \`NHT-\${dateStamp}-\${randomUUID().slice(0, 8).toUpperCase()}\`;
+      const reference = "NHT-" + dateStamp + "-" + randomUUID().slice(0, 8).toUpperCase();
       const created = await tx.reservation.create({
         data: {
           tenantId: access.membership.tenantId,
