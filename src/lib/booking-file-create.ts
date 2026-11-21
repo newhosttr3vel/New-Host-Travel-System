@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { hotelReservationDetailsSchema } from "@/lib/hotel-pricing";
 
-const dateOnly = z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).refine((value) => {
+const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(value + "T00:00:00.000Z");
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 });
 const optionalDate = z.union([dateOnly, z.literal("")]).optional();
-const money = z.string().regex(/^(?:0|[1-9]\\d{0,11})(?:\\.\\d{1,2})?$/);
+const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
 
 export const bookingFileServiceSchema = z.object({
   supplierId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
@@ -47,5 +47,5 @@ export type BookingFileCreateInput = z.infer<typeof bookingFileCreateSchema>;
 export type BookingFileServiceInput = z.infer<typeof bookingFileServiceSchema>;
 
 export function asBookingDate(value: string | undefined): Date | null {
-  return value ? new Date(value + "T12:00:00.000Z") : null;
+  return value && value.length > 0 ? new Date(value + "T12:00:00.000Z") : null;
 }
