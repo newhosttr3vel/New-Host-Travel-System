@@ -19,27 +19,28 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
       data: { name: "Booking File Create Tenant", slug: "booking-file-create-" + suffix }
     });
     tenantId = tenant.id;
+    const currentTenantId = tenant.id;
 
     const [customer, otherCustomer] = await Promise.all([
       prisma.customer.create({
-        data: { tenantId, type: "CORPORATE", name: "Booking File B2B Customer" }
+        data: { tenantId: currentTenantId, type: "CORPORATE", name: "Booking File B2B Customer" }
       }),
       prisma.customer.create({
-        data: { tenantId, type: "CORPORATE", name: "Different B2B Customer" }
+        data: { tenantId: currentTenantId, type: "CORPORATE", name: "Different B2B Customer" }
       })
     ]);
 
     const successfulReference = "NHT-BF-CREATE-" + suffix;
     const created = await prisma.$transaction(async (tx) => {
       const file = await tx.bookingFile.create({
-        data: { tenantId, customerId: customer.id, reference: successfulReference }
+        data: { tenantId: currentTenantId, customerId: customer.id, reference: successfulReference }
       });
       const services = [];
       const serviceTypes = ["HOTEL", "FLIGHT", "UMRAH_PACKAGE"] as const;
       for (const [index, serviceType] of serviceTypes.entries()) {
         services.push(await tx.reservation.create({
           data: {
-            tenantId,
+            tenantId: currentTenantId,
             customerId: customer.id,
             bookingFileId: file.id,
             reference: "NHT-BF-SVC-" + index + "-" + suffix,
@@ -63,7 +64,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
     const failedReference = "NHT-BF-ROLLBACK-" + suffix;
     await assert.rejects(prisma.$transaction(async (tx) => {
       const file = await tx.bookingFile.create({
-        data: { tenantId, customerId: customer.id, reference: failedReference }
+        data: { tenantId: currentTenantId, customerId: customer.id, reference: failedReference }
       });
       await tx.reservation.create({
         data: {
@@ -77,7 +78,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
     }));
 
     const rolledBackFile = await prisma.bookingFile.findFirst({
-      where: { tenantId, reference: failedReference },
+      where: { tenantId: currentTenantId, reference: failedReference },
       select: { id: true }
     });
     assert.equal(rolledBackFile, null, "A failed service insert must roll back the master booking file.");
