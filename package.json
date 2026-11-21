@@ -54,6 +54,7 @@
     "typescript": "^5.9.3"
   },
   "overrides": {
-    "minimatch": "11.0.4"
+    "minimatch": "11.0.4",
+    "effect": "3.22.1"
   }
 }
