@@ -35,7 +35,8 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         data: { tenantId, customerId: customer.id, reference: successfulReference }
       });
       const services = [];
-      for (const [index, serviceType] of ["HOTEL", "FLIGHT", "UMRAH_PACKAGE"] as const.entries()) {
+      const serviceTypes = ["HOTEL", "FLIGHT", "UMRAH_PACKAGE"] as const;
+      for (const [index, serviceType] of serviceTypes.entries()) {
         services.push(await tx.reservation.create({
           data: {
             tenantId,
