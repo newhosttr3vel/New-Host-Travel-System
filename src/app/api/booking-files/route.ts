@@ -146,6 +146,7 @@ export async function POST(request: Request) {
     service: BookingFileServiceInput;
     hotelPricing: ReturnType<typeof normalizeHotelReservation> | null;
   }> = [];
+  let totalHotelRoomNights = 0;
 
   for (const service of input.services) {
     let hotelPricing: ReturnType<typeof normalizeHotelReservation> | null = null;
@@ -156,6 +157,12 @@ export async function POST(request: Request) {
         return Response.json({
           error: error instanceof Error ? error.message : "INVALID_HOTEL_PRICING"
         }, { status: 400 });
+      }
+    }
+    if (hotelPricing) {
+      totalHotelRoomNights += hotelPricing.totalRoomNights;
+      if (totalHotelRoomNights > 3650) {
+        return Response.json({ error: "BOOKING_FILE_HOTEL_ROOM_NIGHT_LIMIT_EXCEEDED" }, { status: 400 });
       }
     }
     preparedServices.push({ service, hotelPricing });
