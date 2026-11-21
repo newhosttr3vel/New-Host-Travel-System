@@ -68,7 +68,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
       });
       await tx.reservation.create({
         data: {
-          tenantId,
+          tenantId: currentTenantId,
           customerId: otherCustomer.id,
           bookingFileId: file.id,
           reference: "NHT-BF-CROSS-CUSTOMER-" + suffix,
