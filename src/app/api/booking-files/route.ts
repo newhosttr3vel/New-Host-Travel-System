@@ -173,7 +173,12 @@ export async function POST(request: Request) {
   const outcome = await runReservationTransaction("create-booking-file", () => prisma.$transaction(async (tx) => {
     const tenantId = access.membership.tenantId;
     const lockKey = `booking-file:${tenantId}:${input.idempotencyKey}`;
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+    await tx.$queryRaw<{ acquired: boolean }[]>`
+        WITH lock_result AS MATERIALIZED (
+          SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+        )
+        SELECT TRUE AS acquired FROM lock_result
+      `;
 
     const previous = await tx.bookingFile.findFirst({
       where: { tenantId, idempotencyKey: input.idempotencyKey },
