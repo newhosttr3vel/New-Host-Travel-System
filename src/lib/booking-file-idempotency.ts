@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { BookingFileCreateInput } from "@/lib/booking-file-create";
+import type { BookingFileCreateInput } from "./booking-file-create";
 
 export function bookingFileRequestHash(input: BookingFileCreateInput): string {
   const canonicalPayload = Object.fromEntries(
