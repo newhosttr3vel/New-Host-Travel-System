@@ -6,6 +6,7 @@ import { activateTenantRequestContext, requireTenantPermission } from "@/lib/api
 import { branchScopeWhere, canAccessBranch } from "@/lib/branch-access";
 import { hasPermission } from "@/lib/permissions";
 import { bookingFileCreateSchema, asBookingDate, type BookingFileServiceInput } from "@/lib/booking-file-create";
+import { bookingFileRequestHash } from "@/lib/booking-file-idempotency";
 import { normalizeHotelReservation } from "@/lib/hotel-pricing";
 import { runReservationTransaction } from "@/lib/reservation-errors";
 import { bookingFileViewInclude, serializeBookingFile } from "@/lib/booking-file-view";
@@ -141,6 +142,7 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
+  const requestHash = bookingFileRequestHash(input);
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
   const preparedServices: Array<{
     service: BookingFileServiceInput;
@@ -169,6 +171,22 @@ export async function POST(request: Request) {
   }
 
   const outcome = await runReservationTransaction("create-booking-file", () => prisma.$transaction(async (tx) => {
+    const tenantId = access.membership.tenantId;
+    const lockKey = `booking-file:${tenantId}:${input.idempotencyKey}`;
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+
+    const previous = await tx.bookingFile.findFirst({
+      where: { tenantId, idempotencyKey: input.idempotencyKey },
+      include: bookingFileViewInclude
+    });
+    if (previous) {
+      if (!previous.branchId || !canAccessBranch(access.membership, previous.branchId)) {
+        return { error: "IDEMPOTENCY_KEY_SCOPE_CONFLICT" as const };
+      }
+      if (previous.requestHash !== requestHash) return { error: "IDEMPOTENCY_KEY_REUSED" as const };
+      return { item: previous, replay: true as const };
+    }
+
     const assignedBranchIds = access.membership.branchAssignments.map((item) => item.branchId);
     const isAdministrator = access.membership.role === "OWNER" || access.membership.role === "ADMINISTRATOR";
     const requestedBranchId = input.branchId ?? (isAdministrator ? undefined : assignedBranchIds[0]);
@@ -244,7 +262,9 @@ export async function POST(request: Request) {
         tenantId: access.membership.tenantId,
         branchId: branch.id,
         customerId: customer.id,
-        reference: bookingFileReference
+        reference: bookingFileReference,
+        idempotencyKey: input.idempotencyKey,
+        requestHash
       },
       select: { id: true, reference: true }
     });
@@ -317,17 +337,21 @@ export async function POST(request: Request) {
       include: bookingFileViewInclude
     });
     if (!item) throw new Error("CREATED_BOOKING_FILE_NOT_FOUND");
-    return { item };
+    return { item, replay: false as const };
   }));
 
   if (!outcome.ok) return outcome.response;
   const result = outcome.value;
   if ("error" in result) {
+    const isConflict = result.error === "IDEMPOTENCY_KEY_REUSED" || result.error === "IDEMPOTENCY_KEY_SCOPE_CONFLICT";
     return Response.json(
       { error: result.error },
-      { status: result.error === "BRANCH_NOT_ASSIGNED" ? 403 : 400 }
+      { status: result.error === "BRANCH_NOT_ASSIGNED" ? 403 : isConflict ? 409 : 400 }
     );
   }
 
-  return Response.json({ item: serializeBookingFile(result.item, canReadCosts) }, { status: 201 });
+  return Response.json(
+    { item: serializeBookingFile(result.item, canReadCosts), replay: result.replay },
+    { status: result.replay ? 200 : 201 }
+  );
 }
