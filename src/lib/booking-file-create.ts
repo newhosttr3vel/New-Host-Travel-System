@@ -39,6 +39,7 @@ export const bookingFileServiceSchema = z.object({
 
 export const bookingFileCreateSchema = z.object({
   customerId: z.string().trim().min(1).max(80),
+  idempotencyKey: z.string().uuid(),
   branchId: z.string().trim().min(1).max(80).optional(),
   services: z.array(bookingFileServiceSchema).min(1).max(20)
 });
