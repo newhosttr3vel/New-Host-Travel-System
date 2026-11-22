@@ -125,7 +125,12 @@ test("booking-file idempotency serializes retries and is isolated by tenant", {
       hash: string
     ) => prisma.$transaction(async (tx) => {
       const lockKey = "booking-file:" + tenantId + ":" + idempotencyKey;
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+      await tx.$queryRaw<{ acquired: boolean }[]>`
+        WITH lock_result AS MATERIALIZED (
+          SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
+        )
+        SELECT TRUE AS acquired FROM lock_result
+      `;
       const previous = await tx.bookingFile.findFirst({
         where: { tenantId, idempotencyKey }
       });
