@@ -20,12 +20,15 @@ test("booking-file input accepts multiple service lines and applies safe financi
 });
 
 test("booking-file input requires at least one and allows no more than twenty services", () => {
-  assert.equal(bookingFileCreateSchema.safeParse({ customerId: "customer-1",
-    idempotencyKey, services: [] }).success, false);
+  assert.equal(bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: []
+  }).success, false);
   assert.equal(
     bookingFileCreateSchema.safeParse({
       customerId: "customer-1",
-    idempotencyKey,
+      idempotencyKey,
       services: Array.from({ length: 21 }, () => visaService)
     }).success,
     false
@@ -87,7 +90,6 @@ test("empty optional date values normalize to null instead of an invalid Date", 
   assert.equal(asBookingDate(undefined), null);
   assert.equal(asBookingDate("2026-12-10")?.toISOString(), "2026-12-10T12:00:00.000Z");
 });
-
 
 test("booking-file creation requires a valid UUID idempotency key", () => {
   assert.equal(bookingFileCreateSchema.safeParse({
