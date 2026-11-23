@@ -144,32 +144,6 @@ export async function POST(request: Request) {
   const input = parsed.data;
   const requestHash = bookingFileRequestHash(input);
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
-  const preparedServices: Array<{
-    service: BookingFileServiceInput;
-    hotelPricing: ReturnType<typeof normalizeHotelReservation> | null;
-  }> = [];
-  let totalHotelRoomNights = 0;
-
-  for (const service of input.services) {
-    let hotelPricing: ReturnType<typeof normalizeHotelReservation> | null = null;
-    if (service.serviceType === "HOTEL" && service.hotelDetails && service.startDate && service.endDate) {
-      try {
-        hotelPricing = normalizeHotelReservation(service.hotelDetails, service.startDate, service.endDate, canReadCosts);
-      } catch (error) {
-        return Response.json({
-          error: error instanceof Error ? error.message : "INVALID_HOTEL_PRICING"
-        }, { status: 400 });
-      }
-    }
-    if (hotelPricing) {
-      totalHotelRoomNights += hotelPricing.totalRoomNights;
-      if (totalHotelRoomNights > 3650) {
-        return Response.json({ error: "BOOKING_FILE_HOTEL_ROOM_NIGHT_LIMIT_EXCEEDED" }, { status: 400 });
-      }
-    }
-    preparedServices.push({ service, hotelPricing });
-  }
-
   const outcome = await runReservationTransaction("create-booking-file", () => prisma.$transaction(async (tx) => {
     const tenantId = access.membership.tenantId;
     const lockKey = `booking-file:${tenantId}:${input.idempotencyKey}`;
@@ -190,6 +164,33 @@ export async function POST(request: Request) {
       }
       if (previous.requestHash !== requestHash) return { error: "IDEMPOTENCY_KEY_REUSED" as const };
       return { item: previous, replay: true as const };
+    }
+
+    // Resolve a replay before recalculating mutable service pricing rules. A request
+    // that already committed must remain replayable even if pricing configuration
+    // changes before the client retries after a network timeout.
+    const preparedServices: Array<{
+      service: BookingFileServiceInput;
+      hotelPricing: ReturnType<typeof normalizeHotelReservation> | null;
+    }> = [];
+    let totalHotelRoomNights = 0;
+
+    for (const service of input.services) {
+      let hotelPricing: ReturnType<typeof normalizeHotelReservation> | null = null;
+      if (service.serviceType === "HOTEL" && service.hotelDetails && service.startDate && service.endDate) {
+        try {
+          hotelPricing = normalizeHotelReservation(service.hotelDetails, service.startDate, service.endDate, canReadCosts);
+        } catch (error) {
+          return { error: error instanceof Error ? error.message : "INVALID_HOTEL_PRICING" };
+        }
+      }
+      if (hotelPricing) {
+        totalHotelRoomNights += hotelPricing.totalRoomNights;
+        if (totalHotelRoomNights > 3650) {
+          return { error: "BOOKING_FILE_HOTEL_ROOM_NIGHT_LIMIT_EXCEEDED" as const };
+        }
+      }
+      preparedServices.push({ service, hotelPricing });
     }
 
     const assignedBranchIds = access.membership.branchAssignments.map((item) => item.branchId);
