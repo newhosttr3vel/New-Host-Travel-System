@@ -355,6 +355,8 @@ model BookingFile {
   branchId    String?
   customerId  String
   reference   String
+  idempotencyKey String?
+  requestHash String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   archivedAt  DateTime?
@@ -365,6 +367,7 @@ model BookingFile {
   @@unique([id, tenantId])
   @@unique([id, customerId, tenantId])
   @@unique([tenantId, reference])
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId, customerId, createdAt])
   @@index([tenantId, branchId, createdAt])
   @@map("booking_files")
