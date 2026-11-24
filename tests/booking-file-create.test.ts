@@ -4,13 +4,13 @@ import { asBookingDate, bookingFileCreateSchema } from "../src/lib/booking-file-
 import { bookingFileRequestHash } from "../src/lib/booking-file-idempotency";
 
 const idempotencyKey = "11111111-1111-4111-8111-111111111111";
-const visaService = { serviceType: "VISA" as const };
+const genericService = { serviceType: "OTHER" as const };
 
 test("booking-file input accepts multiple service lines and applies safe financial defaults", () => {
   const parsed = bookingFileCreateSchema.parse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [visaService, { serviceType: "UMRAH_PACKAGE", currency: "SAR", saleAmount: "2500.00" }]
+    services: [genericService, { serviceType: "UMRAH_PACKAGE", currency: "SAR", saleAmount: "2500.00" }]
   });
 
   assert.equal(parsed.services.length, 2);
@@ -29,7 +29,7 @@ test("booking-file input requires at least one and allows no more than twenty se
     bookingFileCreateSchema.safeParse({
       customerId: "customer-1",
       idempotencyKey,
-      services: Array.from({ length: 21 }, () => visaService)
+      services: Array.from({ length: 21 }, () => genericService)
     }).success,
     false
   );
@@ -39,7 +39,7 @@ test("booking-file service dates reject an end date earlier than the start date"
   const parsed = bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [{ serviceType: "VISA", startDate: "2026-12-10", endDate: "2026-12-09" }]
+    services: [{ serviceType: "OTHER", startDate: "2026-12-10", endDate: "2026-12-09" }]
   });
   assert.equal(parsed.success, false);
 });
@@ -255,16 +255,16 @@ test("booking-file creation requires a valid UUID idempotency key", () => {
   assert.equal(bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [visaService]
+    services: [genericService]
   }).success, true);
   assert.equal(bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
-    services: [visaService]
+    services: [genericService]
   }).success, false);
   assert.equal(bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey: "not-a-uuid",
-    services: [visaService]
+    services: [genericService]
   }).success, false);
 });
 
@@ -272,10 +272,10 @@ test("booking-file request hashes ignore the idempotency key and normalize paylo
   const first = bookingFileCreateSchema.parse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [visaService]
+    services: [genericService]
   });
   const second = bookingFileCreateSchema.parse({
-    services: [visaService],
+    services: [genericService],
     idempotencyKey: "22222222-2222-4222-8222-222222222222",
     customerId: "customer-1"
   });
