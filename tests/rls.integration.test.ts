@@ -101,6 +101,32 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
       createVisaDetail(b.id, visaReservationB.id)
     ]);
 
+    const [packageReservationA, packageReservationB] = await Promise.all([
+      admin.reservation.create({
+        data: { tenantId: a.id, customerId: customerA.id, reference: "RLS-PACKAGE-A-" + suffix, serviceType: "UMRAH_PACKAGE" }
+      }),
+      admin.reservation.create({
+        data: { tenantId: b.id, customerId: customerB.id, reference: "RLS-PACKAGE-B-" + suffix, serviceType: "UMRAH_PACKAGE" }
+      })
+    ]);
+    const createPackageDetail = (tenantId: string, reservationId: string, packageName: string) =>
+      admin.pilgrimagePackageReservationDetail.create({
+        data: {
+          tenantId,
+          reservationId,
+          packageType: "UMRAH",
+          packageName,
+          departureCity: "Cairo",
+          departureDate: new Date("2026-12-10T12:00:00.000Z"),
+          returnDate: new Date("2026-12-20T12:00:00.000Z"),
+          travellers: { create: [{ fullName: "RLS Pilgrim", nationality: "EG" }] }
+        }
+      });
+    await Promise.all([
+      createPackageDetail(a.id, packageReservationA.id, "Tenant A Umrah"),
+      createPackageDetail(b.id, packageReservationB.id, "Tenant B Umrah")
+    ]);
+
     await withTenantRlsContext({ userId, tenantId: a.id }, async () => {
       const visible = await prisma.customer.findMany({ where: { tenantId: a.id }, select: { name: true } });
       assert.deepEqual(visible.map((item) => item.name), ["Visible Customer"]);
@@ -138,6 +164,16 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
         select: { fullName: true }
       });
       assert.deepEqual(visibleVisaApplicants.map((item) => item.fullName), ["RLS Visa Applicant"]);
+      const visiblePackages = await prisma.pilgrimagePackageReservationDetail.findMany({
+        where: { tenantId: a.id },
+        select: { packageName: true }
+      });
+      assert.deepEqual(visiblePackages.map((item) => item.packageName), ["Tenant A Umrah"]);
+      const visiblePilgrims = await prisma.pilgrimagePackageTraveller.findMany({
+        where: { tenantId: a.id },
+        select: { fullName: true }
+      });
+      assert.deepEqual(visiblePilgrims.map((item) => item.fullName), ["RLS Pilgrim"]);
 
       await assert.rejects(
         prisma.customer.findMany({ where: { tenantId: b.id } }),
@@ -158,6 +194,10 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
         assert.equal(hiddenVisaDetails.length, 0);
         const hiddenVisaApplicants = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM visa_applicants WHERE "tenantId" = ${b.id}`;
         assert.equal(hiddenVisaApplicants.length, 0);
+        const hiddenPackages = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM pilgrimage_package_reservation_details WHERE "tenantId" = ${b.id}`;
+        assert.equal(hiddenPackages.length, 0);
+        const hiddenPilgrims = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM pilgrimage_package_travellers WHERE "tenantId" = ${b.id}`;
+        assert.equal(hiddenPilgrims.length, 0);
         await assert.rejects(
           tx.customer.create({ data: { tenantId: b.id, name: "Cross-company insert" } }),
           /switch company context/
