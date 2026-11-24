@@ -61,6 +61,25 @@ enum ReservationStatus {
   REFUNDED
 }
 
+enum FlightPassengerType {
+  ADULT
+  CHILD
+  INFANT
+}
+
+enum FlightCabinClass {
+  ECONOMY
+  PREMIUM_ECONOMY
+  BUSINESS
+  FIRST
+}
+
+enum FlightTicketStatus {
+  PENDING
+  ISSUED
+  VOIDED
+}
+
 enum LedgerAccountType {
   ASSET
   LIABILITY
@@ -195,6 +214,9 @@ model Tenant {
   supplierBills    SupplierBill[]
   supplierPayments SupplierPayment[]
   hotelReservationDetails HotelReservationDetail[]
+  flightReservationDetails FlightReservationDetail[]
+  flightSegments FlightSegment[]
+  flightPassengers FlightPassenger[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -339,6 +361,7 @@ model Reservation {
   invoices      Invoice[]
   supplierBills SupplierBill[]
   hotelDetail HotelReservationDetail?
+  flightDetail FlightReservationDetail?
   documents   Document[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
@@ -419,6 +442,65 @@ model HotelReservationDetail {
   @@index([tenantId, fileNo])
   @@index([tenantId, hotelName])
   @@map("hotel_reservation_details")
+}
+
+model FlightReservationDetail {
+  id                String   @id @default(cuid())
+  tenantId          String
+  reservationId     String
+  bookingReference  String?
+  ticketingDeadline DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  tenant            Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservation       Reservation @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  segments          FlightSegment[]
+  passengers        FlightPassenger[]
+  @@unique([id, tenantId])
+  @@unique([reservationId, tenantId])
+  @@index([tenantId, bookingReference])
+  @@map("flight_reservation_details")
+}
+
+model FlightSegment {
+  id              String          @id @default(cuid())
+  tenantId        String
+  flightDetailId  String
+  segmentOrder    Int
+  carrierCode     String
+  flightNumber    String
+  originCode      String
+  destinationCode String
+  departureAt     DateTime
+  arrivalAt       DateTime
+  cabinClass      FlightCabinClass @default(ECONOMY)
+  baggageAllowance String?
+  createdAt       DateTime        @default(now())
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  flightDetail    FlightReservationDetail @relation(fields: [flightDetailId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  @@unique([id, tenantId])
+  @@unique([tenantId, flightDetailId, segmentOrder])
+  @@index([tenantId, departureAt])
+  @@map("flight_segments")
+}
+
+model FlightPassenger {
+  id             String              @id @default(cuid())
+  tenantId       String
+  flightDetailId String
+  fullName       String
+  passengerType  FlightPassengerType @default(ADULT)
+  nationality    String?
+  ticketNumber   String?
+  ticketStatus   FlightTicketStatus  @default(PENDING)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  flightDetail   FlightReservationDetail @relation(fields: [flightDetailId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  @@unique([id, tenantId])
+  @@index([tenantId, flightDetailId, fullName])
+  @@index([tenantId, ticketStatus])
+  @@map("flight_passengers")
 }
 
 model HotelReservationRoom {

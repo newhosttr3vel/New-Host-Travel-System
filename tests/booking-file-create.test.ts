@@ -53,11 +53,106 @@ test("hotel services require a hotel supplier, stay dates and hotel details", ()
   assert.equal(parsed.success, false);
 });
 
-test("flight services require an airline supplier", () => {
+test("flight services require an airline supplier and a complete flight manifest", () => {
   const parsed = bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey,
     services: [{ serviceType: "FLIGHT" }]
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("flight details validate segments, passengers and ticket status", () => {
+  const validFlight = {
+    serviceType: "FLIGHT",
+    supplierId: "airline-supplier-1",
+    flightDetails: {
+      bookingReference: "ABC123",
+      segments: [{
+        carrierCode: "MS",
+        flightNumber: "985",
+        originCode: "CAI",
+        destinationCode: "JED",
+        departureAt: "2026-12-20T08:00:00+02:00",
+        arrivalAt: "2026-12-20T12:00:00+03:00"
+      }],
+      passengers: [{ fullName: "TEST PASSENGER", passengerType: "ADULT" }]
+    }
+  };
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [validFlight]
+  });
+  assert.equal(parsed.success, true);
+  if (parsed.success) {
+    const flight = parsed.data.services[0];
+    assert.equal(flight?.serviceType, "FLIGHT");
+    if (flight?.serviceType === "FLIGHT") {
+      assert.equal(flight.flightDetails?.segments[0]?.cabinClass, "ECONOMY");
+      assert.equal(flight.flightDetails?.passengers[0]?.ticketStatus, "PENDING");
+    }
+  }
+});
+
+test("flight details reject invalid times and issued tickets without numbers", () => {
+  const baseFlight = {
+    serviceType: "FLIGHT",
+    supplierId: "airline-supplier-1",
+    flightDetails: {
+      segments: [{
+        carrierCode: "MS",
+        flightNumber: "985",
+        originCode: "CAI",
+        destinationCode: "JED",
+        departureAt: "2026-12-20T08:00:00+02:00",
+        arrivalAt: "2026-12-20T12:00:00+03:00"
+      }],
+      passengers: [{ fullName: "TEST PASSENGER", ticketStatus: "ISSUED" }]
+    }
+  };
+  assert.equal(bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [baseFlight]
+  }).success, false);
+
+  const invalidTime = {
+    ...baseFlight,
+    flightDetails: {
+      ...baseFlight.flightDetails,
+      passengers: [{ fullName: "TEST PASSENGER" }],
+      segments: [{
+        ...baseFlight.flightDetails.segments[0],
+        arrivalAt: "2026-12-20T07:00:00+02:00"
+      }]
+    }
+  };
+  assert.equal(bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [invalidTime]
+  }).success, false);
+});
+
+test("flight details cannot be attached to non-flight services", () => {
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [{
+      serviceType: "VISA",
+      flightDetails: {
+        segments: [{
+          carrierCode: "MS",
+          flightNumber: "985",
+          originCode: "CAI",
+          destinationCode: "JED",
+          departureAt: "2026-12-20T08:00:00+02:00",
+          arrivalAt: "2026-12-20T12:00:00+03:00"
+        }],
+        passengers: [{ fullName: "TEST PASSENGER" }]
+      }
+    }]
   });
   assert.equal(parsed.success, false);
 });

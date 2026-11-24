@@ -67,6 +67,37 @@ function hotelDetailsCreateData(
   };
 }
 
+function flightDetailsCreateData(
+  input: NonNullable<BookingFileServiceInput["flightDetails"]>
+): Prisma.FlightReservationDetailUncheckedCreateWithoutReservationInput {
+  return {
+    bookingReference: input.bookingReference || null,
+    ticketingDeadline: input.ticketingDeadline ? new Date(input.ticketingDeadline) : null,
+    segments: {
+      create: input.segments.map((segment, segmentOrder) => ({
+        segmentOrder,
+        carrierCode: segment.carrierCode,
+        flightNumber: segment.flightNumber,
+        originCode: segment.originCode,
+        destinationCode: segment.destinationCode,
+        departureAt: new Date(segment.departureAt),
+        arrivalAt: new Date(segment.arrivalAt),
+        cabinClass: segment.cabinClass,
+        baggageAllowance: segment.baggageAllowance || null
+      }))
+    },
+    passengers: {
+      create: input.passengers.map((passenger) => ({
+        fullName: passenger.fullName,
+        passengerType: passenger.passengerType,
+        nationality: passenger.nationality || null,
+        ticketNumber: passenger.ticketNumber || null,
+        ticketStatus: passenger.ticketStatus
+      }))
+    }
+  };
+}
+
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
@@ -306,6 +337,9 @@ export async function POST(request: Request) {
                 hotelPricing
               )
             }
+          } : {}),
+          ...(service.flightDetails ? {
+            flightDetail: { create: flightDetailsCreateData(service.flightDetails) }
           } : {})
         },
         select: { id: true, reference: true }

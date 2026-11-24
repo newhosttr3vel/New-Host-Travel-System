@@ -61,6 +61,43 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
       ["HOTEL", "FLIGHT", "UMRAH_PACKAGE"]
     );
 
+    const flightReservation = created.services.find((service) => service.serviceType === "FLIGHT");
+    assert.ok(flightReservation, "The booking file must contain a flight service.");
+    await prisma.flightReservationDetail.create({
+      data: {
+        tenantId: currentTenantId,
+        reservationId: flightReservation.id,
+        bookingReference: "PNR" + suffix.slice(0, 6).toUpperCase(),
+        segments: {
+          create: [{
+            segmentOrder: 0,
+            carrierCode: "MS",
+            flightNumber: "985",
+            originCode: "CAI",
+            destinationCode: "JED",
+            departureAt: new Date("2026-12-20T06:00:00.000Z"),
+            arrivalAt: new Date("2026-12-20T09:00:00.000Z"),
+            cabinClass: "ECONOMY"
+          }]
+        },
+        passengers: {
+          create: [{
+            fullName: "Integration Test Passenger",
+            passengerType: "ADULT"
+          }]
+        }
+      }
+    });
+    const savedFlight = await prisma.flightReservationDetail.findFirst({
+      where: { tenantId: currentTenantId, reservationId: flightReservation.id },
+      include: { segments: true, passengers: true }
+    });
+    assert.equal(savedFlight?.segments.length, 1);
+    assert.equal(savedFlight?.segments[0]?.originCode, "CAI");
+    assert.equal(savedFlight?.segments[0]?.destinationCode, "JED");
+    assert.equal(savedFlight?.passengers.length, 1);
+    assert.equal(savedFlight?.passengers[0]?.ticketStatus, "PENDING");
+
     const failedReference = "NHT-BF-ROLLBACK-" + suffix;
     await assert.rejects(prisma.$transaction(async (tx) => {
       const file = await tx.bookingFile.create({

@@ -16,7 +16,40 @@ export const bookingFileViewInclude = {
       currency: true,
       saleAmount: true,
       costAmount: true,
-      createdAt: true
+      createdAt: true,
+      flightDetail: {
+        select: {
+          id: true,
+          bookingReference: true,
+          ticketingDeadline: true,
+          segments: {
+            orderBy: [{ segmentOrder: "asc" }],
+            select: {
+              id: true,
+              segmentOrder: true,
+              carrierCode: true,
+              flightNumber: true,
+              originCode: true,
+              destinationCode: true,
+              departureAt: true,
+              arrivalAt: true,
+              cabinClass: true,
+              baggageAllowance: true
+            }
+          },
+          passengers: {
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            select: {
+              id: true,
+              fullName: true,
+              passengerType: true,
+              nationality: true,
+              ticketNumber: true,
+              ticketStatus: true
+            }
+          }
+        }
+      }
     },
     orderBy: [{ createdAt: "asc" }, { reference: "asc" }]
   }
