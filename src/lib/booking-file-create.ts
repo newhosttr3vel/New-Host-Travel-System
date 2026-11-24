@@ -71,7 +71,6 @@ export const visaReservationDetailsSchema = z.object({
   destinationCountryCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/),
   visaType: z.string().trim().min(2).max(80),
   entryType: z.enum(["SINGLE", "DOUBLE", "MULTIPLE"]).default("SINGLE"),
-  status: z.enum(["DRAFT", "SUBMITTED"]).default("DRAFT"),
   applicationReference: z.string().trim().max(80).optional(),
   stayDurationDays: z.number().int().min(1).max(365).optional(),
   applicants: z.array(visaApplicantSchema).min(1).max(20)
