@@ -96,6 +96,32 @@ enum VisaEntryType {
   MULTIPLE
 }
 
+enum PilgrimagePackageType {
+  UMRAH
+  HAJJ
+}
+
+enum PilgrimageTravellerType {
+  ADULT
+  CHILD
+  INFANT
+}
+
+enum PilgrimageAccommodationLevel {
+  THREE_STAR
+  FOUR_STAR
+  FIVE_STAR
+  LUXURY
+  OTHER
+}
+
+enum PilgrimageMealPlan {
+  ROOM_ONLY
+  BREAKFAST
+  HALF_BOARD
+  FULL_BOARD
+}
+
 enum LedgerAccountType {
   ASSET
   LIABILITY
@@ -235,6 +261,8 @@ model Tenant {
   flightPassengers FlightPassenger[]
   visaReservationDetails VisaReservationDetail[]
   visaApplicants VisaApplicant[]
+  pilgrimagePackageReservationDetails PilgrimagePackageReservationDetail[]
+  pilgrimagePackageTravellers PilgrimagePackageTraveller[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -381,6 +409,7 @@ model Reservation {
   hotelDetail HotelReservationDetail?
   flightDetail FlightReservationDetail?
   visaDetail VisaReservationDetail?
+  pilgrimagePackageDetail PilgrimagePackageReservationDetail?
   documents   Document[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
@@ -564,6 +593,48 @@ model VisaApplicant {
   @@unique([id, tenantId])
   @@index([tenantId, visaDetailId, fullName])
   @@map("visa_applicants")
+}
+
+model PilgrimagePackageReservationDetail {
+  id                 String                       @id @default(cuid())
+  tenantId           String
+  reservationId      String
+  packageType        PilgrimagePackageType
+  packageName        String
+  departureCity      String
+  departureDate      DateTime
+  returnDate         DateTime
+  groupReference     String?
+  accommodationLevel PilgrimageAccommodationLevel @default(FOUR_STAR)
+  mealPlan           PilgrimageMealPlan            @default(BREAKFAST)
+  transportIncluded  Boolean                      @default(false)
+  includedServices   String[]                     @default([])
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  tenant             Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservation        Reservation                  @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  travellers         PilgrimagePackageTraveller[]
+  @@unique([id, tenantId])
+  @@unique([reservationId, tenantId])
+  @@index([tenantId, packageType, departureDate])
+  @@index([tenantId, groupReference])
+  @@map("pilgrimage_package_reservation_details")
+}
+
+model PilgrimagePackageTraveller {
+  id              String                  @id @default(cuid())
+  tenantId        String
+  packageDetailId String
+  fullName        String
+  travellerType   PilgrimageTravellerType @default(ADULT)
+  nationality     String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  tenant          Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  packageDetail   PilgrimagePackageReservationDetail @relation(fields: [packageDetailId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  @@unique([id, tenantId])
+  @@index([tenantId, packageDetailId, fullName])
+  @@map("pilgrimage_package_travellers")
 }
 
 model HotelReservationRoom {
