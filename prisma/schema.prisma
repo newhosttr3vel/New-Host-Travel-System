@@ -498,6 +498,7 @@ model FlightPassenger {
   tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   flightDetail   FlightReservationDetail @relation(fields: [flightDetailId, tenantId], references: [id, tenantId], onDelete: Cascade)
   @@unique([id, tenantId])
+  @@unique([tenantId, flightDetailId, ticketNumber])
   @@index([tenantId, flightDetailId, fullName])
   @@index([tenantId, ticketStatus])
   @@map("flight_passengers")

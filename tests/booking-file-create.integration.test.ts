@@ -83,7 +83,9 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         passengers: {
           create: [{
             fullName: "Integration Test Passenger",
-            passengerType: "ADULT"
+            passengerType: "ADULT",
+            ticketNumber: "0987654321098",
+            ticketStatus: "ISSUED"
           }]
         }
       }
@@ -96,7 +98,41 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
     assert.equal(savedFlight?.segments[0]?.originCode, "CAI");
     assert.equal(savedFlight?.segments[0]?.destinationCode, "JED");
     assert.equal(savedFlight?.passengers.length, 1);
-    assert.equal(savedFlight?.passengers[0]?.ticketStatus, "PENDING");
+    assert.equal(savedFlight?.passengers[0]?.ticketStatus, "ISSUED");
+
+    assert.ok(savedFlight);
+    await assert.rejects(prisma.flightSegment.create({
+      data: {
+        tenantId: currentTenantId,
+        flightDetailId: savedFlight.id,
+        segmentOrder: 1,
+        carrierCode: "MS",
+        flightNumber: "986",
+        originCode: "JED",
+        destinationCode: "CAI",
+        departureAt: new Date("2026-12-20T12:00:00.000Z"),
+        arrivalAt: new Date("2026-12-20T11:00:00.000Z")
+      }
+    }), "The database must reject a flight segment whose arrival is not after departure.");
+
+    await assert.rejects(prisma.flightPassenger.create({
+      data: {
+        tenantId: currentTenantId,
+        flightDetailId: savedFlight.id,
+        fullName: "Duplicate Ticket Passenger",
+        ticketNumber: "0987654321098",
+        ticketStatus: "ISSUED"
+      }
+    }), "The database must reject duplicate ticket numbers within one flight service.");
+
+    await assert.rejects(prisma.flightPassenger.create({
+      data: {
+        tenantId: currentTenantId,
+        flightDetailId: savedFlight.id,
+        fullName: "Missing Ticket Number",
+        ticketStatus: "ISSUED"
+      }
+    }), "The database must reject an issued ticket without a ticket number.");
 
     const failedReference = "NHT-BF-ROLLBACK-" + suffix;
     await assert.rejects(prisma.$transaction(async (tx) => {

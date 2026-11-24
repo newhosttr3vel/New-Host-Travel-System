@@ -78,6 +78,8 @@ CREATE INDEX "flight_passengers_tenantId_flightDetailId_fullName_idx"
   ON "flight_passengers"("tenantId", "flightDetailId", "fullName");
 CREATE INDEX "flight_passengers_tenantId_ticketStatus_idx"
   ON "flight_passengers"("tenantId", "ticketStatus");
+CREATE UNIQUE INDEX "flight_passengers_tenantId_flightDetailId_ticketNumber_key"
+  ON "flight_passengers"("tenantId", "flightDetailId", "ticketNumber");
 
 ALTER TABLE "flight_passengers"
   ADD CONSTRAINT "flight_passengers_tenantId_fkey"
@@ -85,6 +87,13 @@ ALTER TABLE "flight_passengers"
 ALTER TABLE "flight_passengers"
   ADD CONSTRAINT "flight_passengers_flightDetailId_tenantId_fkey"
   FOREIGN KEY ("flightDetailId", "tenantId") REFERENCES "flight_reservation_details"("id", "tenantId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "flight_segments"
+  ADD CONSTRAINT "flight_segments_arrival_after_departure_check"
+  CHECK ("arrivalAt" > "departureAt");
+ALTER TABLE "flight_passengers"
+  ADD CONSTRAINT "flight_passengers_issued_ticket_number_check"
+  CHECK ("ticketStatus" <> 'ISSUED' OR "ticketNumber" IS NOT NULL);
 
 ALTER TABLE public.flight_reservation_details ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.flight_reservation_details FORCE ROW LEVEL SECURITY;
