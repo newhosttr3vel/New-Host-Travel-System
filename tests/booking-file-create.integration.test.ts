@@ -108,8 +108,6 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         reservationId: visaReservation.id,
         destinationCountryCode: "SA",
         visaType: "UMRAH",
-        status: "SUBMITTED",
-        submittedAt: new Date("2026-11-24T08:00:00.000Z"),
         applicants: {
           create: [{
             fullName: "Integration Test Visa Applicant",
@@ -124,7 +122,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
       include: { applicants: true }
     });
     assert.equal(savedVisa?.destinationCountryCode, "SA");
-    assert.equal(savedVisa?.status, "SUBMITTED");
+    assert.equal(savedVisa?.status, "DRAFT");
     assert.equal(savedVisa?.applicants.length, 1);
     assert.equal(savedVisa?.applicants[0]?.nationality, "EG");
 
