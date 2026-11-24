@@ -98,6 +98,27 @@ function flightDetailsCreateData(
   };
 }
 
+function visaDetailsCreateData(
+  input: NonNullable<BookingFileServiceInput["visaDetails"]>
+): Prisma.VisaReservationDetailUncheckedCreateWithoutReservationInput {
+  return {
+    destinationCountryCode: input.destinationCountryCode,
+    visaType: input.visaType,
+    entryType: input.entryType,
+    status: input.status,
+    applicationReference: input.applicationReference || null,
+    submittedAt: input.status === "SUBMITTED" ? new Date() : null,
+    stayDurationDays: input.stayDurationDays ?? null,
+    applicants: {
+      create: input.applicants.map((applicant) => ({
+        fullName: applicant.fullName,
+        nationality: applicant.nationality || null,
+        dateOfBirth: asBookingDate(applicant.dateOfBirth)
+      }))
+    }
+  };
+}
+
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
@@ -275,6 +296,9 @@ export async function POST(request: Request) {
       if (service.serviceType === "FLIGHT" && supplier?.category !== "AIRLINE") {
         return { error: "AIRLINE_SUPPLIER_REQUIRED" as const };
       }
+      if (service.serviceType === "VISA" && supplier?.category !== "VISA_PROVIDER") {
+        return { error: "VISA_PROVIDER_REQUIRED" as const };
+      }
     }
 
     const hotelIds = [...new Set(preparedServices.flatMap(({ service }) =>
@@ -342,6 +366,9 @@ export async function POST(request: Request) {
           } : {}),
           ...(service.flightDetails ? {
             flightDetail: { create: flightDetailsCreateData(service.flightDetails) }
+          } : {}),
+          ...(service.visaDetails ? {
+            visaDetail: { create: visaDetailsCreateData(service.visaDetails) }
           } : {})
         },
         select: { id: true, reference: true }
