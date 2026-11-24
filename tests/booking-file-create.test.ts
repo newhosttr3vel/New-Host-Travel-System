@@ -142,7 +142,6 @@ test("visa services require a visa provider and applicant details", () => {
     visaDetails: {
       destinationCountryCode: "SA",
       visaType: "UMRAH",
-      status: "DRAFT",
       applicants: [{ fullName: "TEST APPLICANT", nationality: "EG", dateOfBirth: "1990-01-01" }]
     }
   };
