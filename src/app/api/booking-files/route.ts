@@ -119,6 +119,31 @@ function visaDetailsCreateData(
   };
 }
 
+function pilgrimagePackageDetailsCreateData(
+  input: NonNullable<BookingFileServiceInput["packageDetails"]>,
+  serviceType: "UMRAH_PACKAGE" | "HAJJ_PACKAGE"
+): Prisma.PilgrimagePackageReservationDetailUncheckedCreateWithoutReservationInput {
+  return {
+    packageType: serviceType === "UMRAH_PACKAGE" ? "UMRAH" : "HAJJ",
+    packageName: input.packageName,
+    departureCity: input.departureCity,
+    departureDate: new Date(input.departureDate + "T12:00:00.000Z"),
+    returnDate: new Date(input.returnDate + "T12:00:00.000Z"),
+    groupReference: input.groupReference || null,
+    accommodationLevel: input.accommodationLevel,
+    mealPlan: input.mealPlan,
+    transportIncluded: input.transportIncluded,
+    includedServices: input.includedServices,
+    travellers: {
+      create: input.travellers.map((traveller) => ({
+        fullName: traveller.fullName,
+        travellerType: traveller.travellerType,
+        nationality: traveller.nationality || null
+      }))
+    }
+  };
+}
+
 export async function GET(request: Request) {
   const access = await requireTenantPermission(request, "reservations:read");
   if (!access.ok) return access.response;
@@ -299,6 +324,12 @@ export async function POST(request: Request) {
       if (service.serviceType === "VISA" && supplier?.category !== "VISA_PROVIDER") {
         return { error: "VISA_PROVIDER_REQUIRED" as const };
       }
+      if (
+        (service.serviceType === "UMRAH_PACKAGE" || service.serviceType === "HAJJ_PACKAGE") &&
+        supplier?.category !== "TOUR_OPERATOR"
+      ) {
+        return { error: "TOUR_OPERATOR_REQUIRED" as const };
+      }
     }
 
     const hotelIds = [...new Set(preparedServices.flatMap(({ service }) =>
@@ -369,6 +400,11 @@ export async function POST(request: Request) {
           } : {}),
           ...(service.visaDetails ? {
             visaDetail: { create: visaDetailsCreateData(service.visaDetails) }
+          } : {}),
+          ...(service.packageDetails && (service.serviceType === "UMRAH_PACKAGE" || service.serviceType === "HAJJ_PACKAGE") ? {
+            pilgrimagePackageDetail: {
+              create: pilgrimagePackageDetailsCreateData(service.packageDetails, service.serviceType)
+            }
           } : {})
         },
         select: { id: true, reference: true }
