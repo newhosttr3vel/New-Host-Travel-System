@@ -36,7 +36,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         data: { tenantId: currentTenantId, customerId: customer.id, reference: successfulReference }
       });
       const services = [];
-      const serviceTypes = ["HOTEL", "FLIGHT", "UMRAH_PACKAGE"] as const;
+      const serviceTypes = ["HOTEL", "FLIGHT", "UMRAH_PACKAGE", "VISA"] as const;
       for (const [index, serviceType] of serviceTypes.entries()) {
         services.push(await tx.reservation.create({
           data: {
@@ -97,6 +97,34 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
     assert.equal(savedFlight?.segments[0]?.destinationCode, "JED");
     assert.equal(savedFlight?.passengers.length, 1);
     assert.equal(savedFlight?.passengers[0]?.ticketStatus, "PENDING");
+
+    const visaReservation = created.services.find((service) => service.serviceType === "VISA");
+    assert.ok(visaReservation, "The booking file must contain a visa service.");
+    await prisma.visaReservationDetail.create({
+      data: {
+        tenantId: currentTenantId,
+        reservationId: visaReservation.id,
+        destinationCountryCode: "SA",
+        visaType: "UMRAH",
+        status: "SUBMITTED",
+        submittedAt: new Date("2026-11-24T08:00:00.000Z"),
+        applicants: {
+          create: [{
+            fullName: "Integration Test Visa Applicant",
+            nationality: "EG",
+            dateOfBirth: new Date("1990-01-01T12:00:00.000Z")
+          }]
+        }
+      }
+    });
+    const savedVisa = await prisma.visaReservationDetail.findFirst({
+      where: { tenantId: currentTenantId, reservationId: visaReservation.id },
+      include: { applicants: true }
+    });
+    assert.equal(savedVisa?.destinationCountryCode, "SA");
+    assert.equal(savedVisa?.status, "SUBMITTED");
+    assert.equal(savedVisa?.applicants.length, 1);
+    assert.equal(savedVisa?.applicants[0]?.nationality, "EG");
 
     const failedReference = "NHT-BF-ROLLBACK-" + suffix;
     await assert.rejects(prisma.$transaction(async (tx) => {
