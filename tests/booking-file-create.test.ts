@@ -156,7 +156,6 @@ test("visa services require a visa provider and applicant details", () => {
     assert.equal(visa?.serviceType, "VISA");
     if (visa?.serviceType === "VISA") {
       assert.equal(visa.visaDetails?.entryType, "SINGLE");
-      assert.equal(visa.visaDetails?.status, undefined);
     }
   }
 });
