@@ -49,6 +49,25 @@ export const bookingFileViewInclude = {
             }
           }
         }
+      },
+      visaDetail: {
+        select: {
+          id: true,
+          destinationCountryCode: true,
+          visaType: true,
+          entryType: true,
+          status: true,
+          applicationReference: true,
+          submittedAt: true,
+          issuedAt: true,
+          validFrom: true,
+          validUntil: true,
+          stayDurationDays: true,
+          applicants: {
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            select: { id: true, fullName: true, nationality: true, dateOfBirth: true }
+          }
+        }
       }
     },
     orderBy: [{ createdAt: "asc" }, { reference: "asc" }]
@@ -69,12 +88,21 @@ type FlightDetailProjection = {
   }>;
 };
 
+type VisaDetailProjection = {
+  applicationReference: string | null;
+  applicants: Array<{
+    nationality: string | null;
+    dateOfBirth: Date | null;
+  }>;
+};
+
 export function serializeBookingFile<
   T extends {
     reservations: Array<{
       saleAmount: DecimalLike;
       costAmount: DecimalLike;
       flightDetail?: FlightDetailProjection | null;
+      visaDetail?: VisaDetailProjection | null;
     }>;
   }
 >(item: T, canReadCosts: boolean, canReadTravelDocuments = false) {
@@ -92,7 +120,16 @@ export function serializeBookingFile<
           nationality: canReadTravelDocuments ? passenger.nationality : null,
           ticketNumber: canReadTravelDocuments ? passenger.ticketNumber : null
         }))
-      } : reservation.flightDetail ?? null
+      } : reservation.flightDetail ?? null,
+      visaDetail: reservation.visaDetail ? {
+        ...reservation.visaDetail,
+        applicationReference: canReadTravelDocuments ? reservation.visaDetail.applicationReference : null,
+        applicants: reservation.visaDetail.applicants.map((applicant) => ({
+          ...applicant,
+          nationality: canReadTravelDocuments ? applicant.nationality : null,
+          dateOfBirth: canReadTravelDocuments ? applicant.dateOfBirth : null
+        }))
+      } : reservation.visaDetail ?? null
     }))
   };
 }
