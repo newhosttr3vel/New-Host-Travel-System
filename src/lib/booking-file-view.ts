@@ -116,7 +116,23 @@ type VisaDetailProjection = {
 };
 
 type PilgrimagePackageDetailProjection = {
-  travellers: Array<{ nationality: string | null }>;
+  id: string;
+  packageType: string;
+  packageName: string;
+  departureCity: string;
+  departureDate: Date;
+  returnDate: Date;
+  groupReference: string | null;
+  accommodationLevel: string;
+  mealPlan: string;
+  transportIncluded: boolean;
+  includedServices: string[];
+  travellers: Array<{
+    id: string;
+    fullName: string;
+    travellerType: string;
+    nationality: string | null;
+  }>;
 };
 
 export function serializeBookingFile<
