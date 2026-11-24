@@ -135,6 +135,71 @@ test("flight details reject invalid times and issued tickets without numbers", (
   }).success, false);
 });
 
+test("visa services require a visa provider and applicant details", () => {
+  const validVisa = {
+    serviceType: "VISA",
+    supplierId: "visa-provider-1",
+    visaDetails: {
+      destinationCountryCode: "SA",
+      visaType: "UMRAH",
+      status: "SUBMITTED",
+      applicants: [{ fullName: "TEST APPLICANT", nationality: "EG", dateOfBirth: "1990-01-01" }]
+    }
+  };
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [validVisa]
+  });
+  assert.equal(parsed.success, true);
+  if (parsed.success) {
+    const visa = parsed.data.services[0];
+    assert.equal(visa?.serviceType, "VISA");
+    if (visa?.serviceType === "VISA") {
+      assert.equal(visa.visaDetails?.entryType, "SINGLE");
+      assert.equal(visa.visaDetails?.status, "SUBMITTED");
+    }
+  }
+});
+
+test("visa services reject invalid country codes, missing applicants and client-supplied issued status", () => {
+  const base = {
+    serviceType: "VISA",
+    supplierId: "visa-provider-1",
+    visaDetails: {
+      destinationCountryCode: "SA",
+      visaType: "UMRAH",
+      applicants: [{ fullName: "TEST APPLICANT" }]
+    }
+  };
+  const invalidCountry = { ...base, visaDetails: { ...base.visaDetails, destinationCountryCode: "SAU" } };
+  const noApplicants = { ...base, visaDetails: { ...base.visaDetails, applicants: [] } };
+  const issuedAtCreation = { ...base, visaDetails: { ...base.visaDetails, status: "ISSUED" } };
+  for (const service of [invalidCountry, noApplicants, issuedAtCreation]) {
+    assert.equal(bookingFileCreateSchema.safeParse({
+      customerId: "customer-1",
+      idempotencyKey,
+      services: [service]
+    }).success, false);
+  }
+});
+
+test("visa details cannot be attached to a non-visa service", () => {
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [{
+      serviceType: "UMRAH_PACKAGE",
+      visaDetails: {
+        destinationCountryCode: "SA",
+        visaType: "UMRAH",
+        applicants: [{ fullName: "TEST APPLICANT" }]
+      }
+    }]
+  });
+  assert.equal(parsed.success, false);
+});
+
 test("flight details cannot be attached to non-flight services", () => {
   const parsed = bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
