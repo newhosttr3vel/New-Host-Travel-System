@@ -105,9 +105,9 @@ function visaDetailsCreateData(
     destinationCountryCode: input.destinationCountryCode,
     visaType: input.visaType,
     entryType: input.entryType,
-    status: input.status,
+    status: "DRAFT",
     applicationReference: input.applicationReference || null,
-    submittedAt: input.status === "SUBMITTED" ? new Date() : null,
+    submittedAt: null,
     stayDurationDays: input.stayDurationDays ?? null,
     applicants: {
       create: input.applicants.map((applicant) => ({
