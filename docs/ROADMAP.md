@@ -37,7 +37,8 @@ The target product workflow is documented in [TRAVEL_ERP_BLUEPRINT.md](./TRAVEL_
 - [ ] Add group manifests, traveller assignment and readiness checklist.
 - [x] Capture flight segments, passenger manifests and ticket-status references on booking-file creation (initial operational detail only).
 - [ ] Add ticket issuance, ticket changes, void/refund handling and authorized airline/provider integrations.
-- [ ] Add visa applications, document checks, status transitions, issue and expiry tracking.
+- [x] Capture tenant-scoped visa application and applicant details in booking files (initial data capture only; no passport data or issuance claim).
+- [ ] Add protected visa documents, application status transitions, authority submission, issue and expiry workflows.
 - [ ] Add transport, route, vehicle, pickup and execution workflows.
 
 ## Milestone 5 — Supplier, finance and operations control
