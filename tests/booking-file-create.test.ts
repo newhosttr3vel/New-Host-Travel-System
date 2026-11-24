@@ -10,7 +10,7 @@ test("booking-file input accepts multiple service lines and applies safe financi
   const parsed = bookingFileCreateSchema.parse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [genericService, { serviceType: "UMRAH_PACKAGE", currency: "SAR", saleAmount: "2500.00" }]
+    services: [genericService, { serviceType: "OTHER", currency: "SAR", saleAmount: "2500.00" }]
   });
 
   assert.equal(parsed.services.length, 2);
