@@ -80,6 +80,22 @@ enum FlightTicketStatus {
   VOIDED
 }
 
+enum VisaApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  ISSUED
+  REJECTED
+  CANCELLED
+}
+
+enum VisaEntryType {
+  SINGLE
+  DOUBLE
+  MULTIPLE
+}
+
 enum LedgerAccountType {
   ASSET
   LIABILITY
@@ -217,6 +233,8 @@ model Tenant {
   flightReservationDetails FlightReservationDetail[]
   flightSegments FlightSegment[]
   flightPassengers FlightPassenger[]
+  visaReservationDetails VisaReservationDetail[]
+  visaApplicants VisaApplicant[]
   @@index([status, createdAt])
   @@map("tenants")
 }
@@ -362,6 +380,7 @@ model Reservation {
   supplierBills SupplierBill[]
   hotelDetail HotelReservationDetail?
   flightDetail FlightReservationDetail?
+  visaDetail VisaReservationDetail?
   documents   Document[]
   @@unique([id, tenantId])
   @@unique([tenantId, reference])
@@ -501,6 +520,49 @@ model FlightPassenger {
   @@index([tenantId, flightDetailId, fullName])
   @@index([tenantId, ticketStatus])
   @@map("flight_passengers")
+}
+
+model VisaReservationDetail {
+  id                    String                @id @default(cuid())
+  tenantId              String
+  reservationId         String
+  destinationCountryCode String
+  visaType              String
+  entryType             VisaEntryType         @default(SINGLE)
+  status                VisaApplicationStatus @default(DRAFT)
+  applicationReference  String?
+  submittedAt           DateTime?
+  issuedAt              DateTime?
+  validFrom             DateTime?
+  validUntil            DateTime?
+  stayDurationDays      Int?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  tenant                Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reservation           Reservation           @relation(fields: [reservationId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  applicants            VisaApplicant[]
+  @@unique([id, tenantId])
+  @@unique([reservationId, tenantId])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, destinationCountryCode, status])
+  @@index([tenantId, applicationReference])
+  @@map("visa_reservation_details")
+}
+
+model VisaApplicant {
+  id          String   @id @default(cuid())
+  tenantId    String
+  visaDetailId String
+  fullName    String
+  nationality String?
+  dateOfBirth DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  visaDetail  VisaReservationDetail @relation(fields: [visaDetailId, tenantId], references: [id, tenantId], onDelete: Cascade)
+  @@unique([id, tenantId])
+  @@index([tenantId, visaDetailId, fullName])
+  @@map("visa_applicants")
 }
 
 model HotelReservationRoom {
