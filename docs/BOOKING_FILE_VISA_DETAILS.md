@@ -42,8 +42,8 @@ Create a visa service through `POST /api/booking-files`. The request requires a 
 - Destination country and applicant nationality use two-letter uppercase country codes.
 - A visa service requires an active same-tenant supplier categorized as `VISA_PROVIDER`.
 - Each visa service requires 1–20 applicants.
-- Initial status is `DRAFT` or `SUBMITTED`; a submitted record receives its submission timestamp on the server.
-- A client cannot create a visa as `ISSUED`. Issuance must be performed by a future audited status-transition workflow.
+- New visa records always start in `DRAFT`; clients cannot set `SUBMITTED`, `APPROVED` or `ISSUED` during creation.
+- Submission and every later status transition must be performed by a future audited workflow that records the real action time and actor.
 - The database prevents blank applicant names, invalid country codes, non-positive stay durations, reversed validity windows, and an `ISSUED` record without issue and validity dates.
 - Visa details and applicants are saved in the same transaction as the booking file and reservation.
 - Both tables have tenant RLS, composite tenant foreign keys and runtime-role grants.
@@ -52,7 +52,7 @@ Create a visa service through `POST /api/booking-files`. The request requires a 
 
 This first slice deliberately does not store passport numbers, passport scans, identity-document images or other passport credentials. Those belong in the protected document workflow.
 
-The booking-file read API returns applicant names and operational visa status to users with `reservations:read`. Application references, nationality and date of birth are masked unless the caller has `documents:read`. Costs remain masked unless the caller has `finance:read`.
+The booking-file read API returns applicant names and the initial draft status to users with `reservations:read`. Application references, nationality and date of birth are masked unless the caller has `documents:read`. Costs remain masked unless the caller has `finance:read`.
 
 ## Explicit limitations
 
