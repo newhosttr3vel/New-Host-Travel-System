@@ -33,6 +33,51 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
       data: { tenantId: b.id, customerId: customerB.id, reference: "RLS-HIDDEN-" + suffix }
     });
 
+    const [flightReservationA, flightReservationB] = await Promise.all([
+      admin.reservation.create({
+        data: {
+          tenantId: a.id,
+          customerId: customerA.id,
+          reference: "RLS-FLIGHT-A-" + suffix,
+          serviceType: "FLIGHT"
+        }
+      }),
+      admin.reservation.create({
+        data: {
+          tenantId: b.id,
+          customerId: customerB.id,
+          reference: "RLS-FLIGHT-B-" + suffix,
+          serviceType: "FLIGHT"
+        }
+      })
+    ]);
+    const createFlightDetail = (tenantId: string, reservationId: string, bookingReference: string) =>
+      admin.flightReservationDetail.create({
+        data: {
+          tenantId,
+          reservationId,
+          bookingReference,
+          segments: {
+            create: [{
+              segmentOrder: 0,
+              carrierCode: "MS",
+              flightNumber: "985",
+              originCode: "CAI",
+              destinationCode: "JED",
+              departureAt: new Date("2026-12-20T06:00:00.000Z"),
+              arrivalAt: new Date("2026-12-20T09:00:00.000Z")
+            }]
+          },
+          passengers: {
+            create: [{ fullName: "RLS Test Passenger" }]
+          }
+        }
+      });
+    await Promise.all([
+      createFlightDetail(a.id, flightReservationA.id, "RLS-A-" + suffix),
+      createFlightDetail(b.id, flightReservationB.id, "RLS-B-" + suffix)
+    ]);
+
     await withTenantRlsContext({ userId, tenantId: a.id }, async () => {
       const visible = await prisma.customer.findMany({ where: { tenantId: a.id }, select: { name: true } });
       assert.deepEqual(visible.map((item) => item.name), ["Visible Customer"]);
@@ -44,6 +89,23 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
         select: { id: true, reference: true }
       });
       assert.deepEqual(visibleFiles, [{ id: bookingFile.id, reference: bookingFile.reference }]);
+
+      const visibleFlightDetails = await prisma.flightReservationDetail.findMany({
+        where: { tenantId: a.id },
+        select: { bookingReference: true }
+      });
+      assert.deepEqual(visibleFlightDetails.map((item) => item.bookingReference), ["RLS-A-" + suffix]);
+      const visibleSegments = await prisma.flightSegment.findMany({
+        where: { tenantId: a.id },
+        select: { flightNumber: true }
+      });
+      assert.deepEqual(visibleSegments.map((item) => item.flightNumber), ["985"]);
+      const visiblePassengers = await prisma.flightPassenger.findMany({
+        where: { tenantId: a.id },
+        select: { fullName: true }
+      });
+      assert.deepEqual(visiblePassengers.map((item) => item.fullName), ["RLS Test Passenger"]);
+
       await assert.rejects(
         prisma.customer.findMany({ where: { tenantId: b.id } }),
         /switch company context/
@@ -53,6 +115,12 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
         assert.equal(rawRows.length, 0);
         const hiddenBookingFiles = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM booking_files WHERE "tenantId" = ${b.id}`;
         assert.equal(hiddenBookingFiles.length, 0);
+        const hiddenFlightDetails = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM flight_reservation_details WHERE "tenantId" = ${b.id}`;
+        assert.equal(hiddenFlightDetails.length, 0);
+        const hiddenFlightSegments = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM flight_segments WHERE "tenantId" = ${b.id}`;
+        assert.equal(hiddenFlightSegments.length, 0);
+        const hiddenFlightPassengers = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM flight_passengers WHERE "tenantId" = ${b.id}`;
+        assert.equal(hiddenFlightPassengers.length, 0);
         await assert.rejects(
           tx.customer.create({ data: { tenantId: b.id, name: "Cross-company insert" } }),
           /switch company context/
@@ -81,6 +149,8 @@ test("PostgreSQL RLS denies cross-company reads and writes for a non-owner runti
       assert.equal(unchangedEvent?.action, "RLS_TEST_EVENT");
     });
   } finally {
+    if (tenantA) await admin.reservation.deleteMany({ where: { tenantId: tenantA } });
+    if (tenantB) await admin.reservation.deleteMany({ where: { tenantId: tenantB } });
     if (tenantA) await admin.bookingFile.deleteMany({ where: { tenantId: tenantA } });
     if (tenantB) await admin.bookingFile.deleteMany({ where: { tenantId: tenantB } });
     if (tenantA) await admin.tenant.delete({ where: { id: tenantA } });

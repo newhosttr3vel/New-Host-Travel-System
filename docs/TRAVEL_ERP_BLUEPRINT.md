@@ -31,7 +31,7 @@ A service line may have its own lifecycle, but must remain attached to the maste
 | Traveller / pilgrim records | Traveller profiles, passport data, document checklist, group manifests and rooming lists | Not implemented |
 | Hajj & Umrah | Packages, groups, departure dates, package costing, traveller allocation and readiness checks | Not implemented |
 | Hotels & room inventory | Hotel master data, room types, supplier contracts, date-based allotments, release dates, availability and allocation | Supplier directory exists; inventory/contracts/allocation not implemented |
-| Flights & tickets | Flight segments, passenger assignment, ticket numbers, issue status and changes | Not implemented |
+| Flights & tickets | Flight segments, passenger assignment, ticket numbers, issue status and changes | Initial flight segments, passenger manifest and ticket-status capture are implemented on booking-file creation; ticket issuance, changes and provider integrations remain |
 | Visas | Visa applications, document checks, submission, approval/rejection, issue and expiry tracking | Role exists; workflow not implemented |
 | Transport & ground operations | Transfers, vehicles, routes, manifests, pickup times, supplier assignment and execution status | Not implemented |
 | Supplier management | Supplier profiles, contacts, contracts, rate periods, service confirmation and payables | Supplier directory and initial bill/payment APIs exist; contract/rate screens remain |

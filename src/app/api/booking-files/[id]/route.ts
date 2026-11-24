@@ -29,5 +29,6 @@ export async function GET(request: Request, context: RouteContext) {
   if (!item) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
 
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
-  return Response.json({ item: serializeBookingFile(item, canReadCosts) });
+  const canReadTravelDocuments = hasPermission(access.membership.role, "documents:read");
+  return Response.json({ item: serializeBookingFile(item, canReadCosts, canReadTravelDocuments) });
 }

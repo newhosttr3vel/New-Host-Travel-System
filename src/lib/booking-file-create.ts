@@ -7,6 +7,59 @@ const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
 });
 const optionalDate = z.union([dateOnly, z.literal("")]).optional();
 const money = z.string().regex(/^(?:0|[1-9]\d{0,11})(?:\.\d{1,2})?$/);
+const flightDateTime = z.string().datetime({ offset: true });
+
+const flightSegmentSchema = z.object({
+  carrierCode: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2,3}$/),
+  flightNumber: z.string().trim().toUpperCase().regex(/^\d{1,4}[A-Z]?$/),
+  originCode: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/),
+  destinationCode: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/),
+  departureAt: flightDateTime,
+  arrivalAt: flightDateTime,
+  cabinClass: z.enum(["ECONOMY", "PREMIUM_ECONOMY", "BUSINESS", "FIRST"]).default("ECONOMY"),
+  baggageAllowance: z.string().trim().max(80).optional()
+}).superRefine((value, context) => {
+  if (Date.parse(value.arrivalAt) <= Date.parse(value.departureAt)) {
+    context.addIssue({ code: "custom", path: ["arrivalAt"], message: "Arrival must be later than departure." });
+  }
+});
+
+const flightPassengerSchema = z.object({
+  fullName: z.string().trim().min(2).max(160),
+  passengerType: z.enum(["ADULT", "CHILD", "INFANT"]).default("ADULT"),
+  nationality: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).optional(),
+  ticketNumber: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{5,32}$/).optional(),
+  ticketStatus: z.enum(["PENDING", "ISSUED", "VOIDED"]).default("PENDING")
+}).superRefine((value, context) => {
+  if (value.ticketStatus === "ISSUED" && !value.ticketNumber) {
+    context.addIssue({ code: "custom", path: ["ticketNumber"], message: "An issued ticket must have a ticket number." });
+  }
+});
+
+export const flightReservationDetailsSchema = z.object({
+  bookingReference: z.string().trim().toUpperCase().max(12).optional(),
+  ticketingDeadline: flightDateTime.optional(),
+  segments: z.array(flightSegmentSchema).min(1).max(12),
+  passengers: z.array(flightPassengerSchema).min(1).max(20)
+}).superRefine((value, context) => {
+  for (let index = 1; index < value.segments.length; index += 1) {
+    const previous = value.segments[index - 1];
+    const current = value.segments[index];
+    if (previous && current && Date.parse(current.departureAt) < Date.parse(previous.arrivalAt)) {
+      context.addIssue({
+        code: "custom",
+        path: ["segments", index, "departureAt"],
+        message: "Flight segments must be in chronological order without overlap."
+      });
+    }
+  }
+  const ticketNumbers = value.passengers
+    .map((passenger) => passenger.ticketNumber)
+    .filter((ticketNumber): ticketNumber is string => Boolean(ticketNumber));
+  if (new Set(ticketNumbers).size !== ticketNumbers.length) {
+    context.addIssue({ code: "custom", path: ["passengers"], message: "Ticket numbers must be unique within the flight booking." });
+  }
+});
 
 export const bookingFileServiceSchema = z.object({
   supplierId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
@@ -17,7 +70,8 @@ export const bookingFileServiceSchema = z.object({
   saleAmount: money.default("0"),
   costAmount: money.default("0"),
   notes: z.string().trim().max(2000).optional(),
-  hotelDetails: hotelReservationDetailsSchema.optional()
+  hotelDetails: hotelReservationDetailsSchema.optional(),
+  flightDetails: flightReservationDetailsSchema.optional()
 }).superRefine((value, context) => {
   if (value.startDate && value.endDate && value.startDate !== "" && value.endDate !== "" && value.endDate < value.startDate) {
     context.addIssue({ code: "custom", path: ["endDate"], message: "End date must not be earlier than start date." });
@@ -34,6 +88,12 @@ export const bookingFileServiceSchema = z.object({
   }
   if (value.serviceType === "FLIGHT" && !value.supplierId) {
     context.addIssue({ code: "custom", path: ["supplierId"], message: "An airline supplier is required." });
+  }
+  if (value.serviceType === "FLIGHT" && !value.flightDetails) {
+    context.addIssue({ code: "custom", path: ["flightDetails"], message: "Flight segments and passengers are required." });
+  }
+  if (value.serviceType !== "FLIGHT" && value.flightDetails) {
+    context.addIssue({ code: "custom", path: ["flightDetails"], message: "Flight details are only valid for flight services." });
   }
 });
 
