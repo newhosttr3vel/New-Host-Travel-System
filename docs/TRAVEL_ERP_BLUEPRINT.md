@@ -29,7 +29,7 @@ A service line may have its own lifecycle, but must remain attached to the maste
 | CRM & sales | Leads, customer profiles, corporate accounts, quotations, follow-ups and conversion | Customer directory exists; leads and quotation workflow remain |
 | Booking desk | Master booking files, service lines, statuses, confirmations, amendments and cancellations | Basic reservation CRUD and controlled status changes exist |
 | Traveller / pilgrim records | Traveller profiles, passport data, document checklist, group manifests and rooming lists | Not implemented |
-| Hajj & Umrah | Packages, groups, departure dates, package costing, traveller allocation and readiness checks | Not implemented |
+| Hajj & Umrah | Packages, groups, departure dates, package costing, traveller allocation and readiness checks | Initial tenant-scoped package itinerary and per-booking traveller capture are implemented; package catalog, group capacity, rooming and readiness workflows remain |
 | Hotels & room inventory | Hotel master data, room types, supplier contracts, date-based allotments, release dates, availability and allocation | Supplier directory exists; inventory/contracts/allocation not implemented |
 | Flights & tickets | Flight segments, passenger assignment, ticket numbers, issue status and changes | Initial flight segments, passenger manifest and ticket-status capture are implemented on booking-file creation; ticket issuance, changes and provider integrations remain |
 | Visas | Visa applications, document checks, submission, approval/rejection, issue and expiry tracking | Role exists; workflow not implemented |
