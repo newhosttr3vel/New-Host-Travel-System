@@ -4,13 +4,13 @@ import { asBookingDate, bookingFileCreateSchema } from "../src/lib/booking-file-
 import { bookingFileRequestHash } from "../src/lib/booking-file-idempotency";
 
 const idempotencyKey = "11111111-1111-4111-8111-111111111111";
-const visaService = { serviceType: "VISA" as const };
+const genericService = { serviceType: "OTHER" as const };
 
 test("booking-file input accepts multiple service lines and applies safe financial defaults", () => {
   const parsed = bookingFileCreateSchema.parse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [visaService, { serviceType: "UMRAH_PACKAGE", currency: "SAR", saleAmount: "2500.00" }]
+    services: [genericService, { serviceType: "UMRAH_PACKAGE", currency: "SAR", saleAmount: "2500.00" }]
   });
 
   assert.equal(parsed.services.length, 2);
@@ -29,7 +29,7 @@ test("booking-file input requires at least one and allows no more than twenty se
     bookingFileCreateSchema.safeParse({
       customerId: "customer-1",
       idempotencyKey,
-      services: Array.from({ length: 21 }, () => visaService)
+      services: Array.from({ length: 21 }, () => genericService)
     }).success,
     false
   );
@@ -39,7 +39,7 @@ test("booking-file service dates reject an end date earlier than the start date"
   const parsed = bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [{ serviceType: "VISA", startDate: "2026-12-10", endDate: "2026-12-09" }]
+    services: [{ serviceType: "OTHER", startDate: "2026-12-10", endDate: "2026-12-09" }]
   });
   assert.equal(parsed.success, false);
 });
@@ -135,6 +135,70 @@ test("flight details reject invalid times and issued tickets without numbers", (
   }).success, false);
 });
 
+test("visa services require a visa provider and applicant details", () => {
+  const validVisa = {
+    serviceType: "VISA",
+    supplierId: "visa-provider-1",
+    visaDetails: {
+      destinationCountryCode: "SA",
+      visaType: "UMRAH",
+      applicants: [{ fullName: "TEST APPLICANT", nationality: "EG", dateOfBirth: "1990-01-01" }]
+    }
+  };
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [validVisa]
+  });
+  assert.equal(parsed.success, true);
+  if (parsed.success) {
+    const visa = parsed.data.services[0];
+    assert.equal(visa?.serviceType, "VISA");
+    if (visa?.serviceType === "VISA") {
+      assert.equal(visa.visaDetails?.entryType, "SINGLE");
+    }
+  }
+});
+
+test("visa services reject invalid country codes, missing applicants and client-supplied workflow statuses", () => {
+  const base = {
+    serviceType: "VISA",
+    supplierId: "visa-provider-1",
+    visaDetails: {
+      destinationCountryCode: "SA",
+      visaType: "UMRAH",
+      applicants: [{ fullName: "TEST APPLICANT" }]
+    }
+  };
+  const invalidCountry = { ...base, visaDetails: { ...base.visaDetails, destinationCountryCode: "SAU" } };
+  const noApplicants = { ...base, visaDetails: { ...base.visaDetails, applicants: [] } };
+  const submittedAtCreation = { ...base, visaDetails: { ...base.visaDetails, status: "SUBMITTED" } };
+  const issuedAtCreation = { ...base, visaDetails: { ...base.visaDetails, status: "ISSUED" } };
+  for (const service of [invalidCountry, noApplicants, submittedAtCreation, issuedAtCreation]) {
+    assert.equal(bookingFileCreateSchema.safeParse({
+      customerId: "customer-1",
+      idempotencyKey,
+      services: [service]
+    }).success, false);
+  }
+});
+
+test("visa details cannot be attached to a non-visa service", () => {
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [{
+      serviceType: "UMRAH_PACKAGE",
+      visaDetails: {
+        destinationCountryCode: "SA",
+        visaType: "UMRAH",
+        applicants: [{ fullName: "TEST APPLICANT" }]
+      }
+    }]
+  });
+  assert.equal(parsed.success, false);
+});
+
 test("flight details cannot be attached to non-flight services", () => {
   const parsed = bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
@@ -190,16 +254,16 @@ test("booking-file creation requires a valid UUID idempotency key", () => {
   assert.equal(bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [visaService]
+    services: [genericService]
   }).success, true);
   assert.equal(bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
-    services: [visaService]
+    services: [genericService]
   }).success, false);
   assert.equal(bookingFileCreateSchema.safeParse({
     customerId: "customer-1",
     idempotencyKey: "not-a-uuid",
-    services: [visaService]
+    services: [genericService]
   }).success, false);
 });
 
@@ -207,10 +271,10 @@ test("booking-file request hashes ignore the idempotency key and normalize paylo
   const first = bookingFileCreateSchema.parse({
     customerId: "customer-1",
     idempotencyKey,
-    services: [visaService]
+    services: [genericService]
   });
   const second = bookingFileCreateSchema.parse({
-    services: [visaService],
+    services: [genericService],
     idempotencyKey: "22222222-2222-4222-8222-222222222222",
     customerId: "customer-1"
   });
