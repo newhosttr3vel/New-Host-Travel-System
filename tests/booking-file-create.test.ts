@@ -142,7 +142,7 @@ test("visa services require a visa provider and applicant details", () => {
     visaDetails: {
       destinationCountryCode: "SA",
       visaType: "UMRAH",
-      status: "SUBMITTED",
+      status: "DRAFT",
       applicants: [{ fullName: "TEST APPLICANT", nationality: "EG", dateOfBirth: "1990-01-01" }]
     }
   };
@@ -157,12 +157,12 @@ test("visa services require a visa provider and applicant details", () => {
     assert.equal(visa?.serviceType, "VISA");
     if (visa?.serviceType === "VISA") {
       assert.equal(visa.visaDetails?.entryType, "SINGLE");
-      assert.equal(visa.visaDetails?.status, "SUBMITTED");
+      assert.equal(visa.visaDetails?.status, undefined);
     }
   }
 });
 
-test("visa services reject invalid country codes, missing applicants and client-supplied issued status", () => {
+test("visa services reject invalid country codes, missing applicants and client-supplied workflow statuses", () => {
   const base = {
     serviceType: "VISA",
     supplierId: "visa-provider-1",
@@ -174,8 +174,9 @@ test("visa services reject invalid country codes, missing applicants and client-
   };
   const invalidCountry = { ...base, visaDetails: { ...base.visaDetails, destinationCountryCode: "SAU" } };
   const noApplicants = { ...base, visaDetails: { ...base.visaDetails, applicants: [] } };
+  const submittedAtCreation = { ...base, visaDetails: { ...base.visaDetails, status: "SUBMITTED" } };
   const issuedAtCreation = { ...base, visaDetails: { ...base.visaDetails, status: "ISSUED" } };
-  for (const service of [invalidCountry, noApplicants, issuedAtCreation]) {
+  for (const service of [invalidCountry, noApplicants, submittedAtCreation, issuedAtCreation]) {
     assert.equal(bookingFileCreateSchema.safeParse({
       customerId: "customer-1",
       idempotencyKey,
