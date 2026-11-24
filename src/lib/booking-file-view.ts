@@ -68,6 +68,25 @@ export const bookingFileViewInclude = {
             select: { id: true, fullName: true, nationality: true, dateOfBirth: true }
           }
         }
+      },
+      pilgrimagePackageDetail: {
+        select: {
+          id: true,
+          packageType: true,
+          packageName: true,
+          departureCity: true,
+          departureDate: true,
+          returnDate: true,
+          groupReference: true,
+          accommodationLevel: true,
+          mealPlan: true,
+          transportIncluded: true,
+          includedServices: true,
+          travellers: {
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            select: { id: true, fullName: true, travellerType: true, nationality: true }
+          }
+        }
       }
     },
     orderBy: [{ createdAt: "asc" }, { reference: "asc" }]
@@ -96,6 +115,10 @@ type VisaDetailProjection = {
   }>;
 };
 
+type PilgrimagePackageDetailProjection = {
+  travellers: Array<{ nationality: string | null }>;
+};
+
 export function serializeBookingFile<
   T extends {
     reservations: Array<{
@@ -103,6 +126,7 @@ export function serializeBookingFile<
       costAmount: DecimalLike;
       flightDetail?: FlightDetailProjection | null;
       visaDetail?: VisaDetailProjection | null;
+      pilgrimagePackageDetail?: PilgrimagePackageDetailProjection | null;
     }>;
   }
 >(item: T, canReadCosts: boolean, canReadTravelDocuments = false) {
@@ -129,7 +153,14 @@ export function serializeBookingFile<
           nationality: canReadTravelDocuments ? applicant.nationality : null,
           dateOfBirth: canReadTravelDocuments ? applicant.dateOfBirth : null
         }))
-      } : reservation.visaDetail ?? null
+      } : reservation.visaDetail ?? null,
+      pilgrimagePackageDetail: reservation.pilgrimagePackageDetail ? {
+        ...reservation.pilgrimagePackageDetail,
+        travellers: reservation.pilgrimagePackageDetail.travellers.map((traveller) => ({
+          ...traveller,
+          nationality: canReadTravelDocuments ? traveller.nationality : null
+        }))
+      } : reservation.pilgrimagePackageDetail ?? null
     }))
   };
 }
