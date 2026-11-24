@@ -280,3 +280,75 @@ test("booking-file request hashes ignore the idempotency key and normalize paylo
   });
   assert.equal(bookingFileRequestHash(first), bookingFileRequestHash(second));
 });
+
+
+test("Umrah and Hajj services require a tour operator, matching dates and traveller details", () => {
+  for (const serviceType of ["UMRAH_PACKAGE", "HAJJ_PACKAGE"] as const) {
+    const service = {
+      serviceType,
+      supplierId: "tour-operator-1",
+      startDate: "2026-12-10",
+      endDate: "2026-12-20",
+      packageDetails: {
+        packageName: serviceType === "UMRAH_PACKAGE" ? "December Umrah" : "Hajj Group 2027",
+        departureCity: "Cairo",
+        departureDate: "2026-12-10",
+        returnDate: "2026-12-20",
+        groupReference: "GROUP-2026-12",
+        accommodationLevel: "FOUR_STAR",
+        mealPlan: "BREAKFAST",
+        transportIncluded: true,
+        includedServices: ["Makkah accommodation", "Madinah accommodation"],
+        travellers: [{ fullName: "TEST PILGRIM", travellerType: "ADULT", nationality: "EG" }]
+      }
+    };
+    const parsed = bookingFileCreateSchema.safeParse({
+      customerId: "customer-1",
+      idempotencyKey,
+      services: [service]
+    });
+    assert.equal(parsed.success, true);
+    if (parsed.success) {
+      const packageDetails = parsed.data.services[0]?.packageDetails;
+      assert.equal(packageDetails?.travellers.length, 1);
+      assert.equal(packageDetails?.mealPlan, "BREAKFAST");
+    }
+
+    assert.equal(bookingFileCreateSchema.safeParse({
+      customerId: "customer-1",
+      idempotencyKey,
+      services: [{ ...service, supplierId: undefined }]
+    }).success, false);
+    assert.equal(bookingFileCreateSchema.safeParse({
+      customerId: "customer-1",
+      idempotencyKey,
+      services: [{ ...service, endDate: "2026-12-21" }]
+    }).success, false);
+    assert.equal(bookingFileCreateSchema.safeParse({
+      customerId: "customer-1",
+      idempotencyKey,
+      services: [{
+        ...service,
+        packageDetails: { ...service.packageDetails, travellers: [] }
+      }]
+    }).success, false);
+  }
+});
+
+test("pilgrimage package details cannot be attached to unrelated service types", () => {
+  const parsed = bookingFileCreateSchema.safeParse({
+    customerId: "customer-1",
+    idempotencyKey,
+    services: [{
+      serviceType: "OTHER",
+      packageDetails: {
+        packageName: "Test Package",
+        departureCity: "Cairo",
+        departureDate: "2026-12-10",
+        returnDate: "2026-12-20",
+        travellers: [{ fullName: "TEST PILGRIM" }]
+      }
+    }]
+  });
+  assert.equal(parsed.success, false);
+});
