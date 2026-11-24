@@ -126,6 +126,40 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
     assert.equal(savedVisa?.applicants.length, 1);
     assert.equal(savedVisa?.applicants[0]?.nationality, "EG");
 
+    const umrahReservation = created.services.find((service) => service.serviceType === "UMRAH_PACKAGE");
+    assert.ok(umrahReservation, "The booking file must contain an Umrah package service.");
+    await prisma.pilgrimagePackageReservationDetail.create({
+      data: {
+        tenantId: currentTenantId,
+        reservationId: umrahReservation.id,
+        packageType: "UMRAH",
+        packageName: "Integration Umrah Package",
+        departureCity: "Cairo",
+        departureDate: new Date("2026-12-10T12:00:00.000Z"),
+        returnDate: new Date("2026-12-20T12:00:00.000Z"),
+        groupReference: "UMRAH-" + suffix,
+        accommodationLevel: "FOUR_STAR",
+        mealPlan: "BREAKFAST",
+        transportIncluded: true,
+        includedServices: ["Makkah accommodation", "Madinah accommodation"],
+        travellers: {
+          create: [{
+            fullName: "Integration Test Pilgrim",
+            travellerType: "ADULT",
+            nationality: "EG"
+          }]
+        }
+      }
+    });
+    const savedPackage = await prisma.pilgrimagePackageReservationDetail.findFirst({
+      where: { tenantId: currentTenantId, reservationId: umrahReservation.id },
+      include: { travellers: true }
+    });
+    assert.equal(savedPackage?.packageType, "UMRAH");
+    assert.equal(savedPackage?.packageName, "Integration Umrah Package");
+    assert.equal(savedPackage?.travellers.length, 1);
+    assert.equal(savedPackage?.travellers[0]?.nationality, "EG");
+
     assert.ok(savedFlight);
     await assert.rejects(prisma.flightSegment.create({
       data: {
