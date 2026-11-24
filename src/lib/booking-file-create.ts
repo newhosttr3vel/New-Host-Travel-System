@@ -61,6 +61,22 @@ export const flightReservationDetailsSchema = z.object({
   }
 });
 
+const visaApplicantSchema = z.object({
+  fullName: z.string().trim().min(2).max(160),
+  nationality: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).optional(),
+  dateOfBirth: dateOnly.optional()
+});
+
+export const visaReservationDetailsSchema = z.object({
+  destinationCountryCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/),
+  visaType: z.string().trim().min(2).max(80),
+  entryType: z.enum(["SINGLE", "DOUBLE", "MULTIPLE"]).default("SINGLE"),
+  status: z.enum(["DRAFT", "SUBMITTED"]).default("DRAFT"),
+  applicationReference: z.string().trim().max(80).optional(),
+  stayDurationDays: z.number().int().min(1).max(365).optional(),
+  applicants: z.array(visaApplicantSchema).min(1).max(20)
+});
+
 export const bookingFileServiceSchema = z.object({
   supplierId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
   serviceType: z.enum(["HOTEL", "FLIGHT", "VISA", "TRANSPORT", "UMRAH_PACKAGE", "HAJJ_PACKAGE", "TOUR", "OTHER"]),
@@ -71,7 +87,8 @@ export const bookingFileServiceSchema = z.object({
   costAmount: money.default("0"),
   notes: z.string().trim().max(2000).optional(),
   hotelDetails: hotelReservationDetailsSchema.optional(),
-  flightDetails: flightReservationDetailsSchema.optional()
+  flightDetails: flightReservationDetailsSchema.optional(),
+  visaDetails: visaReservationDetailsSchema.optional()
 }).superRefine((value, context) => {
   if (value.startDate && value.endDate && value.startDate !== "" && value.endDate !== "" && value.endDate < value.startDate) {
     context.addIssue({ code: "custom", path: ["endDate"], message: "End date must not be earlier than start date." });
@@ -94,6 +111,12 @@ export const bookingFileServiceSchema = z.object({
   }
   if (value.serviceType !== "FLIGHT" && value.flightDetails) {
     context.addIssue({ code: "custom", path: ["flightDetails"], message: "Flight details are only valid for flight services." });
+  }
+  if (value.serviceType === "VISA" && (!value.supplierId || !value.visaDetails)) {
+    context.addIssue({ code: "custom", path: ["visaDetails"], message: "A visa provider and applicant details are required." });
+  }
+  if (value.serviceType !== "VISA" && value.visaDetails) {
+    context.addIssue({ code: "custom", path: ["visaDetails"], message: "Visa details are only valid for visa services." });
   }
 });
 
