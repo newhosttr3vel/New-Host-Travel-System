@@ -113,7 +113,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         departureAt: new Date("2026-12-20T12:00:00.000Z"),
         arrivalAt: new Date("2026-12-20T11:00:00.000Z")
       }
-    }), undefined, "The database must reject a flight segment whose arrival is not after departure.");
+    }));
 
     await assert.rejects(prisma.flightPassenger.create({
       data: {
@@ -123,7 +123,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         ticketNumber: "0987654321098",
         ticketStatus: "ISSUED"
       }
-    }), undefined, "The database must reject duplicate ticket numbers within one flight service.");
+    }));
 
     await assert.rejects(prisma.flightPassenger.create({
       data: {
@@ -132,7 +132,7 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
         fullName: "Missing Ticket Number",
         ticketStatus: "ISSUED"
       }
-    }), undefined, "The database must reject an issued ticket without a ticket number.");
+    }));
 
     const failedReference = "NHT-BF-ROLLBACK-" + suffix;
     await assert.rejects(prisma.$transaction(async (tx) => {
