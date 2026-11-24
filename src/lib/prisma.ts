@@ -12,7 +12,8 @@ const modelDelegates = new Set([
   "branch", "branchMembership", "customer", "bookingFile", "hotel", "supplier", "reservation",
   "hotelReservationDetail", "hotelReservationRoom", "hotelReservationNightRate",
   "flightReservationDetail", "flightSegment", "flightPassenger",
-  "visaReservationDetail", "visaApplicant", "auditEvent",
+  "visaReservationDetail", "visaApplicant",
+  "pilgrimagePackageReservationDetail", "pilgrimagePackageTraveller", "auditEvent",
   "document", "ledgerAccount", "journalEntry", "journalLine", "invoice", "invoiceLine",
   "customerPayment", "supplierBill", "supplierBillLine", "supplierPayment"
 ]);
@@ -21,6 +22,7 @@ const tenantModels = new Set([
   "Reservation", "BookingFile", "HotelReservationDetail", "HotelReservationRoom", "HotelReservationNightRate",
   "FlightReservationDetail", "FlightSegment", "FlightPassenger",
   "VisaReservationDetail", "VisaApplicant",
+  "PilgrimagePackageReservationDetail", "PilgrimagePackageTraveller",
   "AuditEvent", "Document", "LedgerAccount", "JournalEntry", "JournalLine", "Invoice",
   "InvoiceLine", "CustomerPayment", "SupplierBill", "SupplierBillLine", "SupplierPayment"
 ]);
