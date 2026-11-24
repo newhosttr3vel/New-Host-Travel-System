@@ -143,8 +143,9 @@ export async function GET(request: Request) {
   ]));
 
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
+  const canReadTravelDocuments = hasPermission(access.membership.role, "documents:read");
   return Response.json({
-    items: items.map((item) => serializeBookingFile(item, canReadCosts)),
+    items: items.map((item) => serializeBookingFile(item, canReadCosts, canReadTravelDocuments)),
     pagination: { page, pageSize, total, pages: Math.ceil(total / pageSize) }
   });
 }
@@ -175,6 +176,7 @@ export async function POST(request: Request) {
   const input = parsed.data;
   const requestHash = bookingFileRequestHash(input);
   const canReadCosts = hasPermission(access.membership.role, "finance:read");
+  const canReadTravelDocuments = hasPermission(access.membership.role, "documents:read");
   const outcome = await runReservationTransaction("create-booking-file", () => prisma.$transaction(async (tx) => {
     const tenantId = access.membership.tenantId;
     const lockKey = `booking-file:${tenantId}:${input.idempotencyKey}`;
@@ -391,7 +393,7 @@ export async function POST(request: Request) {
   }
 
   return Response.json(
-    { item: serializeBookingFile(result.item, canReadCosts), replay: result.replay },
+    { item: serializeBookingFile(result.item, canReadCosts, canReadTravelDocuments), replay: result.replay },
     { status: result.replay ? 200 : 201 }
   );
 }

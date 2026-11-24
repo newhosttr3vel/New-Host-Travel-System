@@ -65,7 +65,7 @@ Create a flight service through `POST /api/booking-files`. The request still req
 - Validation errors: HTTP 400; branch authorization failures: HTTP 403.
 - The booking file and all flight records are written in the same PostgreSQL transaction.
 - All three flight tables enforce tenant isolation with PostgreSQL RLS and are registered in the tenant-context Prisma wrapper.
-- The booking-file read API returns flight segments and passenger ticket status. Cost fields continue to be masked without `finance:read`.
+- The booking-file read API returns flight segments and passenger names. Booking references, passenger nationality and ticket numbers are masked unless the user has `documents:read`; cost fields are masked unless the user has `finance:read`.
 
 ## Explicit limitations
 

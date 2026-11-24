@@ -61,20 +61,38 @@ export type BookingFileView = Prisma.BookingFileGetPayload<{
 
 type DecimalLike = { toString(): string };
 
+type FlightDetailProjection = {
+  bookingReference: string | null;
+  passengers: Array<{
+    nationality: string | null;
+    ticketNumber: string | null;
+  }>;
+};
+
 export function serializeBookingFile<
   T extends {
     reservations: Array<{
       saleAmount: DecimalLike;
       costAmount: DecimalLike;
+      flightDetail?: FlightDetailProjection | null;
     }>;
   }
->(item: T, canReadCosts: boolean) {
+>(item: T, canReadCosts: boolean, canReadTravelDocuments = false) {
   return {
     ...item,
     reservations: item.reservations.map((reservation) => ({
       ...reservation,
       saleAmount: reservation.saleAmount.toString(),
-      costAmount: canReadCosts ? reservation.costAmount.toString() : null
+      costAmount: canReadCosts ? reservation.costAmount.toString() : null,
+      flightDetail: reservation.flightDetail ? {
+        ...reservation.flightDetail,
+        bookingReference: canReadTravelDocuments ? reservation.flightDetail.bookingReference : null,
+        passengers: reservation.flightDetail.passengers.map((passenger) => ({
+          ...passenger,
+          nationality: canReadTravelDocuments ? passenger.nationality : null,
+          ticketNumber: canReadTravelDocuments ? passenger.ticketNumber : null
+        }))
+      } : reservation.flightDetail ?? null
     }))
   };
 }
