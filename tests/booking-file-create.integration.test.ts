@@ -54,11 +54,11 @@ test("booking-file multi-service creation is atomic and enforces one customer pe
       return { file, services };
     });
 
-    assert.equal(created.services.length, 3);
+    assert.equal(created.services.length, 4);
     assert.ok(created.services.every((service) => service.bookingFileId === created.file.id));
     assert.deepEqual(
       created.services.map((service) => service.serviceType),
-      ["HOTEL", "FLIGHT", "UMRAH_PACKAGE"]
+      ["HOTEL", "FLIGHT", "UMRAH_PACKAGE", "VISA"]
     );
 
     const flightReservation = created.services.find((service) => service.serviceType === "FLIGHT");
