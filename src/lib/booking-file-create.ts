@@ -74,7 +74,7 @@ export const visaReservationDetailsSchema = z.object({
   applicationReference: z.string().trim().max(80).optional(),
   stayDurationDays: z.number().int().min(1).max(365).optional(),
   applicants: z.array(visaApplicantSchema).min(1).max(20)
-});
+}).strict();
 
 export const bookingFileServiceSchema = z.object({
   supplierId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
