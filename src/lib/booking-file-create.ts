@@ -76,6 +76,33 @@ export const visaReservationDetailsSchema = z.object({
   applicants: z.array(visaApplicantSchema).min(1).max(20)
 }).strict();
 
+const pilgrimagePackageTravellerSchema = z.object({
+  fullName: z.string().trim().min(2).max(160),
+  travellerType: z.enum(["ADULT", "CHILD", "INFANT"]).default("ADULT"),
+  nationality: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).optional()
+});
+
+export const pilgrimagePackageDetailsSchema = z.object({
+  packageName: z.string().trim().min(2).max(160),
+  departureCity: z.string().trim().min(2).max(100),
+  departureDate: dateOnly,
+  returnDate: dateOnly,
+  groupReference: z.string().trim().max(80).optional(),
+  accommodationLevel: z.enum(["THREE_STAR", "FOUR_STAR", "FIVE_STAR", "LUXURY", "OTHER"]).default("FOUR_STAR"),
+  mealPlan: z.enum(["ROOM_ONLY", "BREAKFAST", "HALF_BOARD", "FULL_BOARD"]).default("BREAKFAST"),
+  transportIncluded: z.boolean().default(false),
+  includedServices: z.array(z.string().trim().min(2).max(80)).max(20).default([]),
+  travellers: z.array(pilgrimagePackageTravellerSchema).min(1).max(50)
+}).superRefine((value, context) => {
+  if (value.returnDate <= value.departureDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["returnDate"],
+      message: "Return date must be later than departure date."
+    });
+  }
+});
+
 export const bookingFileServiceSchema = z.object({
   supplierId: z.union([z.string().trim().min(1).max(80), z.literal("")]).optional(),
   serviceType: z.enum(["HOTEL", "FLIGHT", "VISA", "TRANSPORT", "UMRAH_PACKAGE", "HAJJ_PACKAGE", "TOUR", "OTHER"]),
@@ -87,7 +114,8 @@ export const bookingFileServiceSchema = z.object({
   notes: z.string().trim().max(2000).optional(),
   hotelDetails: hotelReservationDetailsSchema.optional(),
   flightDetails: flightReservationDetailsSchema.optional(),
-  visaDetails: visaReservationDetailsSchema.optional()
+  visaDetails: visaReservationDetailsSchema.optional(),
+  packageDetails: pilgrimagePackageDetailsSchema.optional()
 }).superRefine((value, context) => {
   if (value.startDate && value.endDate && value.startDate !== "" && value.endDate !== "" && value.endDate < value.startDate) {
     context.addIssue({ code: "custom", path: ["endDate"], message: "End date must not be earlier than start date." });
@@ -116,6 +144,20 @@ export const bookingFileServiceSchema = z.object({
   }
   if (value.serviceType !== "VISA" && value.visaDetails) {
     context.addIssue({ code: "custom", path: ["visaDetails"], message: "Visa details are only valid for visa services." });
+  }
+  const isPilgrimagePackage = value.serviceType === "UMRAH_PACKAGE" || value.serviceType === "HAJJ_PACKAGE";
+  if (isPilgrimagePackage) {
+    if (!value.supplierId || !value.packageDetails) {
+      context.addIssue({ code: "custom", path: ["packageDetails"], message: "A tour operator and package traveller details are required." });
+    }
+    if (!value.startDate || value.startDate === "" || value.startDate !== value.packageDetails?.departureDate) {
+      context.addIssue({ code: "custom", path: ["startDate"], message: "Package start date must match its departure date." });
+    }
+    if (!value.endDate || value.endDate === "" || value.endDate !== value.packageDetails?.returnDate) {
+      context.addIssue({ code: "custom", path: ["endDate"], message: "Package end date must match its return date." });
+    }
+  } else if (value.packageDetails) {
+    context.addIssue({ code: "custom", path: ["packageDetails"], message: "Pilgrimage package details are only valid for Umrah or Hajj services." });
   }
 });
 
