@@ -27,6 +27,20 @@ const record = {
         nationality: "EG",
         dateOfBirth: new Date("1990-01-01T12:00:00.000Z")
       }]
+    },
+    pilgrimagePackageDetail: {
+      id: "package-detail-1",
+      packageType: "UMRAH",
+      packageName: "December Umrah",
+      departureCity: "Cairo",
+      departureDate: new Date("2026-12-10T12:00:00.000Z"),
+      returnDate: new Date("2026-12-20T12:00:00.000Z"),
+      groupReference: "GROUP-2026-12",
+      accommodationLevel: "FOUR_STAR",
+      mealPlan: "BREAKFAST",
+      transportIncluded: true,
+      includedServices: ["Makkah accommodation"],
+      travellers: [{ id: "pilgrim-1", fullName: "TEST PILGRIM", travellerType: "ADULT", nationality: "EG" }]
     }
   }]
 };
@@ -72,4 +86,17 @@ test("booking file projection exposes visa applicant details only with documents
     result.reservations[0]?.visaDetail?.applicants[0]?.dateOfBirth?.toISOString(),
     "1990-01-01T12:00:00.000Z"
   );
+});
+
+
+test("booking file projection masks pilgrimage traveller nationality without documents:read", () => {
+  const result = serializeBookingFile(record, false, false);
+  assert.equal(result.reservations[0]?.pilgrimagePackageDetail?.packageName, "December Umrah");
+  assert.equal(result.reservations[0]?.pilgrimagePackageDetail?.travellers[0]?.fullName, "TEST PILGRIM");
+  assert.equal(result.reservations[0]?.pilgrimagePackageDetail?.travellers[0]?.nationality, null);
+});
+
+test("booking file projection exposes pilgrimage traveller nationality only with documents:read", () => {
+  const result = serializeBookingFile(record, false, true);
+  assert.equal(result.reservations[0]?.pilgrimagePackageDetail?.travellers[0]?.nationality, "EG");
 });

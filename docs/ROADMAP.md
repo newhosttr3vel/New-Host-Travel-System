@@ -33,7 +33,8 @@ The target product workflow is documented in [TRAVEL_ERP_BLUEPRINT.md](./TRAVEL_
 
 ## Milestone 4 — Hajj, Umrah and traveller operations
 - [ ] Add traveller/pilgrim profiles and protected document vault.
-- [ ] Add Umrah/Hajj packages, groups, departures, capacities and costing.
+- [ ] Add Umrah/Hajj package catalog, group departures, capacities and package costing.
+- [x] Capture initial tenant-scoped Umrah/Hajj package itinerary and traveller manifest on booking-file services (without group inventory or protected document handling).
 - [ ] Add group manifests, traveller assignment and readiness checklist.
 - [x] Capture flight segments, passenger manifests and ticket-status references on booking-file creation (initial operational detail only).
 - [ ] Add ticket issuance, ticket changes, void/refund handling and authorized airline/provider integrations.
