@@ -43,6 +43,7 @@ The target product workflow is documented in [TRAVEL_ERP_BLUEPRINT.md](./TRAVEL_
 - [ ] Add transport, route, vehicle, pickup and execution workflows.
 
 ## Milestone 5 — Supplier, finance and operations control
+- [x] Add a finance-permission-gated, tenant/branch-scoped booking-file summary for linked invoices, receipts, supplier bills, payments and per-currency estimates (read-only; no posting).
 - [ ] Add supplier contracts, service rates, confirmations and performance history.
 - [ ] Add supplier-bill and supplier-payment screens.
 - [ ] Add credit notes, refunds, allocations, customer/supplier statements and bank reconciliation.
