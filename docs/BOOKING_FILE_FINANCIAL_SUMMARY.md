@@ -6,7 +6,7 @@ This read-only endpoint gives finance-authorized users a consolidated view of fi
 
 `GET /api/booking-files/{id}/financial-summary`
 
-Requires the existing `finance:read` permission. The booking file, service reservations, customer invoices and supplier bills are all queried with the authenticated tenant context and the caller's branch scope. An inaccessible or missing booking file returns `404 NOT_FOUND`.
+Requires the existing `finance:read` permission. The booking file, service reservations, customer invoices, receipt rows, supplier bills and supplier-payment rows are all queried with the authenticated tenant context and the caller's branch scope. An inaccessible or missing booking file returns `404 NOT_FOUND`.
 
 ## Response
 
