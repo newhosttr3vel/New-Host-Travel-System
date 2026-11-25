@@ -56,6 +56,7 @@ export async function GET(request: Request, context: RouteContext) {
               total: true,
               paidAmount: true,
               payments: {
+                where: { tenantId, ...branchScope },
                 orderBy: [{ paymentDate: "asc" }, { createdAt: "asc" }],
                 select: {
                   id: true,
@@ -86,6 +87,7 @@ export async function GET(request: Request, context: RouteContext) {
                 select: { id: true, name: true }
               },
               payments: {
+                where: { tenantId, ...branchScope },
                 orderBy: [{ paymentDate: "asc" }, { createdAt: "asc" }],
                 select: {
                   id: true,
