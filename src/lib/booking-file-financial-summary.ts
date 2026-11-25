@@ -2,6 +2,18 @@ import { amountToCents, centsToAmount } from "@/lib/finance-journal";
 
 type DecimalLike = { toString(): string };
 
+type FinancialPayment = {
+  id: string;
+  paymentDate: Date;
+  method: string;
+  amount: DecimalLike;
+  currency: string;
+  reference: string | null;
+  receiptNumber?: string;
+  paymentNumber?: string;
+  journalEntry: { reference: string };
+};
+
 type FinancialDocument = {
   id: string;
   reference: string;
@@ -13,6 +25,7 @@ type FinancialDocument = {
   issueDate?: Date;
   billDate?: Date;
   supplier?: { id: string; name: string };
+  payments: FinancialPayment[];
 };
 
 type ReservationFinancialRecord = {
@@ -81,6 +94,16 @@ function serializeDocument(document: FinancialDocument, date: Date, kind: "INVOI
     paidAmount: document.paidAmount.toString(),
     outstandingAmount: includedInTotals ? centsToAmount(total - paid) : null,
     includedInTotals,
+    payments: document.payments.map((payment) => ({
+      id: payment.id,
+      number: payment.receiptNumber ?? payment.paymentNumber ?? null,
+      paymentDate: payment.paymentDate.toISOString(),
+      method: payment.method,
+      amount: payment.amount.toString(),
+      currency: payment.currency,
+      reference: payment.reference,
+      journalReference: payment.journalEntry.reference
+    })),
     ...(kind === "SUPPLIER_BILL" ? { supplier: document.supplier ?? null } : {})
   };
 }
