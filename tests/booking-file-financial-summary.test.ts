@@ -102,6 +102,11 @@ test("booking-file financial summary keeps each currency separate", () => {
   const result = summarizeBookingFileFinancials(record);
   assert.deepEqual(result.currencySummaries.map((item) => item.currency), ["EGP", "SAR"]);
 
+  const receipt = result.reservations[0]?.invoices[0]?.payments[0];
+  assert.equal(receipt?.number, "RCPT-001");
+  assert.equal(receipt?.journalReference, "JRN-001");
+  assert.equal(receipt?.amount, "500.05");
+
   const egp = result.currencySummaries[0]!;
   assert.deepEqual(egp.estimates, {
     sales: "1250.10",
@@ -143,6 +148,7 @@ test("void financial documents remain visible but are excluded from balances", (
   assert.equal(egp?.receivables.invoiced, "1250.10");
   const voidInvoice = result.reservations[0]?.invoices.find((invoice) => invoice.id === "invoice-void");
   assert.equal(voidInvoice?.includedInTotals, false);
+  assert.deepEqual(voidInvoice?.payments, []);
   assert.equal(voidInvoice?.outstandingAmount, null);
 });
 
@@ -159,4 +165,6 @@ test("supplier bills include their supplier reference and exact outstanding bala
   assert.equal(bill?.supplier?.name, "Hotel Supplier");
   assert.equal(bill?.outstandingAmount, "500.00");
   assert.equal(bill?.includedInTotals, true);
+  assert.equal(bill?.payments[0]?.number, "PAY-001");
+  assert.equal(bill?.payments[0]?.journalReference, "JRN-002");
 });
