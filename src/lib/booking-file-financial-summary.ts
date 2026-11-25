@@ -14,7 +14,7 @@ type FinancialPayment = {
   journalEntry: { reference: string };
 };
 
-type FinancialDocument = {
+type FinancialDocumentBase = {
   id: string;
   reference: string;
   status: string;
@@ -22,10 +22,13 @@ type FinancialDocument = {
   total: DecimalLike;
   paidAmount: DecimalLike;
   dueDate: Date | null;
-  issueDate?: Date;
-  billDate?: Date;
-  supplier?: { id: string; name: string };
   payments: FinancialPayment[];
+};
+
+type InvoiceFinancialDocument = FinancialDocumentBase & { issueDate: Date };
+type SupplierBillFinancialDocument = FinancialDocumentBase & {
+  billDate: Date;
+  supplier: { id: string; name: string };
 };
 
 type ReservationFinancialRecord = {
@@ -37,8 +40,8 @@ type ReservationFinancialRecord = {
   saleAmount: DecimalLike;
   costAmount: DecimalLike;
   archivedAt: Date | null;
-  invoices: FinancialDocument[];
-  supplierBills: FinancialDocument[];
+  invoices: InvoiceFinancialDocument[];
+  supplierBills: SupplierBillFinancialDocument[];
 };
 
 type BookingFileFinancialRecord = {
@@ -79,7 +82,24 @@ function getCurrency(
   return value;
 }
 
-function serializeDocument(document: FinancialDocument, date: Date, kind: "INVOICE" | "SUPPLIER_BILL") {
+function serializePayment(payment: FinancialPayment) {
+  return {
+    id: payment.id,
+    number: payment.receiptNumber ?? payment.paymentNumber ?? null,
+    paymentDate: payment.paymentDate.toISOString(),
+    method: payment.method,
+    amount: payment.amount.toString(),
+    currency: payment.currency,
+    reference: payment.reference,
+    journalReference: payment.journalEntry.reference
+  };
+}
+
+function serializeDocument(
+  document: FinancialDocumentBase,
+  date: Date,
+  supplier?: { id: string; name: string }
+) {
   const includedInTotals = document.status !== "VOID";
   const total = amountToCents(document.total.toString());
   const paid = amountToCents(document.paidAmount.toString());
@@ -94,17 +114,8 @@ function serializeDocument(document: FinancialDocument, date: Date, kind: "INVOI
     paidAmount: document.paidAmount.toString(),
     outstandingAmount: includedInTotals ? centsToAmount(total - paid) : null,
     includedInTotals,
-    payments: document.payments.map((payment) => ({
-      id: payment.id,
-      number: payment.receiptNumber ?? payment.paymentNumber ?? null,
-      paymentDate: payment.paymentDate.toISOString(),
-      method: payment.method,
-      amount: payment.amount.toString(),
-      currency: payment.currency,
-      reference: payment.reference,
-      journalReference: payment.journalEntry.reference
-    })),
-    ...(kind === "SUPPLIER_BILL" ? { supplier: document.supplier ?? null } : {})
+    payments: document.payments.map(serializePayment),
+    ...(supplier ? { supplier } : {})
   };
 }
 
@@ -124,7 +135,7 @@ export function summarizeBookingFileFinancials(item: BookingFileFinancialRecord)
     estimate.estimatedCosts += cost;
 
     const invoices = reservation.invoices.map((invoice) => {
-      const serialized = serializeDocument(invoice, invoice.issueDate!, "INVOICE");
+      const serialized = serializeDocument(invoice, invoice.issueDate);
       if (serialized.includedInTotals) {
         const totals = getCurrency(currencies, invoice.currency);
         totals.invoiced += amountToCents(invoice.total.toString());
@@ -134,7 +145,7 @@ export function summarizeBookingFileFinancials(item: BookingFileFinancialRecord)
     });
 
     const supplierBills = reservation.supplierBills.map((bill) => {
-      const serialized = serializeDocument(bill, bill.billDate!, "SUPPLIER_BILL");
+      const serialized = serializeDocument(bill, bill.billDate, bill.supplier);
       if (serialized.includedInTotals) {
         const totals = getCurrency(currencies, bill.currency);
         totals.supplierBilled += amountToCents(bill.total.toString());
