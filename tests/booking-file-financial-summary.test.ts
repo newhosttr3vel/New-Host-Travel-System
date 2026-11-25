@@ -29,7 +29,17 @@ const record = {
         issueDate: new Date("2026-11-20T12:00:00.000Z"),
         dueDate: new Date("2026-11-30T12:00:00.000Z"),
         total: decimal("1250.10"),
-        paidAmount: decimal("500.05")
+        paidAmount: decimal("500.05"),
+        payments: [{
+          id: "receipt-1",
+          receiptNumber: "RCPT-001",
+          paymentDate: new Date("2026-11-23T12:00:00.000Z"),
+          method: "BANK_TRANSFER",
+          amount: decimal("500.05"),
+          currency: "EGP",
+          reference: "BANK-REF-001",
+          journalEntry: { reference: "JRN-001" }
+        }]
       }, {
         id: "invoice-void",
         reference: "INV-VOID",
@@ -38,7 +48,8 @@ const record = {
         issueDate: new Date("2026-11-21T12:00:00.000Z"),
         dueDate: null,
         total: decimal("999.99"),
-        paidAmount: decimal("0.00")
+        paidAmount: decimal("0.00"),
+        payments: []
       }],
       supplierBills: [{
         id: "bill-1",
@@ -49,6 +60,16 @@ const record = {
         dueDate: new Date("2026-12-01T12:00:00.000Z"),
         total: decimal("800.00"),
         paidAmount: decimal("300.00"),
+        payments: [{
+          id: "supplier-payment-1",
+          paymentNumber: "PAY-001",
+          paymentDate: new Date("2026-11-24T12:00:00.000Z"),
+          method: "BANK_TRANSFER",
+          amount: decimal("300.00"),
+          currency: "EGP",
+          reference: "SUP-BANK-001",
+          journalEntry: { reference: "JRN-002" }
+        }],
         supplier: { id: "supplier-1", name: "Hotel Supplier" }
       }]
     },
@@ -69,7 +90,8 @@ const record = {
         issueDate: new Date("2026-11-22T12:00:00.000Z"),
         dueDate: null,
         total: decimal("4200.00"),
-        paidAmount: decimal("0.00")
+        paidAmount: decimal("0.00"),
+        payments: []
       }],
       supplierBills: []
     }
