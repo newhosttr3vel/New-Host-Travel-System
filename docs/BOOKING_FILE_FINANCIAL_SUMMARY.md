@@ -14,8 +14,8 @@ The response contains:
 
 - Booking-file reference and B2B customer identity.
 - Every service reservation, including archived service lines so historical financial documents are not silently hidden.
-- Linked non-void customer invoices and their paid/outstanding amounts.
-- Linked non-void supplier bills, supplier identity and their paid/outstanding amounts.
+- Linked customer invoices with receipt number, method, date and journal reference for each posted receipt.
+- Linked supplier bills with supplier identity and payment number, method, date and journal reference for each posted payment.
 - A currency summary for estimated service amounts, customer receivables and supplier payables.
 
 All amounts are returned as decimal strings and aggregated with integer cents. EGP, SAR, USD and other currencies are kept in separate groups; this endpoint does not invent exchange rates or combine unlike currencies.
@@ -23,8 +23,8 @@ All amounts are returned as decimal strings and aggregated with integer cents. E
 ## Financial definitions and boundaries
 
 - **Estimates** come from the reservation's sale and cost snapshots. The displayed gross margin is an estimate, not a posted or realized profit.
-- **Receivables** come from customer invoices linked through `reservationId`; collected amounts use the invoice's posted `paidAmount` snapshot.
-- **Payables** come from supplier bills linked through `reservationId`; paid amounts use the bill's posted `paidAmount` snapshot.
+- **Receivables** come from customer invoices linked through `reservationId`; receipt details are listed from posted payment rows, while collected totals use the invoice's posted `paidAmount` snapshot.
+- **Payables** come from supplier bills linked through `reservationId`; supplier payment details are listed from posted payment rows, while paid totals use the bill's posted `paidAmount` snapshot.
 - Documents with `VOID` status remain visible in the service history but are excluded from totals and have a null outstanding amount.
 - Unlinked invoices or supplier bills are not attributed to a booking file.
 - No invoice, receipt, supplier bill, payment, allocation or journal entry is created or changed by this endpoint.
