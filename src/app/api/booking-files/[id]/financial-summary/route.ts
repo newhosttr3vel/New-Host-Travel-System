@@ -54,7 +54,20 @@ export async function GET(request: Request, context: RouteContext) {
               issueDate: true,
               dueDate: true,
               total: true,
-              paidAmount: true
+              paidAmount: true,
+              payments: {
+                orderBy: [{ paymentDate: "asc" }, { createdAt: "asc" }],
+                select: {
+                  id: true,
+                  receiptNumber: true,
+                  paymentDate: true,
+                  method: true,
+                  amount: true,
+                  currency: true,
+                  reference: true,
+                  journalEntry: { select: { reference: true } }
+                }
+              }
             }
           },
           supplierBills: {
@@ -71,6 +84,19 @@ export async function GET(request: Request, context: RouteContext) {
               paidAmount: true,
               supplier: {
                 select: { id: true, name: true }
+              },
+              payments: {
+                orderBy: [{ paymentDate: "asc" }, { createdAt: "asc" }],
+                select: {
+                  id: true,
+                  paymentNumber: true,
+                  paymentDate: true,
+                  method: true,
+                  amount: true,
+                  currency: true,
+                  reference: true,
+                  journalEntry: { select: { reference: true } }
+                }
               }
             }
           }
