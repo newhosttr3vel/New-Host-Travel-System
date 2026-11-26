@@ -36,7 +36,7 @@ test("booking-file financial summary API enforces finance permission, tenant iso
     const cookieHeader = signUp.headers.getSetCookie()
       .map((value) => value.split(";")[0])
       .join("; ");
-    assert.match(cookieHeader, /better-auth\\.session_token=/);
+    assert.match(cookieHeader, /better-auth\.session_token=/);
 
     const workspace = await createWorkspaceForUser(prisma, {
       userId,
