@@ -136,6 +136,219 @@ test("booking-file financial summary API enforces finance permission, tenant iso
       }
     });
 
+    // Seed linked financial documents directly so the read API is tested against
+    // both valid branch-A records and deliberately mismatched branch-B child rows.
+    const cashAccount = await admin.ledgerAccount.create({
+      data: {
+        tenantId,
+        code: "CASH-FIN-API-" + suffix,
+        name: "نقدية اختبار",
+        nameEn: "Finance API test cash",
+        type: "ASSET"
+      }
+    });
+    const supplier = await admin.supplier.create({
+      data: {
+        tenantId,
+        name: "Finance API Test Supplier",
+        category: "HOTEL"
+      }
+    });
+    const documentDate = new Date("2026-11-27T12:00:00.000Z");
+    const createJournal = (branchId: string, reference: string, sourceType: "INVOICE" | "CUSTOMER_PAYMENT" | "SUPPLIER_BILL" | "SUPPLIER_PAYMENT") =>
+      admin.journalEntry.create({
+        data: {
+          tenantId,
+          branchId,
+          reference,
+          entryDate: documentDate,
+          description: "Financial summary API branch-scope fixture",
+          currency: "EGP",
+          exchangeRate: "1",
+          sourceType
+        }
+      });
+
+    const [
+      invoiceJournal,
+      hiddenInvoiceJournal,
+      receiptJournal,
+      hiddenReceiptJournal,
+      billJournal,
+      hiddenBillJournal,
+      supplierPaymentJournal,
+      hiddenSupplierPaymentJournal
+    ] = await Promise.all([
+      createJournal(branchA.id, "NHT-FIN-INV-A-" + suffix, "INVOICE"),
+      createJournal(branchB.id, "NHT-FIN-INV-B-" + suffix, "INVOICE"),
+      createJournal(branchA.id, "NHT-FIN-RCT-A-" + suffix, "CUSTOMER_PAYMENT"),
+      createJournal(branchB.id, "NHT-FIN-RCT-B-" + suffix, "CUSTOMER_PAYMENT"),
+      createJournal(branchA.id, "NHT-FIN-BILL-A-" + suffix, "SUPPLIER_BILL"),
+      createJournal(branchB.id, "NHT-FIN-BILL-B-" + suffix, "SUPPLIER_BILL"),
+      createJournal(branchA.id, "NHT-FIN-PAY-A-" + suffix, "SUPPLIER_PAYMENT"),
+      createJournal(branchB.id, "NHT-FIN-PAY-B-" + suffix, "SUPPLIER_PAYMENT")
+    ]);
+
+    const [visibleInvoice, hiddenBranchInvoice] = await Promise.all([
+      admin.invoice.create({
+        data: {
+          tenantId,
+          branchId: branchA.id,
+          customerId: customer.id,
+          reservationId: visibleReservation.id,
+          journalEntryId: invoiceJournal.id,
+          reference: "NHT-FIN-INVOICE-A-" + suffix,
+          issueDate: documentDate,
+          status: "ISSUED",
+          currency: "EGP",
+          exchangeRate: "1",
+          subtotal: "1000.00",
+          taxAmount: "0.00",
+          total: "1000.00",
+          paidAmount: "40.00",
+          idempotencyKey: "finance-api-invoice-a-" + suffix,
+          requestHash: "finance-api-invoice-a-hash-" + suffix
+        }
+      }),
+      admin.invoice.create({
+        data: {
+          tenantId,
+          branchId: branchB.id,
+          customerId: customer.id,
+          reservationId: visibleReservation.id,
+          journalEntryId: hiddenInvoiceJournal.id,
+          reference: "NHT-FIN-INVOICE-B-" + suffix,
+          issueDate: documentDate,
+          status: "ISSUED",
+          currency: "EGP",
+          exchangeRate: "1",
+          subtotal: "500.00",
+          taxAmount: "0.00",
+          total: "500.00",
+          paidAmount: "0.00",
+          idempotencyKey: "finance-api-invoice-b-" + suffix,
+          requestHash: "finance-api-invoice-b-hash-" + suffix
+        }
+      })
+    ]);
+
+    const [visibleReceipt, hiddenBranchReceipt] = await Promise.all([
+      admin.customerPayment.create({
+        data: {
+          tenantId,
+          branchId: branchA.id,
+          invoiceId: visibleInvoice.id,
+          accountId: cashAccount.id,
+          journalEntryId: receiptJournal.id,
+          receiptNumber: "NHT-FIN-RECEIPT-A-" + suffix,
+          paymentDate: documentDate,
+          method: "CASH",
+          amount: "40.00",
+          currency: "EGP",
+          exchangeRate: "1",
+          idempotencyKey: "finance-api-receipt-a-" + suffix,
+          requestHash: "finance-api-receipt-a-hash-" + suffix
+        }
+      }),
+      admin.customerPayment.create({
+        data: {
+          tenantId,
+          branchId: branchB.id,
+          invoiceId: visibleInvoice.id,
+          accountId: cashAccount.id,
+          journalEntryId: hiddenReceiptJournal.id,
+          receiptNumber: "NHT-FIN-RECEIPT-B-" + suffix,
+          paymentDate: documentDate,
+          method: "CASH",
+          amount: "5.00",
+          currency: "EGP",
+          exchangeRate: "1",
+          idempotencyKey: "finance-api-receipt-b-" + suffix,
+          requestHash: "finance-api-receipt-b-hash-" + suffix
+        }
+      })
+    ]);
+
+    const [visibleSupplierBill, hiddenBranchSupplierBill] = await Promise.all([
+      admin.supplierBill.create({
+        data: {
+          tenantId,
+          branchId: branchA.id,
+          supplierId: supplier.id,
+          reservationId: visibleReservation.id,
+          journalEntryId: billJournal.id,
+          reference: "NHT-FIN-SUPPLIER-BILL-A-" + suffix,
+          billDate: documentDate,
+          status: "ISSUED",
+          currency: "EGP",
+          exchangeRate: "1",
+          subtotal: "700.00",
+          taxAmount: "0.00",
+          total: "700.00",
+          paidAmount: "100.00",
+          idempotencyKey: "finance-api-bill-a-" + suffix,
+          requestHash: "finance-api-bill-a-hash-" + suffix
+        }
+      }),
+      admin.supplierBill.create({
+        data: {
+          tenantId,
+          branchId: branchB.id,
+          supplierId: supplier.id,
+          reservationId: visibleReservation.id,
+          journalEntryId: hiddenBillJournal.id,
+          reference: "NHT-FIN-SUPPLIER-BILL-B-" + suffix,
+          billDate: documentDate,
+          status: "ISSUED",
+          currency: "EGP",
+          exchangeRate: "1",
+          subtotal: "300.00",
+          taxAmount: "0.00",
+          total: "300.00",
+          paidAmount: "0.00",
+          idempotencyKey: "finance-api-bill-b-" + suffix,
+          requestHash: "finance-api-bill-b-hash-" + suffix
+        }
+      })
+    ]);
+
+    const [visibleSupplierPayment, hiddenBranchSupplierPayment] = await Promise.all([
+      admin.supplierPayment.create({
+        data: {
+          tenantId,
+          branchId: branchA.id,
+          supplierBillId: visibleSupplierBill.id,
+          accountId: cashAccount.id,
+          journalEntryId: supplierPaymentJournal.id,
+          paymentNumber: "NHT-FIN-PAYMENT-A-" + suffix,
+          paymentDate: documentDate,
+          method: "CASH",
+          amount: "100.00",
+          currency: "EGP",
+          exchangeRate: "1",
+          idempotencyKey: "finance-api-supplier-payment-a-" + suffix,
+          requestHash: "finance-api-supplier-payment-a-hash-" + suffix
+        }
+      }),
+      admin.supplierPayment.create({
+        data: {
+          tenantId,
+          branchId: branchB.id,
+          supplierBillId: visibleSupplierBill.id,
+          accountId: cashAccount.id,
+          journalEntryId: hiddenSupplierPaymentJournal.id,
+          paymentNumber: "NHT-FIN-PAYMENT-B-" + suffix,
+          paymentDate: documentDate,
+          method: "CASH",
+          amount: "10.00",
+          currency: "EGP",
+          exchangeRate: "1",
+          idempotencyKey: "finance-api-supplier-payment-b-" + suffix,
+          requestHash: "finance-api-supplier-payment-b-hash-" + suffix
+        }
+      })
+    ]);
+
     const request = (path: string, includeSession = true) => new Request("http://localhost:3000" + path, {
       headers: {
         ...(includeSession ? { Cookie: cookieHeader } : {}),
@@ -151,17 +364,37 @@ test("booking-file financial summary API enforces finance permission, tenant iso
     assert.equal(ownResponse.status, 200, await ownResponse.clone().text());
     const ownBody = await ownResponse.json() as {
       item: {
-        reservations: Array<{ id: string }>;
-        currencySummaries: Array<{ currency: string; estimates: { sales: string; costs: string } }>;
+        reservations: Array<{
+          id: string;
+          invoices: Array<{ id: string; payments: Array<{ id: string; number: string | null }> }>;
+          supplierBills: Array<{ id: string; payments: Array<{ id: string; number: string | null }> }>;
+        }>;
+        currencySummaries: Array<{
+          currency: string;
+          estimates: { sales: string; costs: string; grossMargin: string };
+          receivables: { invoiced: string; collected: string; outstanding: string };
+          payables: { billed: string; paid: string; outstanding: string };
+        }>;
       };
     };
     assert.deepEqual(ownBody.item.reservations.map((item) => item.id), [visibleReservation.id]);
     assert.ok(!ownBody.item.reservations.some((item) => item.id === hiddenBranchReservation.id));
+
+    const visibleReservationSummary = ownBody.item.reservations[0];
+    assert.deepEqual(visibleReservationSummary.invoices.map((item) => item.id), [visibleInvoice.id]);
+    assert.deepEqual(visibleReservationSummary.invoices[0].payments.map((item) => item.id), [visibleReceipt.id]);
+    assert.ok(!visibleReservationSummary.invoices[0].payments.some((item) => item.id === hiddenBranchReceipt.id));
+
+    assert.deepEqual(visibleReservationSummary.supplierBills.map((item) => item.id), [visibleSupplierBill.id]);
+    assert.deepEqual(visibleReservationSummary.supplierBills[0].payments.map((item) => item.id), [visibleSupplierPayment.id]);
+    assert.ok(!visibleReservationSummary.supplierBills[0].payments.some((item) => item.id === hiddenBranchSupplierPayment.id));
+    assert.ok(!visibleReservationSummary.supplierBills.some((item) => item.id === hiddenBranchSupplierBill.id));
+
     assert.deepEqual(ownBody.item.currencySummaries, [{
       currency: "EGP",
       estimates: { sales: "1200.50", costs: "900.25", grossMargin: "300.25" },
-      receivables: { invoiced: "0.00", collected: "0.00", outstanding: "0.00" },
-      payables: { billed: "0.00", paid: "0.00", outstanding: "0.00" }
+      receivables: { invoiced: "1000.00", collected: "40.00", outstanding: "960.00" },
+      payables: { billed: "700.00", paid: "100.00", outstanding: "600.00" }
     }]);
 
     const hiddenBranchResponse = await getFinancialSummary(
