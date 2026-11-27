@@ -462,7 +462,19 @@ test("booking-file financial summary API enforces finance permission, tenant iso
     );
     assert.equal(forbiddenResponse.status, 403);
   } finally {
-    if (tenantId) await admin.tenant.delete({ where: { id: tenantId } });
+    if (tenantId) {
+      // Remove documents before their referenced journals/accounts. Journal lines
+      // intentionally restrict account deletion, so deleting the tenant directly
+      // would fail while those references are still present.
+      await admin.customerPayment.deleteMany({ where: { tenantId } });
+      await admin.supplierPayment.deleteMany({ where: { tenantId } });
+      await admin.invoice.deleteMany({ where: { tenantId } });
+      await admin.supplierBill.deleteMany({ where: { tenantId } });
+      await admin.journalEntry.deleteMany({ where: { tenantId } });
+      await admin.ledgerAccount.deleteMany({ where: { tenantId } });
+      await admin.supplier.deleteMany({ where: { tenantId } });
+      await admin.tenant.delete({ where: { id: tenantId } });
+    }
     if (foreignTenantId) await admin.tenant.delete({ where: { id: foreignTenantId } });
     if (userId) await admin.user.deleteMany({ where: { id: userId } });
     await admin.$disconnect();
