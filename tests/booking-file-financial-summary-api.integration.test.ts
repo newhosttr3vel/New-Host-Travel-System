@@ -147,6 +147,15 @@ test("booking-file financial summary API enforces finance permission, tenant iso
         type: "ASSET"
       }
     });
+    const revenueAccount = await admin.ledgerAccount.create({
+      data: {
+        tenantId,
+        code: "REV-FIN-API-" + suffix,
+        name: "إيرادات اختبار",
+        nameEn: "Finance API test revenue",
+        type: "REVENUE"
+      }
+    });
     const supplier = await admin.supplier.create({
       data: {
         tenantId,
@@ -156,17 +165,42 @@ test("booking-file financial summary API enforces finance permission, tenant iso
     });
     const documentDate = new Date("2026-11-27T12:00:00.000Z");
     const createJournal = (branchId: string, reference: string, sourceType: "INVOICE" | "CUSTOMER_PAYMENT" | "SUPPLIER_BILL" | "SUPPLIER_PAYMENT") =>
-      admin.journalEntry.create({
-        data: {
-          tenantId: workspace.tenantId,
-          branchId,
-          reference,
-          entryDate: documentDate,
-          description: "Financial summary API branch-scope fixture",
-          currency: "EGP",
-          exchangeRate: "1",
-          sourceType
-        }
+      admin.$transaction(async (tx) => {
+        const journal = await tx.journalEntry.create({
+          data: {
+            tenantId: workspace.tenantId,
+            branchId,
+            reference,
+            entryDate: documentDate,
+            description: "Financial summary API branch-scope fixture",
+            currency: "EGP",
+            exchangeRate: "1",
+            sourceType
+          }
+        });
+        await tx.journalLine.createMany({
+          data: [
+            {
+              tenantId: workspace.tenantId,
+              journalEntryId: journal.id,
+              accountId: cashAccount.id,
+              debit: "1.00",
+              credit: "0.00",
+              baseDebit: "1.00",
+              baseCredit: "0.00"
+            },
+            {
+              tenantId: workspace.tenantId,
+              journalEntryId: journal.id,
+              accountId: revenueAccount.id,
+              debit: "0.00",
+              credit: "1.00",
+              baseDebit: "0.00",
+              baseCredit: "1.00"
+            }
+          ]
+        });
+        return journal;
       });
 
     const [
