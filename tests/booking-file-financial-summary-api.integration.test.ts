@@ -158,7 +158,7 @@ test("booking-file financial summary API enforces finance permission, tenant iso
     const createJournal = (branchId: string, reference: string, sourceType: "INVOICE" | "CUSTOMER_PAYMENT" | "SUPPLIER_BILL" | "SUPPLIER_PAYMENT") =>
       admin.journalEntry.create({
         data: {
-          tenantId,
+          tenantId: workspace.tenantId,
           branchId,
           reference,
           entryDate: documentDate,
