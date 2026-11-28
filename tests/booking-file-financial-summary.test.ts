@@ -32,13 +32,14 @@ const record = {
         paidAmount: decimal("500.05"),
         payments: [{
           id: "receipt-1",
+          branchId: "branch-a",
           receiptNumber: "RCPT-001",
           paymentDate: new Date("2026-11-23T12:00:00.000Z"),
           method: "BANK_TRANSFER",
           amount: decimal("500.05"),
           currency: "EGP",
           reference: "BANK-REF-001",
-          journalEntry: { reference: "JRN-001" }
+          journalEntry: { reference: "JRN-001", branchId: "branch-a" }
         }]
       }, {
         id: "invoice-void",
@@ -62,13 +63,14 @@ const record = {
         paidAmount: decimal("300.00"),
         payments: [{
           id: "supplier-payment-1",
+          branchId: "branch-a",
           paymentNumber: "PAY-001",
           paymentDate: new Date("2026-11-24T12:00:00.000Z"),
           method: "BANK_TRANSFER",
           amount: decimal("300.00"),
           currency: "EGP",
           reference: "SUP-BANK-001",
-          journalEntry: { reference: "JRN-002" }
+          journalEntry: { reference: "JRN-002", branchId: "branch-a" }
         }],
         supplier: { id: "supplier-1", name: "Hotel Supplier" }
       }]
@@ -167,4 +169,63 @@ test("supplier bills include their supplier reference and exact outstanding bala
   assert.equal(bill?.includedInTotals, true);
   assert.equal(bill?.payments[0]?.number, "PAY-001");
   assert.equal(bill?.payments[0]?.journalReference, "JRN-002");
+});
+
+
+test("document balances use only visible same-currency payments and matching-branch journals", () => {
+  const egpReservation = record.reservations[0]!;
+  const inconsistentRecord = {
+    ...record,
+    reservations: [
+      {
+        ...egpReservation,
+        invoices: egpReservation.invoices.map((invoice) => invoice.id === "invoice-1" ? {
+          ...invoice,
+          paidAmount: decimal("600.05"),
+          payments: invoice.payments.map((payment) => ({
+            ...payment,
+            journalEntry: { ...payment.journalEntry, branchId: "branch-b" }
+          })).concat([{
+            id: "receipt-other-currency",
+            branchId: "branch-a",
+            receiptNumber: "RCPT-SAR",
+            paymentDate: new Date("2026-11-24T12:00:00.000Z"),
+            method: "BANK_TRANSFER",
+            amount: decimal("100.00"),
+            currency: "SAR",
+            reference: null,
+            journalEntry: { reference: "JRN-SAR", branchId: "branch-a" }
+          }])
+        } : invoice),
+        supplierBills: egpReservation.supplierBills.map((bill) => ({
+          ...bill,
+          paidAmount: decimal("310.00"),
+          payments: bill.payments.map((payment) => ({
+            ...payment,
+            journalEntry: { ...payment.journalEntry, branchId: "branch-b" }
+          }))
+        }))
+      },
+      record.reservations[1]!
+    ]
+  };
+
+  const result = summarizeBookingFileFinancials(inconsistentRecord);
+  const reservation = result.reservations[0]!;
+  const invoice = reservation.invoices.find((item) => item.id === "invoice-1")!;
+  const bill = reservation.supplierBills[0]!;
+
+  assert.equal(invoice.paidAmount, "500.05");
+  assert.equal(invoice.outstandingAmount, "750.05");
+  assert.equal(invoice.payments[0]?.journalReference, null);
+  assert.equal(invoice.payments[1]?.currency, "SAR");
+  assert.equal(bill.paidAmount, "300.00");
+  assert.equal(bill.outstandingAmount, "500.00");
+  assert.equal(bill.payments[0]?.journalReference, null);
+
+  const egp = result.currencySummaries.find((item) => item.currency === "EGP")!;
+  assert.equal(egp.receivables.collected, "500.05");
+  assert.equal(egp.receivables.outstanding, "750.05");
+  assert.equal(egp.payables.paid, "300.00");
+  assert.equal(egp.payables.outstanding, "500.00");
 });
