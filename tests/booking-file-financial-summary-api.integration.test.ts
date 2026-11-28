@@ -416,6 +416,7 @@ test("booking-file financial summary API enforces finance permission, tenant iso
 
     const visibleReservationSummary = ownBody.item.reservations[0];
     assert.deepEqual(visibleReservationSummary.invoices.map((item) => item.id), [visibleInvoice.id]);
+    assert.ok(!visibleReservationSummary.invoices.some((item) => item.id === hiddenBranchInvoice.id));
     assert.deepEqual(visibleReservationSummary.invoices[0].payments.map((item) => item.id), [visibleReceipt.id]);
     assert.equal(visibleReservationSummary.invoices[0].paidAmount, "40.00");
     assert.equal(visibleReservationSummary.invoices[0].outstandingAmount, "960.00");
