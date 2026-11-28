@@ -193,7 +193,7 @@ test("document balances use only visible same-currency payments and matching-bra
             method: "BANK_TRANSFER",
             amount: decimal("100.00"),
             currency: "SAR",
-            reference: null,
+            reference: "BANK-REF-SAR",
             journalEntry: { reference: "JRN-SAR", branchId: "branch-a" }
           }])
         } : invoice),
