@@ -90,6 +90,7 @@ export async function GET(request: Request, context: RouteContext) {
                 orderBy: [{ paymentDate: "asc" }, { createdAt: "asc" }],
                 select: {
                   id: true,
+                  branchId: true,
                   paymentNumber: true,
                   paymentDate: true,
                   method: true,
