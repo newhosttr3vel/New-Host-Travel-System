@@ -215,11 +215,11 @@ test("booking-file financial summary API enforces finance permission, tenant iso
     ] = await Promise.all([
       createJournal(branchA.id, "NHT-FIN-INV-A-" + suffix, "INVOICE"),
       createJournal(branchB.id, "NHT-FIN-INV-B-" + suffix, "INVOICE"),
-      createJournal(branchA.id, "NHT-FIN-RCT-A-" + suffix, "CUSTOMER_PAYMENT"),
+      createJournal(branchB.id, "NHT-FIN-RCT-A-" + suffix, "CUSTOMER_PAYMENT"),
       createJournal(branchB.id, "NHT-FIN-RCT-B-" + suffix, "CUSTOMER_PAYMENT"),
       createJournal(branchA.id, "NHT-FIN-BILL-A-" + suffix, "SUPPLIER_BILL"),
       createJournal(branchB.id, "NHT-FIN-BILL-B-" + suffix, "SUPPLIER_BILL"),
-      createJournal(branchA.id, "NHT-FIN-PAY-A-" + suffix, "SUPPLIER_PAYMENT"),
+      createJournal(branchB.id, "NHT-FIN-PAY-A-" + suffix, "SUPPLIER_PAYMENT"),
       createJournal(branchB.id, "NHT-FIN-PAY-B-" + suffix, "SUPPLIER_PAYMENT")
     ]);
 
@@ -239,7 +239,7 @@ test("booking-file financial summary API enforces finance permission, tenant iso
           subtotal: "1000.00",
           taxAmount: "0.00",
           total: "1000.00",
-          paidAmount: "40.00",
+          paidAmount: "45.00",
           idempotencyKey: "finance-api-invoice-a-" + suffix,
           requestHash: "finance-api-invoice-a-hash-" + suffix
         }
@@ -319,7 +319,7 @@ test("booking-file financial summary API enforces finance permission, tenant iso
           subtotal: "700.00",
           taxAmount: "0.00",
           total: "700.00",
-          paidAmount: "100.00",
+          paidAmount: "110.00",
           idempotencyKey: "finance-api-bill-a-" + suffix,
           requestHash: "finance-api-bill-a-hash-" + suffix
         }
@@ -400,8 +400,8 @@ test("booking-file financial summary API enforces finance permission, tenant iso
       item: {
         reservations: Array<{
           id: string;
-          invoices: Array<{ id: string; payments: Array<{ id: string; number: string | null }> }>;
-          supplierBills: Array<{ id: string; payments: Array<{ id: string; number: string | null }> }>;
+          invoices: Array<{ id: string; paidAmount: string; outstandingAmount: string | null; payments: Array<{ id: string; number: string | null; journalReference: string | null }> }>;
+          supplierBills: Array<{ id: string; paidAmount: string; outstandingAmount: string | null; payments: Array<{ id: string; number: string | null; journalReference: string | null }> }>;
         }>;
         currencySummaries: Array<{
           currency: string;
@@ -416,11 +416,18 @@ test("booking-file financial summary API enforces finance permission, tenant iso
 
     const visibleReservationSummary = ownBody.item.reservations[0];
     assert.deepEqual(visibleReservationSummary.invoices.map((item) => item.id), [visibleInvoice.id]);
+    assert.ok(!visibleReservationSummary.invoices.some((item) => item.id === hiddenBranchInvoice.id));
     assert.deepEqual(visibleReservationSummary.invoices[0].payments.map((item) => item.id), [visibleReceipt.id]);
+    assert.equal(visibleReservationSummary.invoices[0].paidAmount, "40.00");
+    assert.equal(visibleReservationSummary.invoices[0].outstandingAmount, "960.00");
+    assert.equal(visibleReservationSummary.invoices[0].payments[0]?.journalReference, null);
     assert.ok(!visibleReservationSummary.invoices[0].payments.some((item) => item.id === hiddenBranchReceipt.id));
 
     assert.deepEqual(visibleReservationSummary.supplierBills.map((item) => item.id), [visibleSupplierBill.id]);
     assert.deepEqual(visibleReservationSummary.supplierBills[0].payments.map((item) => item.id), [visibleSupplierPayment.id]);
+    assert.equal(visibleReservationSummary.supplierBills[0].paidAmount, "100.00");
+    assert.equal(visibleReservationSummary.supplierBills[0].outstandingAmount, "600.00");
+    assert.equal(visibleReservationSummary.supplierBills[0].payments[0]?.journalReference, null);
     assert.ok(!visibleReservationSummary.supplierBills[0].payments.some((item) => item.id === hiddenBranchSupplierPayment.id));
     assert.ok(!visibleReservationSummary.supplierBills.some((item) => item.id === hiddenBranchSupplierBill.id));
 

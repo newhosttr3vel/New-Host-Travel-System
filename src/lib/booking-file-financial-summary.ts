@@ -4,6 +4,7 @@ type DecimalLike = { toString(): string };
 
 type FinancialPayment = {
   id: string;
+  branchId: string;
   paymentDate: Date;
   method: string;
   amount: DecimalLike;
@@ -11,7 +12,7 @@ type FinancialPayment = {
   reference: string | null;
   receiptNumber?: string;
   paymentNumber?: string;
-  journalEntry: { reference: string };
+  journalEntry: { reference: string; branchId: string };
 };
 
 type FinancialDocumentBase = {
@@ -20,7 +21,6 @@ type FinancialDocumentBase = {
   status: string;
   currency: string;
   total: DecimalLike;
-  paidAmount: DecimalLike;
   dueDate: Date | null;
   payments: FinancialPayment[];
 };
@@ -91,8 +91,17 @@ function serializePayment(payment: FinancialPayment) {
     amount: payment.amount.toString(),
     currency: payment.currency,
     reference: payment.reference,
-    journalReference: payment.journalEntry.reference
+    journalReference: payment.journalEntry.branchId === payment.branchId
+      ? payment.journalEntry.reference
+      : null
   };
+}
+
+function visiblePaidCents(document: FinancialDocumentBase): bigint {
+  return document.payments.reduce((total, payment) => {
+    if (payment.currency !== document.currency) return total;
+    return total + amountToCents(payment.amount.toString());
+  }, 0n);
 }
 
 function serializeDocument(
@@ -102,7 +111,7 @@ function serializeDocument(
 ) {
   const includedInTotals = document.status !== "VOID";
   const total = amountToCents(document.total.toString());
-  const paid = amountToCents(document.paidAmount.toString());
+  const paid = visiblePaidCents(document);
   return {
     id: document.id,
     reference: document.reference,
@@ -111,7 +120,7 @@ function serializeDocument(
     documentDate: date.toISOString(),
     dueDate: document.dueDate?.toISOString() ?? null,
     total: document.total.toString(),
-    paidAmount: document.paidAmount.toString(),
+    paidAmount: centsToAmount(paid),
     outstandingAmount: includedInTotals ? centsToAmount(total - paid) : null,
     includedInTotals,
     payments: document.payments.map(serializePayment),
@@ -139,7 +148,7 @@ export function summarizeBookingFileFinancials(item: BookingFileFinancialRecord)
       if (serialized.includedInTotals) {
         const totals = getCurrency(currencies, invoice.currency);
         totals.invoiced += amountToCents(invoice.total.toString());
-        totals.collected += amountToCents(invoice.paidAmount.toString());
+        totals.collected += amountToCents(serialized.paidAmount);
       }
       return serialized;
     });
@@ -149,7 +158,7 @@ export function summarizeBookingFileFinancials(item: BookingFileFinancialRecord)
       if (serialized.includedInTotals) {
         const totals = getCurrency(currencies, bill.currency);
         totals.supplierBilled += amountToCents(bill.total.toString());
-        totals.supplierPaid += amountToCents(bill.paidAmount.toString());
+        totals.supplierPaid += amountToCents(serialized.paidAmount);
       }
       return serialized;
     });
