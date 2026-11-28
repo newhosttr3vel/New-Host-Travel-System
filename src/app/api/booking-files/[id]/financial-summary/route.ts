@@ -54,19 +54,19 @@ export async function GET(request: Request, context: RouteContext) {
               issueDate: true,
               dueDate: true,
               total: true,
-              paidAmount: true,
               payments: {
                 where: { tenantId, ...branchScope },
                 orderBy: [{ paymentDate: "asc" }, { createdAt: "asc" }],
                 select: {
                   id: true,
+                  branchId: true,
                   receiptNumber: true,
                   paymentDate: true,
                   method: true,
                   amount: true,
                   currency: true,
                   reference: true,
-                  journalEntry: { select: { reference: true } }
+                  journalEntry: { select: { reference: true, branchId: true } }
                 }
               }
             }
@@ -82,7 +82,6 @@ export async function GET(request: Request, context: RouteContext) {
               billDate: true,
               dueDate: true,
               total: true,
-              paidAmount: true,
               supplier: {
                 select: { id: true, name: true }
               },
@@ -97,7 +96,7 @@ export async function GET(request: Request, context: RouteContext) {
                   amount: true,
                   currency: true,
                   reference: true,
-                  journalEntry: { select: { reference: true } }
+                  journalEntry: { select: { reference: true, branchId: true } }
                 }
               }
             }
